@@ -15,7 +15,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { WritingSessionRecord } from '../types/settings';
+import type { BookProfile, WritingSessionRecord } from '../types/settings';
+import { getBookIdForPath } from '../utils/books';
 import {
     buildCommunityHourModeMix,
     projectPrivate,
@@ -128,6 +129,19 @@ describe('WritingSessionLog privacy boundary', () => {
             expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: undefined }, bookOf)).toBe('book-a');
             // A scene the vault no longer knows, or one with no time, counts for nothing.
             expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: activity(['Gone.md', 90], ['B/one.md', 0]) }, bookOf)).toBe('book-a');
+        });
+
+        it('places each scene by its book\'s folder, whichever book is active', () => {
+            // The view resolves paths with getBookIdForPath over every Book Manager book. Scene data
+            // would only hold the active book's folder, so a session that ended in Book A after most
+            // of its time in Book B would be posted under A.
+            const profiles = [
+                { id: 'book-a', title: 'A', sourceFolder: 'Books/A' },
+                { id: 'book-b', title: 'B', sourceFolder: 'Books/B' },
+            ] as BookProfile[];
+            const byFolder = (path: string) => getBookIdForPath(profiles, path);
+            expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: activity(['Books/A/1 Start.md', 10], ['Books/B/7 Storm.md', 50]) }, byFolder)).toBe('book-b');
+            expect(sessionPostBookId({ bookId: 'book-b', scenesActivity: activity(['Books/A/1 Start.md', 40], ['Books/B/7 Storm.md', 5]) }, byFolder)).toBe('book-a');
         });
     });
 

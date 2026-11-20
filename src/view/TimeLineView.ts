@@ -61,7 +61,7 @@ import { hasSceneNotes, isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
-import { DEFAULT_BOOK_TITLE, getActiveBook, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable, isSceneInBook } from '../utils/books';
+import { DEFAULT_BOOK_TITLE, getActiveBook, getBookIdForPath, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import type {
     ActiveWritingSession,
@@ -1283,23 +1283,13 @@ export class RadialTimelineView extends ItemView {
     /**
      * The book a saved session's feed post is filed under (sessionPostBookId):
      * the Book Manager book whose scenes took most of the session's time, else
-     * the book active when it began. A scene belongs to the first book whose
-     * membership rule it meets (isSceneInBook).
+     * the book active when it began. A scene's book is the one whose source
+     * folder holds its file (getBookIdForPath), whichever book is active now:
+     * getSceneData() reads only the active book's folder, so it can't place a
+     * scene from another book.
      */
-    private async sessionPostBook(record: WritingSessionRecord): Promise<string | undefined> {
-        const books = this.plugin.settings.books ?? []; // SAFE: pre-Book-Manager vaults have no books array; the session's own book is used
-        if (books.length < 2) return record.bookId;
-        let scenes: TimelineItem[] = [];
-        try {
-            scenes = await this.plugin.getSceneData();
-        } catch {
-            return record.bookId; // SAFE: scene data unavailable; the session's own book is the honest answer
-        }
-        const byPath = new Map(scenes.filter(scene => scene.path).map(scene => [scene.path as string, scene]));
-        return sessionPostBookId(record, (path) => {
-            const scene = byPath.get(path);
-            return scene ? books.find(book => isSceneInBook(scene, book))?.id : undefined;
-        });
+    private sessionPostBook(record: WritingSessionRecord): string | undefined {
+        return sessionPostBookId(record, path => getBookIdForPath(this.plugin.settings.books, path));
     }
 
     private formatWritingSessionMode(mode: WritingSessionMode): string {
@@ -2299,7 +2289,7 @@ export class RadialTimelineView extends ItemView {
                         try {
                             await service.setPostSessionsToFeed(completion.postToFeed);
                             if (completion.postToFeed) {
-                                await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record, await this.sessionPostBook(record)));
+                                await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record, this.sessionPostBook(record)));
                                 new Notice(t('ui.timeLineView.postedToFeed'));
                             }
                         } catch (postError) {

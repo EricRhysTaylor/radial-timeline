@@ -158,6 +158,13 @@ saving, and the remembered default only pre-arms it. It is never a passive
 flag applied after the fact. Sent by
 `communityShareClient.postSessionToCommunityFeed`.
 
+Since 2026-11-20 the post also carries `plugin_book_key`, the Book Manager id
+of the book it is filed under, never the book's title. That book is the one
+whose scenes took most of the session's time (`sessionPostBookId`), else the
+book active when the session began. Each scene is placed in a book by its
+source folder (`getBookIdForPath`). The server matches the id only inside the
+author's own books.
+
 ### Any level, per session: the Desk Lamp
 
 The Desk Lamp is independent of the sharing level: it works at Private too.
@@ -342,7 +349,7 @@ bookTitle:            'PRIVACY_TRACER_TITLE_DO_NOT_LEAK'
 
 - `src/services/WritingSessionLog.privacy.test.ts` covers the exits in the
   log module: `projectPrivate` (baseline: all tracers present),
-  `projectSessionFeedPost` (note allowed, nothing else), and
+  `projectSessionFeedPost` (note and the book's id allowed, nothing else), and
   `buildCommunityHourModeMix`.
 - `src/communityShare/communitySharePreview.test.ts` covers the wire path:
   `buildCommunityDailyEntries` and `buildCommunitySharePreview`, fed traced

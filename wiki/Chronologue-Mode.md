@@ -10,6 +10,7 @@ Chronologue arranges your scenes by story-world time, so you can build and check
 3.  **Activate the Shift sub-mode** (press `Shift`, use `Caps Lock`, or click the Shift button): See the bones of your story's temporal structure for all scenes and subplots.
 4.  **Compare elapsed time**: In the Shift sub-mode, click two scenes to see the elapsed story-time between them with the duration arc. Keep clicking more scenes as needed.
 5.  **Analyze time gaps**: Also in the Shift sub-mode, discontinuities (large time jumps) appear with an infinity symbol — identify gaps that might need bridging scenes.
+6.  **Feel the pace of story time**: Turn on **Time scale** so a scene that covers more story time takes more of the ring.
 
 > [!NOTE]
 > **Date formats**: A calendar anchor needs at least a year. Year-only (`When: 2045`), year+month (`When: 2045-07`), and textual month+year (`When: July 2045`) work — omitted pieces default internally to the first day at noon. Month-only, day-only, and time-only values cannot establish a calendar anchor. A scene can still appear in Chronologue with `When` blank.
@@ -64,6 +65,12 @@ Runtime lives in [Narrative Mode](Narrative-Mode#runtime-view), where it follows
 ## Subplot Alignment
 
 The **alignment chip** at the left of the mode row switches subplot rings between **Fill** (scenes spread evenly across each act) and **Sequence** (every scene sits at its true position in the full manuscript, with empty cells where a thread is dormant). See [Subplot Alignment in Narrative Mode](Narrative-Mode#subplot-alignment-fill-vs-sequence) — the same control applies here.
+
+---
+
+## Time scale
+
+Select **Time scale** beside **Fill** to size the outer All Scenes ring by story time. A scene that covers a long stretch of story time takes more of the ring, and a brief one takes less. Scenes at the same moment stay separate, and undated scenes get a section of their own. Subplot rings keep their usual layout. Time scale needs at least two different dates, or a date range.
 
 ---
 

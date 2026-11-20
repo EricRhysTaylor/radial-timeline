@@ -21,6 +21,7 @@ import {
     projectPrivate,
     projectSessionFeedPost,
     SESSION_FEED_POST_BODY_MAX,
+    sessionPostBookId,
 } from './WritingSessionLog';
 
 const TRACERS = {
@@ -89,6 +90,14 @@ describe('WritingSessionLog privacy boundary', () => {
             expect(out).not.toHaveProperty('scenesActivity');
             expect(out).not.toHaveProperty('bookId');
             expect(out).not.toHaveProperty('bookTitle');
+            // No book named by the caller, no book key.
+            expect(out).not.toHaveProperty('bookKey');
+        });
+
+        it('carries the book only as its Book Manager id, never its title', () => {
+            const out = projectSessionFeedPost(tracedRecord(), 'book-2');
+            expect(out.bookKey).toBe('book-2');
+            assertNoTracers(out, [TRACERS.note]);
         });
 
         it('composes a stats headline and caps the body at the server limit', () => {
@@ -100,6 +109,25 @@ describe('WritingSessionLog privacy boundary', () => {
         it('posts the stats headline alone when the author left no note', () => {
             const out = projectSessionFeedPost(tracedRecord({ note: undefined }));
             expect(out.body).toBe('Drafting · 47 min · 312 words');
+        });
+    });
+
+    describe('the book a session post is filed under', () => {
+        const books: Record<string, string> = { 'A/one.md': 'book-a', 'A/two.md': 'book-a', 'B/one.md': 'book-b' };
+        const bookOf = (path: string) => books[path];
+        const activity = (...entries: Array<[string, number]>) => entries.map(([path, activeMs]) => ({ path, activeMs, typedWords: 0 }));
+
+        it('is the book whose scenes took most of the time', () => {
+            expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: activity(['A/one.md', 10], ['B/one.md', 30], ['A/two.md', 15]) }, bookOf)).toBe('book-b');
+            expect(sessionPostBookId({ bookId: 'book-b', scenesActivity: activity(['A/one.md', 20], ['B/one.md', 30], ['A/two.md', 15]) }, bookOf)).toBe('book-a');
+        });
+
+        it('keeps the session\'s own book on a tie, and when no scene time is known', () => {
+            expect(sessionPostBookId({ bookId: 'book-b', scenesActivity: activity(['A/one.md', 30], ['B/one.md', 30]) }, bookOf)).toBe('book-b');
+            expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: [] }, bookOf)).toBe('book-a');
+            expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: undefined }, bookOf)).toBe('book-a');
+            // A scene the vault no longer knows, or one with no time, counts for nothing.
+            expect(sessionPostBookId({ bookId: 'book-a', scenesActivity: activity(['Gone.md', 90], ['B/one.md', 0]) }, bookOf)).toBe('book-a');
         });
     });
 

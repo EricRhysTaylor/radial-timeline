@@ -1366,6 +1366,17 @@ describe('standing-share exits: begin, pause, resume, session post', () => {
             body: 'Drafted 500 words.',
             session: { minutes: 30, words: 500, mode: 'drafting' }
         });
+
+        // With the session's book, its Book Manager id goes as plugin_book_key, and nothing else is added.
+        await postSessionToCommunityFeed(plugin as never, { ...post, bookKey: 'book-2' });
+        const withBook = JSON.parse((request.mock.calls.at(-1)?.[0] as { body: string }).body) as Record<string, unknown>;
+        expect(withBook).toEqual({
+            connection_id: 'conn-1',
+            current_secret: 'rtcs_current-secret',
+            body: 'Drafted 500 words.',
+            session: { minutes: 30, words: 500, mode: 'drafting' },
+            plugin_book_key: 'book-2'
+        });
     });
 
     it('postSessionToCommunityFeed surfaces the server error code and treats a 2xx without ok as invalid', async () => {

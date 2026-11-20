@@ -56,17 +56,18 @@ import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletio
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
 import { openMailboxMenu, paintMailboxButton, usesNativeMenus } from '../communityShare/communityMailbox';
 import { DESK_LAMP_PANEL_HELP, DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
-import { projectSessionFeedPost } from '../services/WritingSessionLog';
+import { projectSessionFeedPost, sessionPostBookId } from '../services/WritingSessionLog';
 import { hasSceneNotes, isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
-import { DEFAULT_BOOK_TITLE, getActiveBook, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
+import { DEFAULT_BOOK_TITLE, getActiveBook, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable, isSceneInBook } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import type {
     ActiveWritingSession,
     StructuralMoveHistoryEntry,
     WritingSessionMode,
+    WritingSessionRecord,
     WritingSessionStage,
     WritingSessionStagePreference,
     WritingSessionTargetMode
@@ -1279,6 +1280,28 @@ export class RadialTimelineView extends ItemView {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
+    /**
+     * The book a saved session's feed post is filed under (sessionPostBookId):
+     * the Book Manager book whose scenes took most of the session's time, else
+     * the book active when it began. A scene belongs to the first book whose
+     * membership rule it meets (isSceneInBook).
+     */
+    private async sessionPostBook(record: WritingSessionRecord): Promise<string | undefined> {
+        const books = this.plugin.settings.books ?? []; // SAFE: pre-Book-Manager vaults have no books array; the session's own book is used
+        if (books.length < 2) return record.bookId;
+        let scenes: TimelineItem[] = [];
+        try {
+            scenes = await this.plugin.getSceneData();
+        } catch {
+            return record.bookId; // SAFE: scene data unavailable; the session's own book is the honest answer
+        }
+        const byPath = new Map(scenes.filter(scene => scene.path).map(scene => [scene.path as string, scene]));
+        return sessionPostBookId(record, (path) => {
+            const scene = byPath.get(path);
+            return scene ? books.find(book => isSceneInBook(scene, book))?.id : undefined;
+        });
+    }
+
     private formatWritingSessionMode(mode: WritingSessionMode): string {
         if (mode === 'drafting') return t('ui.timeLineView.modeFreshDraftingLower');
         if (mode === 'revising') return t('ui.timeLineView.modeRevisionLower');
@@ -2276,7 +2299,7 @@ export class RadialTimelineView extends ItemView {
                         try {
                             await service.setPostSessionsToFeed(completion.postToFeed);
                             if (completion.postToFeed) {
-                                await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record));
+                                await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record, await this.sessionPostBook(record)));
                                 new Notice(t('ui.timeLineView.postedToFeed'));
                             }
                         } catch (postError) {

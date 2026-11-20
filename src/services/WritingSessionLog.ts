@@ -13,11 +13,13 @@
  *   - buildCommunityHourModeMix(...):  28-day hour x mode minutes rollup,
  *     NEVER per-session and NEVER dated — only a recurring local-hour habit
  *     shape, aggregated across the trailing window.
- *   - projectSessionFeedPost(record):  author-composed public feed post — the
- *     ONLY exit that may carry `note`, and only because the author explicitly
- *     armed the per-save "post to community feed" toggle at the top sharing
- *     level. It is an authored post (equivalent to typing on the website
- *     feed), not data exhaust.
+ *   - projectSessionFeedPost(record, bookKey):  author-composed public feed
+ *     post — the ONLY exit that may carry `note`, and only because the author
+ *     explicitly armed the per-save "post to community feed" toggle at the top
+ *     sharing level. It is an authored post (equivalent to typing on the
+ *     website feed), not data exhaust. It may carry `bookKey`, the Book
+ *     Manager id of the book the post is filed under (sessionPostBookId),
+ *     never a book title.
  *
  * NEVER emitted to friends or community at any tier:
  *   - scenePaths
@@ -126,6 +128,43 @@ export interface SessionFeedPost {
         words?: number;
         mode: WritingSessionMode;
     };
+    /**
+     * The Book Manager id of the book the post is filed under (the key project
+     * sync sends as `book_key`). The server files the post under that book when
+     * it is the author's own public book, else under the connection's book.
+     */
+    bookKey?: string;
+}
+
+/**
+ * The book a session's feed post is filed under: the book whose scenes took
+ * most of the session's time, else the book active when the session began.
+ * One session, one post: a session that moved between books is posted once,
+ * under the book it spent longest in (Eric, 2026-11-20, multi-book sessions;
+ * the author's word count is one figure for the whole session, so it can't be
+ * split between books honestly). Ties keep the session's own book when it is
+ * one of them, else the first in scene order. `bookOfPath` names a scene
+ * file's book; a path it doesn't know is not counted.
+ */
+export function sessionPostBookId(
+    record: Pick<WritingSessionRecord, 'bookId' | 'scenesActivity'>,
+    bookOfPath: (path: string) => string | undefined
+): string | undefined {
+    const totals = new Map<string, number>();
+    for (const entry of record.scenesActivity ?? []) { // SAFE: a session saved before scene activity tracking has none
+        const book = bookOfPath(entry.path);
+        if (!book || !(entry.activeMs > 0)) continue;
+        totals.set(book, (totals.get(book) ?? 0) + entry.activeMs); // SAFE: first scene of this book starts its total at zero
+    }
+    let best: string | undefined;
+    let bestMs = 0;
+    for (const [book, ms] of totals) {
+        if (ms > bestMs || (ms === bestMs && book === record.bookId)) {
+            best = book;
+            bestMs = ms;
+        }
+    }
+    return best ?? record.bookId;
 }
 
 const FEED_MODE_LABELS: Record<WritingSessionMode, string> = {
@@ -139,10 +178,12 @@ const FEED_MODE_LABELS: Record<WritingSessionMode, string> = {
  * Author-composed public feed post for one saved session. This is a sanctioned
  * `note` exit — callable ONLY when the author armed the per-save "post to
  * community feed" toggle; callers must gate on that toggle plus the top
- * sharing level. Deliberately excludes bookId/bookTitle (the server snapshots
+ * sharing level. Deliberately excludes the book's title (the server snapshots
  * the PUBLIC project title), scene paths, scene titles, and exact timestamps.
+ * The book goes only as `bookKey`, the id the server matches inside the
+ * author's own books.
  */
-export function projectSessionFeedPost(record: WritingSessionRecord): SessionFeedPost {
+export function projectSessionFeedPost(record: WritingSessionRecord, bookKey?: string): SessionFeedPost {
     const minutes = Math.max(1, Math.round((record.elapsedMs ?? 0) / 60000)); // SAFE: elapsedMs is optional; the Math.max(1) floor keeps a logged session from reading as zero-length
     const words = record.mode === 'drafting' || (record.wordsAdded ?? 0) > 0 // SAFE: wordsAdded is optional; no recorded delta reads as no words added
         ? Math.max(0, record.wordsAdded ?? 0) || undefined // SAFE: wordsAdded is optional, and a zero delta is omitted from the log line entirely
@@ -160,6 +201,7 @@ export function projectSessionFeedPost(record: WritingSessionRecord): SessionFee
         audience: 'community',
         body,
         stats: { minutes, words, mode: record.mode },
+        ...(bookKey ? { bookKey } : {}),
     };
 }
 

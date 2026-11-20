@@ -2025,7 +2025,9 @@ export async function postSessionToCommunityFeed(
             connection_id: current.connection.connectionId,
             current_secret: secret,
             body: post.body,
-            session: post.stats
+            session: post.stats,
+            // The book the session was written in; the server matches it only inside this author's books.
+            ...(post.bookKey ? { plugin_book_key: post.bookKey } : {})
         },
         isOkResponse,
         { code: 'post_failed', message: t('ui.communityShareClient.postFailed') },

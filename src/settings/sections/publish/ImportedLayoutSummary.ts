@@ -8,7 +8,8 @@
  *
  * A row is kept to one short line. The longer explanation sits behind the
  * row's info icon, and where the author has something to do next, the row
- * ends with where to go: a settings location, the template file, or a guide.
+ * ends with where to go: a settings location or a guide. The template file
+ * has a row of its own, and is shown only there.
  */
 import { setIcon } from 'obsidian';
 import type { ImportedTemplateCheckRecord } from '../../../publishing/importedTemplateCheck';
@@ -108,8 +109,6 @@ export function buildImportedTemplateFactRows(input: {
     const { facts, check } = input;
     const rows: ImportedTemplateFactRow[] = [];
     const whenSet = (text: string, conditional: boolean) => conditional ? t('ui.importedLayoutSummary.whenSet', { item: text }) : text;
-    // The file to edit, for rows whose next step is a change to the template.
-    const editFile: ImportedTemplateNextStep[] = input.copyPath ? [{ kind: 'file', path: input.copyPath }] : [];
 
     if (check) {
         rows.push({
@@ -164,7 +163,6 @@ export function buildImportedTemplateFactRows(input: {
             : facts.bookDetails[0] === 'author' ? t('ui.importedLayoutSummary.bookDetailsAuthor')
             : t('ui.importedLayoutSummary.bookDetailsNone'),
         info: printsDetails ? t('ui.importedLayoutSummary.infoBookDetails') : t('ui.importedLayoutSummary.infoBookDetailsNone'),
-        ...(!printsDetails && editFile.length > 0 ? { next: editFile } : {}),
     });
 
     // Fields only the author can fill. The ones Pandoc fills itself are named in the explanation.
@@ -193,7 +191,7 @@ export function buildImportedTemplateFactRows(input: {
             label: t('ui.importedLayoutSummary.labelStructure'),
             value: t('ui.importedLayoutSummary.structureHeadings'),
             info: t('ui.importedLayoutSummary.infoStructureHeadings'),
-            next: [...editFile, { kind: 'guide', label: t('ui.importedLayoutSummary.guideStructure'), wikiPage: IMPORTED_TEMPLATE_GUIDE_PAGE }],
+            next: [{ kind: 'guide', label: t('ui.importedLayoutSummary.guideStructure'), wikiPage: IMPORTED_TEMPLATE_GUIDE_PAGE }],
         });
 
     if (!facts.readsHeaderIncludes) {
@@ -201,16 +199,17 @@ export function buildImportedTemplateFactRows(input: {
             label: t('ui.importedLayoutSummary.labelPdfSettings'),
             value: t('ui.importedLayoutSummary.pdfSettingsNotRead'),
             info: t('ui.importedLayoutSummary.infoPdfSettings'),
-            ...(editFile.length > 0 ? { next: editFile } : {}),
         });
     }
 
+    // The file is shown once, on its own row. A row that asks for a change to
+    // the template says so in its explanation, which names this row.
     if (input.copyPath) {
         rows.push({
             label: t('ui.importedLayoutSummary.labelFile'),
             value: '',
             info: t('ui.importedLayoutSummary.infoFile'),
-            next: editFile,
+            next: [{ kind: 'file', path: input.copyPath }],
         });
     }
     return rows;
@@ -228,7 +227,7 @@ function createChip(parent: HTMLElement, cls: string, onActivate?: () => void): 
     return chip;
 }
 
-function renderNextStep(parent: HTMLElement, step: ImportedTemplateNextStep, actions: ImportedTemplateFactActions, ownRow = false): void {
+function renderNextStep(parent: HTMLElement, step: ImportedTemplateNextStep, actions: ImportedTemplateFactActions): void {
     switch (step.kind) {
         case 'setting': {
             // A trail of places; a button when it can take the author there.
@@ -241,17 +240,13 @@ function renderNextStep(parent: HTMLElement, step: ImportedTemplateNextStep, act
             return;
         }
         case 'file': {
-            // The file as folder and name. On a row whose next step is an edit
-            // to it, the chip itself opens the file; the Template file row has
-            // the buttons as well.
+            // The file as folder and name, with what can be done with it beside it.
             const cut = step.path.lastIndexOf('/') + 1;
             const { openFile, showFile } = actions;
-            const opensFromChip = openFile && !ownRow;
-            const file = createChip(parent, 'ert-layout-imported-file', opensFromChip ? () => openFile(step.path) : undefined);
+            const file = parent.createSpan({ cls: 'ert-layout-imported-file' });
             setIcon(file.createSpan({ cls: 'ert-layout-imported-file-icon', attr: { 'aria-hidden': 'true' } }), 'file-code');
             file.createSpan({ cls: 'ert-layout-imported-file-folder', text: step.path.slice(0, cut) });
             file.createSpan({ cls: 'ert-layout-imported-file-name', text: step.path.slice(cut) });
-            if (opensFromChip) return;
             if (openFile) {
                 parent.createEl('button', { cls: 'ert-layout-imported-fileAction', text: t('ui.importedLayoutSummary.fileOpen'), attr: { type: 'button' } })
                     .onClickEvent(() => openFile(step.path));
@@ -293,7 +288,7 @@ export function renderImportedTemplateFacts(container: HTMLElement, rows: Import
         } else if (row.value) {
             line.createSpan({ text: row.value });
         }
-        inline.forEach(step => renderNextStep(line, step, actions, true));
+        inline.forEach(step => renderNextStep(line, step, actions));
         if (row.info) {
             const info = iconHost.createSpan({ cls: 'ert-layout-imported-info', attr: { tabindex: '0', role: 'note' } });
             setIcon(info, 'info');

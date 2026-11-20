@@ -137,7 +137,7 @@ The Check and Save steps, and the style's card in **Settings → Publish**, show
 *   **Document class**, **Fonts**, and **LaTeX packages** — under the names your template gives them, which are the names to search for or install. Each font is listed with its use (body text, sans-serif, monospace, math). Anything the template loads only when one of its fields is filled is marked.
 *   **Book Details** — whether the template prints the title and author
 *   **Fields to fill** — fields the template reads that Radial Timeline does not fill, such as `publisher`. The row shows where they go: **Settings › Publish › Custom Pandoc metadata**. On the card, click that location to open it. Add each field as its own line (`publisher: Your Press`); a field you leave out prints nothing. Fields you have filled are listed as filled.
-*   **Chapters and parts** — whether the template prints them. When it does not, the row names the template file to edit and links to [Add chapters and parts](#add-chapters-and-parts).
+*   **Chapters and parts** — whether the template prints them. When it does not, the row links to [Add chapters and parts](#add-chapters-and-parts); the file to edit is on the **Template file** row.
 *   **Binding margin** — shown only when the template cannot receive the paperback binding margin (see [What your template receives](#what-your-template-receives))
 *   **Template file** — Radial Timeline's copy of the template. On the card, **Open** opens it in your computer's editor for `.tex` files and **Show in folder** shows it in your file manager.
 

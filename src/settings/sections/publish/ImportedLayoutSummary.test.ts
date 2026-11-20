@@ -128,20 +128,27 @@ describe('imported template facts', () => {
         expect(value).toBe(`${names.slice(0, 12).join(', ')} and 3 more`);
     });
 
-    it('points each row with something to change at the template file, and chapters at the guide as well', () => {
+    it('names the template file once, on its own row, and points chapters at the guide', () => {
         const rows = rowsFor('\\documentclass{book}\n$body$', { copyPath: COPY });
-        const file = { kind: 'file', path: COPY };
-        expect(rows['Template file']).toMatchObject({ value: '', next: [file] });
+        const guide = { kind: 'guide', label: 'How to add chapters and parts', wikiPage: 'Manuscript-Export#add-chapters-and-parts' };
+        expect(rows['Template file']).toMatchObject({ value: '', next: [{ kind: 'file', path: COPY }] });
         expect(rows['Template file'].info).toContain('your original file is left as it was');
         expect(rows['Template file'].info).toContain('Check again');
-        expect(rows['Chapters and parts'].next).toEqual([file, { kind: 'guide', label: 'How to add chapters and parts', wikiPage: 'Manuscript-Export#add-chapters-and-parts' }]);
+        expect(rows['Chapters and parts'].next).toEqual([guide]);
         expect(rows['Chapters and parts'].info).toContain('\\rtPart, \\rtChapter and \\rtSceneSep');
-        expect(rows['Binding margin'].next).toEqual([file]);
-        expect(rows['Book Details'].next).toEqual([file]);
-        // Before the copy exists (the dialog's Check step) there is no file to point at.
+        // A row that asks for a change to the template says so in its explanation
+        // and does not repeat the file.
+        for (const label of ['Chapters and parts', 'Binding margin', 'Book Details']) {
+            expect(rows[label].info).toContain('the template file');
+        }
+        expect(rows['Binding margin'].next).toBeUndefined();
+        expect(rows['Book Details'].next).toBeUndefined();
+        const fileSteps = Object.values(rows).flatMap(row => row.next ?? []).filter(step => step.kind === 'file');
+        expect(fileSteps).toHaveLength(1);
+        // Before the copy exists (the dialog's Check step) there is no file row.
         const early = rowsFor('\\documentclass{book}\n$body$');
         expect(early['Template file']).toBeUndefined();
-        expect(early['Chapters and parts'].next).toEqual([{ kind: 'guide', label: 'How to add chapters and parts', wikiPage: 'Manuscript-Export#add-chapters-and-parts' }]);
+        expect(early['Chapters and parts'].next).toEqual([guide]);
         // A template that already prints chapters and parts has nothing to change.
         const structural = rowsFor(getBundledPandocLayoutContent('bundled-fiction-modern-classic') || '', { copyPath: COPY });
         expect(structural['Chapters and parts'].next).toBeUndefined();
@@ -197,23 +204,18 @@ describe('drawing the rows', () => {
         const openFile = vi.fn(); const showFile = vi.fn();
         const root = new ElementStub();
         renderImportedTemplateFacts(root as unknown as HTMLElement, rows, { openFile, showFile });
+        // The file is on the card once, on the Template file row.
         const files = root.find('ert-layout-imported-file');
-        // Once on its own row, and again on each row whose next step is an edit to it.
-        expect(files.length).toBeGreaterThanOrEqual(2);
+        expect(files).toHaveLength(1);
+        expect(files[0].tag).toBe('span');
         expect(files[0].find('ert-layout-imported-file-folder')[0].text).toBe('Radial Timeline/Pandoc/imported/');
         expect(files[0].find('ert-layout-imported-file-name')[0].text).toBe('my-book.tex');
-        // On another row the file itself is the control: one click opens it.
-        expect(files[0].tag).toBe('button');
-        files[0].listeners.click();
-        expect(openFile).toHaveBeenCalledTimes(1);
-        // The Template file row shows the file with Open and Show in folder beside it, once.
-        const own = files[files.length - 1];
-        expect(own.tag).toBe('span');
+        // Open and Show in folder sit beside it.
         const actions = root.find('ert-layout-imported-fileAction');
         expect(actions.map(action => action.text)).toEqual(['Open', 'Show in folder']);
         actions[0].listeners.click();
         actions[1].listeners.click();
-        expect(openFile).toHaveBeenCalledTimes(2);
+        expect(openFile).toHaveBeenCalledTimes(1);
         expect(openFile).toHaveBeenCalledWith(COPY);
         expect(showFile).toHaveBeenCalledWith(COPY);
 

@@ -100,7 +100,7 @@ A live timeline updates with your book sync. Pausing Community sharing stops eve
 
 ## Private Scenes
 
-Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book to readers you name. It is off by default. Only those readers can read a released scene, signed in on the website. The first time you turn it on, Radial Timeline shows the release terms and asks you to agree.
+Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book. It is off by default. A released scene starts with the readers you name, signed in on the website. To share it publicly, choose **Open to everyone** on its scene card on the website: every signed-in Community member can read it once the Community's check passes. **Make private again** returns it to your named readers. The first time you turn on **Share scene body**, Radial Timeline shows the release terms and asks you to agree.
 
 **Release scenes…** lists the book's scenes in manuscript order, each marked **Not released**, **Released**, **Changed since release**, or **Hidden after a reader's report**. Radial Timeline works out whether a scene changed since its release inside your vault.
 

@@ -1,6 +1,6 @@
 ## Radial Timeline 8.1.0
 
-A Time scale for Chronologue, your own PDF styles and LaTeX templates, private scenes for readers you choose, Social reports in one list, and newer AI models.
+A Time scale for Chronologue, your own PDF styles and LaTeX templates, scenes you share with named readers or with every Community member, Social reports in one list, and newer AI models.
 
 ### Chronologue
 
@@ -29,15 +29,16 @@ See [Time scale](https://github.com/EricRhysTaylor/radial-timeline/wiki/Chronolo
 
 See [Design your own PDF style](https://github.com/EricRhysTaylor/radial-timeline/wiki/Manuscript-Export#design-your-own-pdf-style) and [Import your own LaTeX template](https://github.com/EricRhysTaylor/radial-timeline/wiki/Manuscript-Export#import-your-own-latex-template).
 
-### Private scenes on the Community
+### Share scenes on the Community
 
-- **Release a scene to readers you choose.** Once your timeline is shared on the Community, **Settings → Community → Private scenes** lets you share a scene's text with named readers. Turn on **Share scene body**, agree to the release terms once, then open **Release scenes…**: your book's scenes in manuscript order, each with its state on the website. Release, update or take down one scene, or check several and do them together. You choose the readers on the website.
+- **Release a scene's text from your vault.** Once your timeline is shared on the Community, turn on **Share scene body** in **Settings → Community → Private scenes**, agree to the release terms once, then open **Release scenes…**: your book's scenes in manuscript order, each with its state on the website. Release, update or take down one scene, or check several and do them together.
+- **Private or public.** A released scene starts with the readers you name on the website. To share it publicly, choose **Open to everyone** on its scene card on the website: every signed-in Community member can read it once the Community's check passes. **Make private again** returns it to your named readers.
 - **See exactly what readers will see.** Before a scene goes, a preview shows its text as readers will read it. Comments, links, callouts and block ids are removed, so a released scene holds only your prose. A scene with a passage that reads like a note to yourself, such as a TODO, a bracketed reminder or a web address, opens with that passage showing and goes once you tick **Looks right**.
 - **Release from the website.** The Community website's release buttons open Radial Timeline straight at **Release scenes** for that book, or at the preview for one scene. A scene already released opens the list with that scene highlighted. The link names only the book and the scene.
 - **Your rating.** Each release is General, for any reader, or Mature, for adult readers. **Update** sends a new version when the scene has changed in your vault, and **Take down** removes it.
 - **Scene text leaves your vault only when you press Release or Update.** Nothing is written to your scene's properties, and a scene that changed after its preview is not sent.
 
-See [Private scenes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#private-scenes).
+See [Private scenes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#private-scenes) in Community settings.
 
 ### Social
 

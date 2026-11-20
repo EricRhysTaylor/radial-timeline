@@ -3351,12 +3351,10 @@ export class RadialTimelineView extends ItemView {
      */
     private renderZeroStateCenter(svg: SVGSVGElement): void {
         const size = 2 * ZERO_STATE_CENTER_HALF;
-        const fo = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-        fo.setAttribute('x', String(-ZERO_STATE_CENTER_HALF));
-        fo.setAttribute('y', String(-ZERO_STATE_CENTER_HALF));
-        fo.setAttribute('width', String(size));
-        fo.setAttribute('height', String(size));
-        fo.setAttribute('class', 'ert-timeline-zero-host');
+        const fo = svg.ownerDocument.win.createSvg('foreignObject', {
+            cls: 'ert-timeline-zero-host',
+            attr: { x: -ZERO_STATE_CENTER_HALF, y: -ZERO_STATE_CENTER_HALF, width: size, height: size },
+        });
         const center = createDiv({ cls: 'ert-timeline-zero' });
         center.createDiv({ cls: 'ert-timeline-zero__title', text: t('ui.welcomeScreen.emptyTitle') });
         center.createDiv({ cls: 'ert-timeline-zero__hint', text: t('ui.welcomeScreen.emptyHint') });

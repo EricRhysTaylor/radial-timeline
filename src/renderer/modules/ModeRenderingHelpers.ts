@@ -121,8 +121,10 @@ export const MIN_TIMELINE_RINGS = 3;
  * state, the same three placeholders in every mode, so the first scene lands
  * on the outer ring without the rings moving.
  */
+const PADDED_RING_VIEWS: readonly string[] = [TimelineMode.NARRATIVE, TimelineMode.PROGRESS];
+
 export function placeholderRingCount(mode: string, ringCount: number): number {
-    const padded = ringCount === 0 || mode === TimelineMode.NARRATIVE || mode === TimelineMode.PROGRESS;
+    const padded = ringCount === 0 || PADDED_RING_VIEWS.includes(mode);
     return padded ? Math.max(0, MIN_TIMELINE_RINGS - ringCount) : 0;
 }
 

@@ -89,7 +89,7 @@ const ATTACHMENT = /\.(?:png|jpe?g|gif|bmp|svg|webp|avif|heic|tiff?|mp3|wav|m4a|
  * here would put one in the regular expression below, which Obsidian's
  * community review flags.
  */
-const REMOVED = '￼';
+const REMOVED = '\uFFFC';
 
 function markdownTarget(link: string): string {
     const open = link.lastIndexOf('](');
@@ -125,7 +125,7 @@ export function linkText(text: string): string {
         .replace(MARKDOWN_LINK, (match: string, embed: string, shown: string) => (
             embed && ATTACHMENT.test(markdownTarget(match)) ? REMOVED : shown.trim()
         ))
-        .replace(/[ \t]*￼[ \t]*/g, ' ')
+        .replace(/[ \t]*\uFFFC[ \t]*/g, ' ')
         .trim();
 }
 

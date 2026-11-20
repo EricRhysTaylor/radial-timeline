@@ -2,7 +2,44 @@ import { describe, expect, it } from 'vitest';
 import * as fs from 'fs'; // SAFE: test-only fixture setup for the font resolver.
 import * as os from 'os'; // SAFE: test-only temp directory resolution.
 import * as path from 'path'; // SAFE: test-only fixture path setup.
-import { buildFontspecBlock, vaultDirHasFont, FONT_REGISTRY } from './fontResolver';
+import { buildFontspecBlock, fontNameWithSpelling, knownFontDisplayName, vaultDirHasFont, FONT_REGISTRY } from './fontResolver';
+
+describe('knownFontDisplayName: a font as a template writes it', () => {
+    it('names a registry font from its family name, a font file, or the stem its files share', () => {
+        for (const written of ['TeX Gyre Pagella', 'tex gyre pagella', 'texgyrepagella', 'texgyrepagella-regular.otf', 'texgyrepagella-regular', 'texgyrepagella-bolditalic.otf', ' texgyrepagella ']) {
+            expect(knownFontDisplayName(written), written).toBe('TeX Gyre Pagella');
+        }
+        expect(knownFontDisplayName('texgyreheros')).toBe('TeX Gyre Heros');
+        expect(knownFontDisplayName('lmroman10-regular.otf')).toBe('Latin Modern Roman');
+        expect(knownFontDisplayName('lmroman10')).toBe('Latin Modern Roman');
+        expect(knownFontDisplayName('SourceSerif4-It.otf')).toBe('Source Serif 4');
+        expect(knownFontDisplayName('SortsMillGoudy')).toBe('Sorts Mill Goudy');
+    });
+
+    it('recognizes every spelling the resolver itself writes into a template', () => {
+        for (const [key, entry] of Object.entries(FONT_REGISTRY)) {
+            const written = /\\setmainfont\{([^}]*)\}/.exec(buildFontspecBlock({ fontKey: key }))?.[1];
+            expect(written && knownFontDisplayName(written), key).toBe(entry.displayName);
+        }
+    });
+
+    it('does not name a font the registry does not have, however close the spelling', () => {
+        for (const written of ['texgyretermes', 'texgyrepagela', 'texgyrepagella-math.otf', 'lmroman12-regular.otf', 'lmroman', 'Garamond', 'Source Serif', 'regular', '']) {
+            expect(knownFontDisplayName(written), written).toBeUndefined();
+        }
+    });
+});
+
+describe('fontNameWithSpelling: a font for a message about the template', () => {
+    it('gives the proper name with the spelling LaTeX was given', () => {
+        expect(fontNameWithSpelling('texgyrepagella-regular')).toBe('TeX Gyre Pagella (texgyrepagella-regular)');
+    });
+
+    it('gives a font written as its proper name, or one it does not know, as written', () => {
+        expect(fontNameWithSpelling('EB Garamond')).toBe('EB Garamond');
+        expect(fontNameWithSpelling('Garamond Premier Pro')).toBe('Garamond Premier Pro');
+    });
+});
 
 describe('buildFontspecBlock — vault → system resolution', () => {
     it('emits a Path-based \\setmainfont when the vault has all required font files', () => {

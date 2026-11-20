@@ -56,7 +56,7 @@ describe('imported template facts', () => {
         const summaries = ['bundled-fiction-classic-manuscript', 'bundled-fiction-contemporary-literary', 'bundled-fiction-signature-literary', 'bundled-fiction-modern-classic']
             .map(id => rowsFor(getBundledPandocLayoutContent(id) || ''));
         expect(summaries.map(rows => rows['Document class'].value)).toEqual(['book (11pt, oneside)', 'book (11pt, twoside)', 'book (11pt, twoside)', 'book (11pt, twoside, openany)']);
-        expect(summaries.map(rows => rows.Fonts.value)).toEqual(['Arial (body text)', 'Source Serif 4 (body text)', 'Sorts Mill Goudy (body text)', 'lmroman10-regular.otf (body text)']);
+        expect(summaries.map(rows => rows.Fonts.value)).toEqual(['Arial (body text)', 'Source Serif 4 (body text)', 'Sorts Mill Goudy (body text)', 'Latin Modern Roman (body text)']);
         expect(summaries.map(rows => rows['Chapters and parts'].value)).toEqual([
             'Not printed; scenes print as headings', 'Not printed; scenes print as headings', 'Not printed; scenes print as headings', 'Printed in the template\'s own styles',
         ]);
@@ -110,6 +110,27 @@ describe('imported template facts', () => {
         expect(rows['Fields to fill'].value).toBe('fancyfont, geometry');
         expect(rows['Book Details'].value).toBe('Not printed');
         expect(rows['Binding margin'].value).toBe('Not applied by this template');
+    });
+
+    it('shows a font Radial Timeline knows under its proper name, and gives the spelling in the file in the explanation', () => {
+        // Loaded by the stem its files share, as a font that comes with LaTeX is.
+        const stem = rowsFor('\\setmainfont{texgyrepagella}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold]\n$body$').Fonts;
+        expect(stem.value).toBe('TeX Gyre Pagella (body text)');
+        expect(stem.info).toContain('In the template file, TeX Gyre Pagella is written "texgyrepagella".');
+        // Loaded by one font file.
+        const file = rowsFor('\\setsansfont{texgyreheros-regular.otf}\n$body$').Fonts;
+        expect(file.value).toBe('TeX Gyre Heros (sans-serif)');
+        expect(file.info).toContain('In the template file, TeX Gyre Heros is written "texgyreheros-regular.otf".');
+        // Already written as its proper name: nothing to add.
+        const family = rowsFor('\\setmainfont{EB Garamond}\n$body$').Fonts;
+        expect(family.value).toBe('EB Garamond (body text)');
+        expect(family.info).not.toContain('is written');
+    });
+
+    it('shows a font it does not know exactly as the file writes it', () => {
+        const rows = rowsFor('\\setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular]\n\\setsansfont{HelveticaNeueLTStd-Roman.otf}\n\\newfontfamily\\display{garamondpremrpro}\n$body$');
+        expect(rows.Fonts.value).toBe('texgyretermes (body text), HelveticaNeueLTStd-Roman.otf (sans-serif), garamondpremrpro (named font)');
+        expect(rows.Fonts.info).not.toContain('is written');
     });
 
     it('says a plain template names no font and loads no package, without guessing a style', () => {

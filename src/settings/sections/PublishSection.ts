@@ -70,6 +70,7 @@ import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus } from '../..
 import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingValidationSnapshot, type MatterPreviewItem } from '../../publishing/readinessSummary';
 import { createBookMetaOnly, ensurePublishingEnvironment, generateSampleTemplates, maybeRenameTemplateFileForPathChange } from '../../publishing/starterSetup';
 import { compactTemplatePathForStorage, registerImportedTemplate } from '../../utils/templateImport';
+import { fontNameWithSpelling } from '../../publishing/fontResolver';
 import { inspectImportedTemplate, recheckImportedTemplate } from '../../publishing/importedTemplateState';
 import { t, tCount } from '../../i18n';
 import { toRomanNumeral } from '../../utils/romanNumerals';
@@ -1219,7 +1220,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                                 // A font or package this computer lacks is named outright.
                                 const message = result.reason === 'tools' ? t('ui.publishSection.importedCheckNeedsTools')
                                     : result.reason === 'missing' ? result.message
-                                    : result.cause?.kind === 'font' ? t('ui.publishSection.importedCheckMissingFont', { name: layout.name, font: result.cause.name })
+                                    : result.cause?.kind === 'font' ? t('ui.publishSection.importedCheckMissingFont', { name: layout.name, font: fontNameWithSpelling(result.cause.name) })
                                     : result.cause?.kind === 'package' ? t('ui.publishSection.importedCheckMissingPackage', { name: layout.name, package: result.cause.name })
                                     : t('ui.publishSection.importedCheckFailed', { name: layout.name });
                                 importedCheckFailures.set(layout.id, { message, latexLines: result.reason === 'latex' ? result.latexLines : [] });

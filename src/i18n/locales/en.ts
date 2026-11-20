@@ -4639,6 +4639,7 @@ export const en = {
             infoClass: 'The LaTeX document class your template is built on, with its options, as written in the file. The class sets the basic page and heading design.',
             infoClassVariable: 'Your template takes its document class from the {{variable}} field. Pandoc uses "article" unless you add a line such as "{{variable}}: book" under Custom Pandoc metadata.',
             infoFonts: 'Fonts your template names. Each must be installed on this computer or come with LaTeX; the test PDF was built with them. "When set" marks a font the template loads only when one of its fields is filled.',
+            infoFontWritten: 'In the template file, {{name}} is written "{{written}}".',
             infoFontsNone: 'Your template names no font, so LaTeX prints with the font its document class comes with.',
             infoPackages: 'Add-ons your template loads. Each must be installed with LaTeX on this computer; the test PDF was built with the ones always loaded.',
             infoBookDetails: 'Radial Timeline fills the title and author from Book Details. Your template prints them where it has $title$ and $author$.',

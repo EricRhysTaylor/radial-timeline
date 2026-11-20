@@ -49,6 +49,7 @@ import { defaultLayoutForPreset, getLayoutAbbreviation } from '../publishing/tem
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { convertAuthorQueriesToWordComments } from '../utils/authorQueryComments';
 import { buildLayoutAssemblyOptions } from '../utils/manuscriptLayoutExport';
+import { fontNameWithSpelling } from '../publishing/fontResolver';
 import { describeImportedTemplateBlock } from '../publishing/importedTemplateState';
 import { ExportFailure, categorizeExportError, extractLatexErrorLines, identifyLatexMissingCause } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
@@ -944,7 +945,7 @@ export class CommandRegistrar {
                     if (!latexLines[0]?.startsWith('!')) throw failure;
                     // A font or package this computer lacks is named outright.
                     const cause = identifyLatexMissingCause(failure.rawOutput ?? ''); // SAFE: no output means no cause to name
-                    failure.message = cause?.kind === 'font' ? t('ui.commandRegistrar.importedTemplateMissingFont', { name: layout.name, font: cause.name })
+                    failure.message = cause?.kind === 'font' ? t('ui.commandRegistrar.importedTemplateMissingFont', { name: layout.name, font: fontNameWithSpelling(cause.name) })
                         : cause?.kind === 'package' ? t('ui.commandRegistrar.importedTemplateMissingPackage', { name: layout.name, package: cause.name })
                         : t('ui.commandRegistrar.importedTemplateFailed', { name: layout.name });
                     failure.detail = latexLines.join('\n');

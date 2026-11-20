@@ -2,6 +2,7 @@ import { App, ButtonComponent, DropdownComponent, Modal, Notice, SuggestModal, T
 import type RadialTimelinePlugin from '../main';
 import type { ImportedTemplateCandidate } from '../utils/templateImport';
 import { buildImportedTemplateCandidate, finalizeImportedLayout } from '../utils/templateImport';
+import { fontNameWithSpelling } from '../publishing/fontResolver';
 import { buildImportedTemplateCheckManuscript, hashTemplateText, runImportedTemplateCheck, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import type { PandocLayoutTemplate, UsageContext } from '../types';
 import type { LatexMissingCause } from '../utils/exportErrors';
@@ -599,7 +600,7 @@ export class ImportTemplateModal extends Modal {
             // the commonest reason a good template stops, and the fix is not
             // in the template.
             description = check.reason === 'tools' ? t('ui.importTemplateModal.checkStatusTools')
-                : check.cause?.kind === 'font' ? t('ui.importTemplateModal.checkStatusMissingFont', { name: check.cause.name })
+                : check.cause?.kind === 'font' ? t('ui.importTemplateModal.checkStatusMissingFont', { name: fontNameWithSpelling(check.cause.name) })
                 : check.cause?.kind === 'package' ? t('ui.importTemplateModal.checkStatusMissingPackage', { name: check.cause.name })
                 : t('ui.importTemplateModal.checkStatusFailed');
             latexLines = check.reason === 'latex' ? check.latexLines : [];

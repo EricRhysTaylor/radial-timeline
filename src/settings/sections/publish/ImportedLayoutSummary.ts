@@ -12,6 +12,7 @@
  * has a row of its own, and is shown only there.
  */
 import { setIcon } from 'obsidian';
+import { knownFontDisplayName } from '../../../publishing/fontResolver';
 import type { ImportedTemplateCheckRecord } from '../../../publishing/importedTemplateCheck';
 import type { TemplateFacts, TemplateFont } from '../../../publishing/templateFacts';
 import { assertNever } from '../../../utils/assertNever';
@@ -134,11 +135,19 @@ export function buildImportedTemplateFactRows(input: {
             });
     }
 
+    // A font Radial Timeline knows is shown under its proper name; the
+    // explanation then gives the spelling in the file, which is what the
+    // author searches the file for. Any other font is shown as written.
+    const shownFonts = facts.fonts.map(font => ({ ...font, shown: knownFontDisplayName(font.name) || font.name }));
+    const respelled = shownFonts.filter(font => font.shown !== font.name);
     rows.push(facts.fonts.length > 0
         ? {
             label: t('ui.importedLayoutSummary.labelFonts'),
-            value: joinList(facts.fonts.map(font => whenSet(`${font.name} (${fontRoleLabel(font.role)})`, font.conditional))),
-            info: t('ui.importedLayoutSummary.infoFonts'),
+            value: joinList(shownFonts.map(font => whenSet(`${font.shown} (${fontRoleLabel(font.role)})`, font.conditional))),
+            info: [
+                t('ui.importedLayoutSummary.infoFonts'),
+                ...respelled.map(font => t('ui.importedLayoutSummary.infoFontWritten', { name: font.shown, written: font.name })),
+            ].join(' '),
         }
         : {
             label: t('ui.importedLayoutSummary.labelFonts'),

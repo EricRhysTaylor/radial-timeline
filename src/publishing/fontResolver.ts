@@ -137,6 +137,52 @@ export const FONT_REGISTRY: Record<string, { displayName: string; files: FontFil
     },
 };
 
+const withoutExtension = (fileName: string) => fileName.replace(/\.[A-Za-z0-9]+$/, '');
+
+/**
+ * Every spelling of a registry font that names it with certainty, lower-cased:
+ * its family name, each of its font files with and without the extension, and
+ * the stem its files share (`texgyrepagella` for `texgyrepagella-regular.otf`),
+ * which is what fontspec is given with `UprightFont=*-regular`.
+ */
+const KNOWN_FONT_SPELLINGS: Map<string, string> = (() => {
+    const spellings = new Map<string, string>();
+    for (const { displayName, files } of Object.values(FONT_REGISTRY)) {
+        spellings.set(displayName.toLowerCase(), displayName);
+        const fileNames = [files.upright, files.italic, files.bold, files.boldItalic, files.texUpright, files.texItalic, files.texBold, files.texBoldItalic]
+            .filter((name): name is string => typeof name === 'string' && name.length > 0);
+        for (const fileName of fileNames) {
+            spellings.set(fileName.toLowerCase(), displayName);
+            spellings.set(withoutExtension(fileName).toLowerCase(), displayName);
+        }
+        for (const upright of [files.upright, files.texUpright]) {
+            const stem = upright ? /^(.+)-regular$/i.exec(withoutExtension(upright)) : null;
+            if (stem) spellings.set(stem[1].toLowerCase(), displayName);
+        }
+    }
+    return spellings;
+})();
+
+/**
+ * The proper name of a font as a LaTeX template or a LaTeX message writes it
+ * ("TeX Gyre Pagella" for `texgyrepagella` or `texgyrepagella-regular.otf`),
+ * or undefined when it is not one of the registry's fonts. Only the registry's
+ * own names are matched: nothing is worked out from the spelling.
+ */
+export function knownFontDisplayName(written: string): string | undefined {
+    return KNOWN_FONT_SPELLINGS.get(written.trim().toLowerCase());
+}
+
+/**
+ * A font for a message about the template file: its proper name followed by
+ * the spelling in the file, which is what the author searches the file for.
+ * A font the registry does not know is given as written.
+ */
+export function fontNameWithSpelling(written: string): string {
+    const known = knownFontDisplayName(written);
+    return known && known !== written.trim() ? `${known} (${written.trim()})` : written;
+}
+
 export interface BuildFontspecOptions {
     /** Spec font key (e.g. `'sorts-mill-goudy'`). Looked up in FONT_REGISTRY, unless `'custom'`. */
     fontKey: string;

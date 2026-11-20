@@ -17,7 +17,7 @@ import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import { addHeadingIcon, addVideoLink, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { DEFAULT_SETTINGS } from '../defaults';
-import { isPandocAvailable, getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, getPandocFolder } from '../../utils/exportFormats';
+import { isPandocAvailable, getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, getPandocFolder, resolveTemplatePath } from '../../utils/exportFormats';
 import type { BookLayoutOptions, BookMeta, BookProfile, ManuscriptSceneHeadingMode, PandocLayoutTemplate, TemplateProfile } from '../../types';
 import { ImportTemplateModal, type ImportedTemplateCommit } from '../../modals/ImportTemplateModal';
 import { DesignedStyleWizardModal } from '../../modals/DesignedStyleWizardModal';
@@ -78,6 +78,14 @@ import { toRomanNumeral } from '../../utils/romanNumerals';
 // metadata syntax (case-sensitive keys), not sentence-case UI copy, so it must
 // stay verbatim and lowercase.
 const PANDOC_METADATA_PLACEHOLDER = 'lang: en-US\nsubtitle: A Novel';
+
+/** Open a file in the application the computer uses for it (a .tex file opens in the author's LaTeX editor). */
+async function openAbsolutePathInDefaultApp(absolutePath: string): Promise<void> {
+    const shell = (window as unknown as { require?: (name: string) => { shell?: { openPath(path: string): Promise<string> } } }).require?.('electron').shell; // SAFE: Electron shell open is the standard desktop-only way to hand a file to its own application.
+    // openPath resolves to an error message, empty when the file opened.
+    const error = shell ? await shell.openPath(absolutePath) : t('ui.publishSection.fileManagerUnavailable', { path: absolutePath });
+    if (error) new Notice(t('ui.publishSection.importedFileOpenFailed', { error }));
+}
 
 /**
  * Reveal a file in the OS file manager (Finder on macOS, Explorer on
@@ -948,7 +956,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // What LaTeX printed the last time "Check again" failed, by layout id.
     // Kept only while Settings is open: the layout's saved state already says
     // it is not ready, this is the reason.
-    const importedCheckFailures = new Map<string, string[]>();
+    const importedCheckFailures = new Map<string, { message: string; latexLines: string[] }>();
 
     const renderLayoutRows = () => {
         layoutRowsContainer.empty();
@@ -1065,9 +1073,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         facts: readTemplateFacts(importedTemplate.text),
                         check: ready ? layout.importCheck : undefined,
                         copyPath: layout.path,
+                        filledFields: Object.keys(parseCustomPandocMetadata(plugin.settings.customPandocMetadata)),
                     }),
                     description: buildLayoutDescription(layout),
                     preview: ready ? getImportedTemplatePreview(plugin, layout) : null,
+                    // Where a row's next step leads: the Custom Pandoc metadata
+                    // field further up this tab, or the template file itself.
+                    actions: {
+                        openSetting: () => plugin.settingsTab?.revealSettingsSection('publishing', 'pandoc-advanced', { force: true }),
+                        openFile: path => { void openAbsolutePathInDefaultApp(resolveTemplatePath(plugin, path)); },
+                        showFile: path => revealAbsolutePathInFileManager(resolveTemplatePath(plugin, path)),
+                    },
                 });
             } else if (useVisual && s.descEl) {
                 s.descEl.addClass('ert-layout-row-desc--rich');
@@ -1171,10 +1187,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         : importedState === 'unchecked' ? t('ui.publishSection.importedNoteUnchecked')
                         : t('ui.publishSection.importedNoteMissing'),
                 });
-                const failedLines = importedCheckFailures.get(layout.id);
-                if (failedLines && failedLines.length > 0) {
-                    s.descEl.createDiv({ cls: 'ert-layout-imported-latexNote', text: t('ui.publishSection.importedCheckFailedLatex') });
-                    s.descEl.createEl('pre', { cls: 'ert-layout-imported-latexError', text: failedLines.join('\n') });
+                const failed = importedCheckFailures.get(layout.id);
+                if (failed) {
+                    // Why the last check failed, in plain words, then LaTeX's own lines.
+                    s.descEl.createDiv({ cls: 'ert-layout-imported-latexNote', text: failed.message });
+                    if (failed.latexLines.length > 0) {
+                        s.descEl.createDiv({ cls: 'ert-layout-imported-latexNote', text: t('ui.publishSection.importedCheckFailedLatex') });
+                        s.descEl.createEl('pre', { cls: 'ert-layout-imported-latexError', text: failed.latexLines.join('\n') });
+                    }
                 }
             }
             if (importedState === 'changed' || importedState === 'unchecked') {
@@ -1195,12 +1215,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                                 }
                                 new Notice(t('ui.publishSection.importedCheckPassed', { name: layout.name }));
                             } else {
-                                importedCheckFailures.set(layout.id, result.reason === 'latex' ? result.latexLines : []);
-                                new Notice(result.reason === 'tools'
-                                    ? t('ui.publishSection.importedCheckNeedsTools')
-                                    : result.reason === 'missing'
-                                        ? result.message
-                                        : t('ui.publishSection.importedCheckFailed', { name: layout.name }), 8000);
+                                // A font or package this computer lacks is named outright.
+                                const message = result.reason === 'tools' ? t('ui.publishSection.importedCheckNeedsTools')
+                                    : result.reason === 'missing' ? result.message
+                                    : result.cause?.kind === 'font' ? t('ui.publishSection.importedCheckMissingFont', { name: layout.name, font: result.cause.name })
+                                    : result.cause?.kind === 'package' ? t('ui.publishSection.importedCheckMissingPackage', { name: layout.name, package: result.cause.name })
+                                    : t('ui.publishSection.importedCheckFailed', { name: layout.name });
+                                importedCheckFailures.set(layout.id, { message, latexLines: result.reason === 'latex' ? result.latexLines : [] });
+                                new Notice(message, 8000);
                             }
                         } catch (error) {
                             new Notice(error instanceof Error ? error.message : String(error));

@@ -4742,7 +4742,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             stepMeta: 'ステップ {{step}}/4',
         },
         importedLayoutSummary: {
-            labelStructure: '構造',
         },
         inquiryBriefingGrouping: {
             today: '今日',

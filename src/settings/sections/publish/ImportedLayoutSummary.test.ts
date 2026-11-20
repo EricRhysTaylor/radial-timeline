@@ -1,33 +1,47 @@
-import { describe, expect, it } from 'vitest';
-import { buildImportedTemplateFactRows, formatPageSize, renderImportedLayoutSummary } from './ImportedLayoutSummary';
+import { describe, expect, it, vi } from 'vitest';
+import {
+    buildImportedTemplateFactRows, formatPageSize, renderImportedLayoutSummary, renderImportedTemplateFacts,
+    type ImportedTemplateFactRow,
+} from './ImportedLayoutSummary';
 import { readTemplateFacts } from '../../../publishing/templateFacts';
 import type { ImportedTemplateCheckRecord } from '../../../publishing/importedTemplateCheck';
 import { getBundledPandocLayoutContent } from '../../../utils/pandocBundledLayouts';
 
+// The tooltip helper reads the live DOM; here a tooltip is recorded as the label a screen reader gets.
+vi.mock('../../../utils/domTooltip', () => ({
+    setTooltip: (element: { setAttribute(name: string, value: string): void }, text: string) => element.setAttribute('aria-label', text),
+}));
+
 class ElementStub {
-    children: ElementStub[] = []; text = ''; cls = ''; attr: Record<string, string> = {};
+    children: ElementStub[] = []; text = ''; cls = ''; tag = 'div'; attr: Record<string, string> = {};
+    listeners: Record<string, () => void> = {};
     createDiv(options: { text?: string; cls?: string } = {}) { return this.createEl('div', options); }
-    createEl(_tag: string, options: { text?: string; cls?: string; attr?: Record<string, string> } = {}) {
+    createSpan(options: { text?: string; cls?: string; attr?: Record<string, string> } = {}) { return this.createEl('span', options); }
+    createEl(tag: string, options: { text?: string; cls?: string; attr?: Record<string, string> } = {}) {
         const child = new ElementStub();
-        child.text = options.text ?? ''; child.cls = options.cls ?? ''; child.attr = options.attr ?? {};
+        child.tag = tag; child.text = options.text ?? ''; child.cls = options.cls ?? ''; child.attr = { ...options.attr };
         this.children.push(child);
         return child;
     }
+    setAttribute(name: string, value: string) { this.attr[name] = value; }
+    onClickEvent(listener: () => void) { this.listeners.click = listener; }
     find(cls: string): ElementStub[] { return [...(this.cls.split(' ').includes(cls) ? [this] : []), ...this.children.flatMap(child => child.find(cls))]; }
     allText(): string { return [this.text, ...this.children.map(child => child.allText())].filter(Boolean).join(' | '); }
 }
 
 const check: ImportedTemplateCheckRecord = { schemaVersion: 1, sha256: 'x', checkedAt: '2026-11-19T12:00:00.000Z', pages: 4, pageWidthPt: 432, pageHeightPt: 648, samplePage: 3 };
-const rowsFor = (tex: string, extra: { check?: ImportedTemplateCheckRecord; copyPath?: string } = {}) =>
+const COPY = 'Radial Timeline/Pandoc/imported/my-book.tex';
+const rowsFor = (tex: string, extra: { check?: ImportedTemplateCheckRecord; copyPath?: string; filledFields?: string[] } = {}): Record<string, ImportedTemplateFactRow> =>
     Object.fromEntries(buildImportedTemplateFactRows({ facts: readTemplateFacts(tex), ...extra }).map(row => [row.label, row]));
 
 describe('imported template facts', () => {
-    it('states the test PDF as measured: pages, page size and the day it was built', () => {
+    it('states the test PDF as measured, with the explanation behind the info icon', () => {
         const row = rowsFor('$body$', { check })['Test PDF'];
         expect(row.value).toMatch(/^4 pages, 6 × 9 in, built .*2026/);
-        expect(row.note).toBe('Built on this computer from a short sample manuscript.');
+        expect(row.info).toContain('short sample manuscript');
+        expect(row.detail).toBeUndefined();
         expect(rowsFor('$body$', { check: { ...check, pages: 1 } })['Test PDF'].value).toMatch(/^1 page, /);
-        // No test PDF on record, or the file has changed since: nothing is said about one.
+        // No test PDF built here, or the file has changed since: nothing is said about one.
         expect(rowsFor('$body$')['Test PDF']).toBeUndefined();
     });
 
@@ -41,19 +55,46 @@ describe('imported template facts', () => {
     it('gives the four built-in layouts different summaries', () => {
         const summaries = ['bundled-fiction-classic-manuscript', 'bundled-fiction-contemporary-literary', 'bundled-fiction-signature-literary', 'bundled-fiction-modern-classic']
             .map(id => rowsFor(getBundledPandocLayoutContent(id) || ''));
-        expect(summaries.map(rows => rows.Class.value)).toEqual(['book (11pt, oneside)', 'book (11pt, twoside)', 'book (11pt, twoside)', 'book (11pt, twoside, openany)']);
-        expect(summaries.map(rows => rows.Fonts.value)).toEqual(['Arial (main)', 'Source Serif 4 (main)', 'Sorts Mill Goudy (main)', 'lmroman10-regular.otf (main)']);
-        expect(summaries[3].Structure.value).toContain('\\rtPart');
-        expect(summaries[0].Structure.value).toContain('second-level heading');
+        expect(summaries.map(rows => rows['Document class'].value)).toEqual(['book (11pt, oneside)', 'book (11pt, twoside)', 'book (11pt, twoside)', 'book (11pt, twoside, openany)']);
+        expect(summaries.map(rows => rows.Fonts.value)).toEqual(['Arial (body text)', 'Source Serif 4 (body text)', 'Sorts Mill Goudy (body text)', 'lmroman10-regular.otf (body text)']);
+        expect(summaries.map(rows => rows['Chapters and parts'].value)).toEqual([
+            'Not printed; scenes print as headings', 'Not printed; scenes print as headings', 'Not printed; scenes print as headings', 'Printed in the template\'s own styles',
+        ]);
         expect(new Set(summaries.map(rows => JSON.stringify(rows))).size).toBe(4);
         for (const rows of summaries) {
-            expect(rows['Book Details'].value).toBe('Prints the title and author');
-            // They read $header-includes$, so there is nothing to say about PDF settings.
-            expect(rows['PDF settings']).toBeUndefined();
+            expect(rows['Book Details'].value).toBe('Title and author');
+            // They read $header-includes$, so there is nothing to say about the binding margin.
+            expect(rows['Binding margin']).toBeUndefined();
+            // The only other field they read is one Pandoc fills itself: nothing for the author to fill.
+            expect(rows['Fields to fill']).toBeUndefined();
         }
     });
 
-    it('reports what depends on a Pandoc variable as such, apart from what is always on', () => {
+    it('keeps every row to one short line and puts the explanation behind its info icon', () => {
+        const rows = buildImportedTemplateFactRows({
+            facts: readTemplateFacts('\\documentclass{book}\n\\usepackage{geometry}\n$publisher$\n$body$'), check, copyPath: COPY,
+        });
+        for (const row of rows) {
+            expect(row.info?.length, row.label).toBeGreaterThan(40);
+            expect(row.value.length, row.label).toBeLessThanOrEqual(60);
+        }
+    });
+
+    it('lists the fields the author fills, with where to fill them, and leaves out the ones Pandoc fills', () => {
+        const tex = '\\documentclass{book}\n$if(highlighting-macros)$$highlighting-macros$$endif$\n$publisher$ $lang$\n$body$';
+        const row = rowsFor(tex)['Fields to fill'];
+        expect(row.value).toBe('lang, publisher');
+        expect(row.next).toEqual([{ kind: 'setting', trail: ['Settings', 'Publish', 'Custom Pandoc metadata'] }]);
+        expect(row.info).toContain('publisher: Your Press');
+        expect(row.info).toContain('Pandoc fills these itself: highlighting-macros.');
+        // A field already filled under Custom Pandoc metadata is shown as filled.
+        const partly = rowsFor(tex, { filledFields: ['lang', 'unrelated'] })['Fields to fill'];
+        expect([partly.value, partly.detail]).toEqual(['publisher', 'Filled: lang']);
+        const all = rowsFor(tex, { filledFields: ['lang', 'publisher'] })['Fields to fill'];
+        expect([all.value, all.detail]).toEqual(['All filled', 'Filled: lang, publisher']);
+    });
+
+    it('reports what depends on a field as such, apart from what is always on', () => {
         const rows = rowsFor([
             '\\documentclass{$documentclass$}',
             '\\usepackage{xcolor}',
@@ -61,45 +102,139 @@ describe('imported template facts', () => {
             '$if(fancyfont)$\\setmainfont{EB Garamond}$endif$',
             '$body$',
         ].join('\n'));
-        expect(rows.Class.value).toBe('Set by the Pandoc variable documentclass');
-        expect(rows.Packages.value).toBe('xcolor');
-        expect(rows.Packages.note).toBe('Loaded only when a Pandoc variable is set: geometry');
-        expect(rows.Fonts.value).toBe('EB Garamond (main), when set');
-        expect(rows['Other variables'].value).toBe('documentclass, fancyfont, geometry');
-        expect(rows['Other variables'].note).toContain('Custom Pandoc metadata');
-        expect(rows['Book Details'].value).toBe('The template does not read the title or author');
-        expect(rows['PDF settings'].value).toContain('$header-includes$');
+        expect(rows['Document class'].value).toBe('Set by the documentclass field');
+        expect(rows['Document class'].info).toContain('"article"');
+        expect(rows['LaTeX packages'].value).toBe('xcolor');
+        expect(rows['LaTeX packages'].detail).toBe('Only when a field is filled: geometry');
+        expect(rows.Fonts.value).toBe('EB Garamond (body text), when set');
+        expect(rows['Fields to fill'].value).toBe('fancyfont, geometry');
+        expect(rows['Book Details'].value).toBe('Not printed');
+        expect(rows['Binding margin'].value).toBe('Not applied by this template');
     });
 
     it('says a plain template names no font and loads no package, without guessing a style', () => {
         const rows = rowsFor('\\documentclass{article}\n\\begin{document}\n$title$\n$body$\n\\end{document}');
-        expect(rows.Class.value).toBe('article');
-        expect(rows.Fonts.value).toBe('None named in the template');
-        expect(rows.Packages.value).toBe('None');
-        expect(rows['Book Details'].value).toBe('Prints the title');
+        expect(rows['Document class'].value).toBe('article');
+        expect(rows.Fonts.value).toBe('None named');
+        expect(rows['LaTeX packages'].value).toBe('None');
+        expect(rows['Book Details'].value).toBe('Title');
         const everything = JSON.stringify(rows).toLowerCase();
         for (const guess of ['confidence', 'detected', 'screenplay', 'literary', 'manuscript formatting', 'approximate']) expect(everything).not.toContain(guess);
     });
 
     it('shortens a long list and says how many more there are', () => {
         const names = Array.from({ length: 15 }, (_, index) => `pkg${index + 1}`);
-        const value = rowsFor(`\\usepackage{${names.join(',')}}\n$body$`).Packages.value;
+        const value = rowsFor(`\\usepackage{${names.join(',')}}\n$body$`)['LaTeX packages'].value;
         expect(value).toBe(`${names.slice(0, 12).join(', ')} and 3 more`);
     });
 
-    it('ends with where the copy is saved and what to do after editing it', () => {
-        const row = rowsFor('$body$', { copyPath: 'Radial Timeline/Pandoc/imported/my-book.tex' })['Saved as'];
-        expect(row.value).toBe('Radial Timeline/Pandoc/imported/my-book.tex');
-        expect(row.note).toContain('Your original file is left as it was');
-        expect(row.note).toContain('Check again');
-        expect(rowsFor('$body$')['Saved as']).toBeUndefined();
+    it('points each row with something to change at the template file, and chapters at the guide as well', () => {
+        const rows = rowsFor('\\documentclass{book}\n$body$', { copyPath: COPY });
+        const file = { kind: 'file', path: COPY };
+        expect(rows['Template file']).toMatchObject({ value: '', next: [file] });
+        expect(rows['Template file'].info).toContain('your original file is left as it was');
+        expect(rows['Template file'].info).toContain('Check again');
+        expect(rows['Chapters and parts'].next).toEqual([file, { kind: 'guide', label: 'How to add chapters and parts', wikiPage: 'Manuscript-Export#add-chapters-and-parts' }]);
+        expect(rows['Chapters and parts'].info).toContain('\\rtPart, \\rtChapter and \\rtSceneSep');
+        expect(rows['Binding margin'].next).toEqual([file]);
+        expect(rows['Book Details'].next).toEqual([file]);
+        // Before the copy exists (the dialog's Check step) there is no file to point at.
+        const early = rowsFor('\\documentclass{book}\n$body$');
+        expect(early['Template file']).toBeUndefined();
+        expect(early['Chapters and parts'].next).toEqual([{ kind: 'guide', label: 'How to add chapters and parts', wikiPage: 'Manuscript-Export#add-chapters-and-parts' }]);
+        // A template that already prints chapters and parts has nothing to change.
+        const structural = rowsFor(getBundledPandocLayoutContent('bundled-fiction-modern-classic') || '', { copyPath: COPY });
+        expect(structural['Chapters and parts'].next).toBeUndefined();
+    });
+});
+
+describe('drawing the rows', () => {
+    const rows = buildImportedTemplateFactRows({
+        facts: readTemplateFacts('\\documentclass{book}\n$publisher$\n$body$'), check, copyPath: COPY,
+    });
+
+    it('gives each row an info icon whose tooltip is the explanation', () => {
+        const root = new ElementStub();
+        renderImportedTemplateFacts(root as unknown as HTMLElement, rows);
+        const icons = root.find('ert-layout-imported-info');
+        expect(icons).toHaveLength(rows.length);
+        expect(icons.map(icon => icon.attr['aria-label'])).toEqual(rows.map(row => row.info));
+        // The explanation is in the tooltip, not on the page.
+        expect(root.allText()).not.toContain('Radial Timeline does not fill them');
+    });
+
+    it('keeps an info icon with the last word of its value, so it never wraps alone', () => {
+        const root = new ElementStub();
+        renderImportedTemplateFacts(root as unknown as HTMLElement, [
+            { label: 'Fonts', value: 'EB Garamond (body text)', info: 'Why' },
+            { label: 'Class', value: 'book', info: 'Why' },
+        ]);
+        const [fonts, single] = root.find('ert-layout-imported-tail');
+        expect(fonts.text).toBe('text) ');
+        expect(fonts.find('ert-layout-imported-info')).toHaveLength(1);
+        expect(single.text).toBe('book ');
+        // The words before the last one are whole and in order.
+        expect(root.allText()).toContain('EB Garamond (body ');
+    });
+
+    it('shows a settings location as a trail, and makes it a button when it can take the author there', () => {
+        const shown = new ElementStub();
+        renderImportedTemplateFacts(shown as unknown as HTMLElement, rows);
+        const [staticTrail] = shown.find('ert-layout-imported-trail');
+        expect(staticTrail.find('ert-layout-imported-trail-place').map(place => place.text)).toEqual(['Settings', 'Publish', 'Custom Pandoc metadata']);
+
+        const openSetting = vi.fn();
+        const live = new ElementStub();
+        renderImportedTemplateFacts(live as unknown as HTMLElement, rows, { openSetting });
+        const [button] = live.find('ert-layout-imported-trail');
+        expect(button.tag).toBe('button');
+        expect(staticTrail.tag).toBe('span');
+        button.listeners.click();
+        expect(openSetting).toHaveBeenCalledOnce();
+    });
+
+    it('shows the template file as folder and name, with Open and Show in folder when they can act', () => {
+        const openFile = vi.fn(); const showFile = vi.fn();
+        const root = new ElementStub();
+        renderImportedTemplateFacts(root as unknown as HTMLElement, rows, { openFile, showFile });
+        const files = root.find('ert-layout-imported-file');
+        // Once on its own row, and again on each row whose next step is an edit to it.
+        expect(files.length).toBeGreaterThanOrEqual(2);
+        expect(files[0].find('ert-layout-imported-file-folder')[0].text).toBe('Radial Timeline/Pandoc/imported/');
+        expect(files[0].find('ert-layout-imported-file-name')[0].text).toBe('my-book.tex');
+        // On another row the file itself is the control: one click opens it.
+        expect(files[0].tag).toBe('button');
+        files[0].listeners.click();
+        expect(openFile).toHaveBeenCalledTimes(1);
+        // The Template file row shows the file with Open and Show in folder beside it, once.
+        const own = files[files.length - 1];
+        expect(own.tag).toBe('span');
+        const actions = root.find('ert-layout-imported-fileAction');
+        expect(actions.map(action => action.text)).toEqual(['Open', 'Show in folder']);
+        actions[0].listeners.click();
+        actions[1].listeners.click();
+        expect(openFile).toHaveBeenCalledTimes(2);
+        expect(openFile).toHaveBeenCalledWith(COPY);
+        expect(showFile).toHaveBeenCalledWith(COPY);
+
+        const still = new ElementStub();
+        renderImportedTemplateFacts(still as unknown as HTMLElement, rows);
+        expect(still.find('ert-layout-imported-fileAction')).toEqual([]);
+    });
+
+    it('links the chapters row to the guide', () => {
+        const root = new ElementStub();
+        renderImportedTemplateFacts(root as unknown as HTMLElement, rows);
+        const [guide] = root.find('ert-layout-imported-guide');
+        expect(guide.text).toBe('How to add chapters and parts');
+        expect(guide.attr.href).toBe('https://docs.radialtimeline.com/Manuscript-Export/#add-chapters-and-parts');
     });
 });
 
 describe('imported layout row', () => {
     const rows = buildImportedTemplateFactRows({ facts: readTemplateFacts('\\documentclass{book}\n$body$'), check });
 
-    it('shows the facts, the description, and the saved first page when there is one', () => {
+    it('shows the facts, the description, and the saved page when there is one', () => {
         const root = new ElementStub();
         renderImportedLayoutSummary(root as unknown as HTMLElement, { rows, description: 'Author description', preview: { src: 'app://local/imported/my-book.png', page: 3 } });
         expect(root.find('ert-layout-imported-row')).toHaveLength(rows.length);

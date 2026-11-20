@@ -31,7 +31,7 @@ describe('categorizeExportError — missing font', () => {
         expect(failure.message).not.toContain('cannot be found');
     });
 });
-import { categorizeExportError, extractLatexErrorLines } from './exportErrors';
+import { categorizeExportError, extractLatexErrorLines, identifyLatexMissingCause } from './exportErrors';
 
 describe('export error categorization', () => {
     it('categorizes missing dependencies ahead of generic pandoc failures', () => {
@@ -78,6 +78,16 @@ describe('extractLatexErrorLines', () => {
         const raw = `! First error.\n${Array.from({ length: 200 }, (_, i) => `noise line ${i}`).join('\n')}`;
         expect(extractLatexErrorLines(raw)).toHaveLength(9);
         expect(extractLatexErrorLines(raw, 3)).toEqual(['! First error.', 'noise line 0', 'noise line 1']);
+    });
+
+    it('names a missing font or package from what LaTeX printed, and nothing else', () => {
+        const font = 'Error producing PDF.\n! Package fontspec Error: \n(fontspec)                The font "Garamond Premier Pro" cannot be\n(fontspec)                found; this may be but usually is not a fontspec\nl.5 \\begin\n';
+        expect(identifyLatexMissingCause(font)).toEqual({ kind: 'font', name: 'Garamond Premier Pro' });
+        expect(identifyLatexMissingCause("! LaTeX Error: File `lettrine.sty' not found.\n! Emergency stop.")).toEqual({ kind: 'package', name: 'lettrine' });
+        // Another kind of missing file, or any other error, is not given a cause.
+        expect(identifyLatexMissingCause("! LaTeX Error: File `cover.png' not found.")).toBeNull();
+        expect(identifyLatexMissingCause('! Undefined control sequence.\nl.3 \\nope')).toBeNull();
+        expect(identifyLatexMissingCause('')).toBeNull();
     });
 
     it('falls back to the first lines when LaTeX gave no "!" error', () => {

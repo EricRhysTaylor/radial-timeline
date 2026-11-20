@@ -4748,7 +4748,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "stepMeta": "bước {{step}} của 4",
         },
         "importedLayoutSummary": {
-            "labelStructure": "Cấu trúc",
         },
         "inquiryBriefingGrouping": {
             "today": "Hôm nay",

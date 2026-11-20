@@ -31,7 +31,7 @@ const pass = (text: string): ImportedTemplateCheckResult => ({
     ok: true, pdf: PDF,
     record: { schemaVersion: 1, sha256: hashTemplateText(text), checkedAt: '2026-11-19T00:00:00.000Z', pages: 3, pageWidthPt: 432, pageHeightPt: 648, samplePage: 2 },
 });
-const fail: ImportedTemplateCheckResult = { ok: false, reason: 'latex', message: 'failed', latexLines: ['! Undefined control sequence.', 'l.3 \\nope'] };
+const fail: ImportedTemplateCheckResult = { ok: false, reason: 'latex', message: 'failed', latexLines: ['! Undefined control sequence.', 'l.3 \\nope'], cause: null };
 
 let root = '';
 let vault: ReturnType<typeof makeDiskVaultPlugin>;
@@ -107,9 +107,11 @@ describe('template import dialog', () => {
         await modal['refreshCandidate']();
         const rows = Object.fromEntries(modal['getFactRows']('Radial Timeline/Pandoc/imported/import-test.tex').map(row => [row.label, row.value]));
         expect(rows).toMatchObject({
-            Class: 'book (11pt)', Fonts: 'EB Garamond (main)', Packages: 'geometry', 'Book Details': 'Prints the title',
-            'Saved as': 'Radial Timeline/Pandoc/imported/import-test.tex',
+            'Document class': 'book (11pt)', Fonts: 'EB Garamond (body text)', 'LaTeX packages': 'geometry', 'Book Details': 'Title',
+            'Chapters and parts': 'Not printed; scenes print as headings',
         });
+        const file = modal['getFactRows']('Radial Timeline/Pandoc/imported/import-test.tex').find(row => row.label === 'Template file');
+        expect(file?.next).toEqual([{ kind: 'file', path: 'Radial Timeline/Pandoc/imported/import-test.tex' }]);
         expect(rows['Test PDF']).toMatch(/^3 pages, 6 × 9 in, built /);
         expect(JSON.stringify(rows).toLowerCase()).not.toMatch(/confidence|detected|screenplay|approximate/);
     });

@@ -4741,7 +4741,6 @@ export const de: DeepPartial<TranslationKeys> = {
             stepMeta: 'Schritt {{step}} von 4',
         },
         importedLayoutSummary: {
-            labelStructure: 'Struktur',
         },
         inquiryBriefingGrouping: {
             today: 'Heute',

@@ -6760,7 +6760,7 @@
 .ert-ui.ert-scope--settings .ert-layout-imported-row,
 .ert-ui.ert-scope--modal .ert-layout-imported-row {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 128px minmax(0, 1fr);
   gap: var(--ert-gap-xs);
   align-items: start;
   line-height: 1.3;
@@ -6771,7 +6771,6 @@
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .ert-ui.ert-scope--settings .ert-layout-imported-value,
@@ -6789,18 +6788,163 @@
   color: var(--text-muted);
 }
 
+/* The Template file row: the file, its buttons and the info icon side by side. */
+.ert-ui.ert-scope--settings .ert-layout-imported-line.is-steps,
+.ert-ui.ert-scope--modal .ert-layout-imported-line.is-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+/* The value's last word and the info icon wrap together, never apart. */
+.ert-ui.ert-scope--settings .ert-layout-imported-tail,
+.ert-ui.ert-scope--modal .ert-layout-imported-tail {
+  white-space: nowrap;
+}
+
+/* The "i" square: the full explanation of a row is in its tooltip. */
+.ert-ui.ert-scope--settings .ert-layout-imported-info,
+.ert-ui.ert-scope--modal .ert-layout-imported-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  vertical-align: text-bottom;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-info:hover,
+.ert-ui.ert-scope--settings .ert-layout-imported-info:focus-visible,
+.ert-ui.ert-scope--modal .ert-layout-imported-info:hover,
+.ert-ui.ert-scope--modal .ert-layout-imported-info:focus-visible {
+  color: var(--text-normal);
+  border-color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-info svg,
+.ert-ui.ert-scope--modal .ert-layout-imported-info svg {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+/* Where to go next for a row: a settings location, the template file, a guide. */
+.ert-ui.ert-scope--settings .ert-layout-imported-next,
+.ert-ui.ert-scope--modal .ert-layout-imported-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+  margin-top: var(--ert-gap-xs);
+}
+
+/* A chip is a button when it opens something. The control sizes keep the
+   button the chip's shape; the selectors name the row so the rest outranks
+   Obsidian's own button look. */
+.ert-ui.ert-scope--settings .ert-layout-imported-row .ert-layout-imported-trail,
+.ert-ui.ert-scope--modal .ert-layout-imported-row .ert-layout-imported-trail,
+.ert-ui.ert-scope--settings .ert-layout-imported-row .ert-layout-imported-file,
+.ert-ui.ert-scope--modal .ert-layout-imported-row .ert-layout-imported-file {
+  --ert-control-height: 20px;
+  --ert-control-pad-x: var(--ert-gap-sm);
+  --ert-control-font-size: 0.72rem;
+  --ert-control-radius: var(--radius-s);
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--ert-gap-3xs);
+  min-width: 0;
+  height: auto;
+  padding: var(--ert-gap-3xs) var(--ert-gap-sm);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  flex-wrap: wrap;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-row .is-link,
+.ert-ui.ert-scope--modal .ert-layout-imported-row .is-link {
+  cursor: pointer;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-row .is-link:hover,
+.ert-ui.ert-scope--settings .ert-layout-imported-row .is-link:focus-visible,
+.ert-ui.ert-scope--modal .ert-layout-imported-row .is-link:hover,
+.ert-ui.ert-scope--modal .ert-layout-imported-row .is-link:focus-visible {
+  border-color: var(--interactive-accent);
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-trail-place.is-last,
+.ert-ui.ert-scope--modal .ert-layout-imported-trail-place.is-last {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-file-name,
+.ert-ui.ert-scope--modal .ert-layout-imported-file-name {
+  color: var(--text-normal);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-trail-sep,
+.ert-ui.ert-scope--modal .ert-layout-imported-trail-sep,
+.ert-ui.ert-scope--settings .ert-layout-imported-file-icon,
+.ert-ui.ert-scope--modal .ert-layout-imported-file-icon,
+.ert-ui.ert-scope--settings .ert-layout-imported-guide-icon,
+.ert-ui.ert-scope--modal .ert-layout-imported-guide-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-trail-sep svg,
+.ert-ui.ert-scope--modal .ert-layout-imported-trail-sep svg,
+.ert-ui.ert-scope--settings .ert-layout-imported-file-icon svg,
+.ert-ui.ert-scope--modal .ert-layout-imported-file-icon svg,
+.ert-ui.ert-scope--settings .ert-layout-imported-guide-icon svg,
+.ert-ui.ert-scope--modal .ert-layout-imported-guide-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-file-folder,
+.ert-ui.ert-scope--modal .ert-layout-imported-file-folder {
+  white-space: nowrap;
+}
+
+/* Open / Show in folder: ordinary buttons, sized to sit beside the file chip. */
+.ert-ui.ert-scope--settings .ert-layout-imported-fileAction,
+.ert-ui.ert-scope--modal .ert-layout-imported-fileAction {
+  --ert-control-height: 20px;
+  --ert-control-pad-x: var(--ert-gap-sm);
+  --ert-control-font-size: 0.72rem;
+  height: auto;
+  line-height: 1.35;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-guide,
+.ert-ui.ert-scope--modal .ert-layout-imported-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-3xs);
+}
+
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-label,
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-value {
   font-size: 0.82rem;
 }
 
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-row {
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   gap: var(--ert-gap-sm);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-label {
-  white-space: normal;
 }
 
 /* A page of the last test PDF. */

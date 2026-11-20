@@ -4,6 +4,8 @@ import type { ImportedTemplateCandidate } from '../utils/templateImport';
 import { buildImportedTemplateCandidate, finalizeImportedLayout } from '../utils/templateImport';
 import { buildImportedTemplateCheckManuscript, hashTemplateText, runImportedTemplateCheck, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import type { PandocLayoutTemplate, UsageContext } from '../types';
+import type { LatexMissingCause } from '../utils/exportErrors';
+import { parseCustomPandocMetadata } from '../utils/exportFormats';
 import { drawPdfPage, renderPdfPagePng } from '../publishing/importedTemplatePreview';
 import { buildImportedTemplateFactRows, renderImportedTemplateFacts, type ImportedTemplateFactRow } from '../settings/sections/publish/ImportedLayoutSummary';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
@@ -29,7 +31,7 @@ export interface ImportedTemplateCommit {
 type TemplateCheckState =
     | { state: 'idle' }
     | { state: 'passed'; key: string; record: ImportedTemplateCheckRecord; pdf: Uint8Array }
-    | { state: 'failed'; key: string; reason: 'tools' | 'latex' | 'missing'; latexLines: string[] };
+    | { state: 'failed'; key: string; reason: 'tools' | 'latex' | 'missing'; latexLines: string[]; cause: LatexMissingCause | null };
 
 class TemplateFileSuggestModal extends SuggestModal<TFile> {
     private readonly onChooseFile: (path: string) => void;
@@ -249,7 +251,7 @@ export class ImportTemplateModal extends Modal {
             if (requestToken !== this.candidateRequestToken) return;
             this.check = result.ok
                 ? { state: 'passed', key, record: result.record, pdf: result.pdf }
-                : { state: 'failed', key, reason: result.reason, latexLines: result.latexLines };
+                : { state: 'failed', key, reason: result.reason, latexLines: result.latexLines, cause: result.cause };
         } catch (error) {
             if (requestToken !== this.candidateRequestToken) return;
             this.candidate = null;
@@ -550,6 +552,7 @@ export class ImportTemplateModal extends Modal {
             facts: candidate.facts,
             check: this.check.state === 'passed' ? this.check.record : undefined,
             copyPath,
+            filledFields: Object.keys(parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata)),
         });
     }
 
@@ -585,8 +588,12 @@ export class ImportTemplateModal extends Modal {
             description = t('ui.importTemplateModal.checkStatusBlocked');
             notes = candidate.issues.slice(0, 4).map(issue => issue.message);
         } else if (candidate && check.state === 'failed') {
-            description = check.reason === 'tools'
-                ? t('ui.importTemplateModal.checkStatusTools')
+            // A font or package this computer lacks is named outright; it is
+            // the commonest reason a good template stops, and the fix is not
+            // in the template.
+            description = check.reason === 'tools' ? t('ui.importTemplateModal.checkStatusTools')
+                : check.cause?.kind === 'font' ? t('ui.importTemplateModal.checkStatusMissingFont', { name: check.cause.name })
+                : check.cause?.kind === 'package' ? t('ui.importTemplateModal.checkStatusMissingPackage', { name: check.cause.name })
                 : t('ui.importTemplateModal.checkStatusFailed');
             latexLines = check.reason === 'latex' ? check.latexLines : [];
             if (latexLines.length > 0) notes = [t('ui.importTemplateModal.latexSaid')];

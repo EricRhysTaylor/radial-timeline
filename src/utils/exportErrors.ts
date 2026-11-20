@@ -122,6 +122,22 @@ export function extractLatexErrorLines(rawOutput: string, maxLines = 9): string[
     return picked;
 }
 
+/** The two LaTeX failures that name exactly what is missing from this computer. */
+export type LatexMissingCause = { kind: 'font' | 'package'; name: string };
+
+/**
+ * A missing font or a missing package, read from what LaTeX printed, or null
+ * for anything else. These two errors state their own cause, so naming it is
+ * reading LaTeX's message, not diagnosing the template.
+ */
+export function identifyLatexMissingCause(rawOutput: string): LatexMissingCause | null {
+    const flat = rawOutput.replace(/\(fontspec\)/g, ' ').replace(/\s+/g, ' ');
+    const font = extractMissingFontName(flat);
+    if (font) return { kind: 'font', name: font };
+    const packageMatch = /File [`']([^`']+)\.sty' not found/.exec(flat);
+    return packageMatch ? { kind: 'package', name: packageMatch[1] } : null;
+}
+
 export function categorizeExportError(error: unknown): ExportFailure {
     if (error instanceof ExportFailure) {
         return error;

@@ -94,7 +94,7 @@ describe('reading a template', () => {
         expect(facts.packages).toEqual([{ name: 'geometry', conditional: false }]);
         expect(facts.fonts).toEqual([]);
         expect(facts.structuralMacros).toBe(false);
-        expect(facts.otherVariables).toEqual([]);
+        expect(facts.fieldsToFill).toEqual([]);
         // An escaped percent sign is text, not the start of a comment.
         expect(facts.bookDetails).toEqual(['title']);
     });
@@ -120,7 +120,9 @@ describe('reading a template', () => {
         expect(facts.fonts).toEqual([]);
         expect(facts.bookDetails).toEqual(['title', 'author']);
         expect(facts.readsHeaderIncludes).toBe(true);
-        expect(facts.otherVariables).toEqual(['classoption', 'date', 'documentclass', 'fontsize', 'geometry', 'linestretch', 'mainfont', 'mainfontoptions', 'papersize', 'thanks', 'toc']);
+        // Fields only the author can fill, apart from the one Pandoc fills by itself.
+        expect(facts.fieldsToFill).toEqual(['classoption', 'date', 'fontsize', 'geometry', 'linestretch', 'mainfont', 'mainfontoptions', 'papersize', 'thanks', 'toc']);
+        expect(facts.pandocFields).toEqual(['documentclass']);
         expect(facts.hasBody).toBe(true);
     });
 
@@ -153,7 +155,7 @@ describe('reading a template', () => {
             { role: 'mono', name: 'JetBrains Mono', conditional: false },
             { role: 'other', name: 'Cormorant', conditional: false },
         ]);
-        expect(facts.otherVariables).toEqual(['fancy', 'inner']);
+        expect(facts.fieldsToFill).toEqual(['fancy', 'inner']);
     });
 
     it('reads a 5 × 8 two-sided novel template for what it loads, whatever else it has', () => {
@@ -174,10 +176,16 @@ describe('reading a template', () => {
         expect(facts.readsHeaderIncludes).toBe(false);
     });
 
+    it('separates the fields Pandoc fills itself from the ones left to the author', () => {
+        const facts = readTemplateFacts('$if(highlighting-macros)$$highlighting-macros$$endif$\n$if(tables)$\\usepackage{longtable}$endif$\n$publisher$ $lang$\n$body$');
+        expect(facts.pandocFields).toEqual(['highlighting-macros', 'tables']);
+        expect(facts.fieldsToFill).toEqual(['lang', 'publisher']);
+    });
+
     it('reports nothing it cannot read', () => {
         expect(readTemplateFacts('')).toEqual({
             hasBody: false, documentClass: null, fonts: [], packages: [], bookDetails: [],
-            readsHeaderIncludes: false, otherVariables: [], structuralMacros: false,
+            readsHeaderIncludes: false, fieldsToFill: [], pandocFields: [], structuralMacros: false,
         });
     });
 });

@@ -13,6 +13,7 @@ import {
 } from './templateImport';
 import { hashTemplateText, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import { getImportedTemplatePreview, getImportedTemplatePreviewPath } from '../publishing/importedTemplatePreview';
+import { getImportedTemplateState } from '../publishing/importedTemplateState';
 import { getBundledPandocLayoutContent } from './pandocBundledLayouts';
 
 const GOOD = '\\documentclass{book}\n\\begin{document}\n$body$\n\\end{document}\n';
@@ -159,6 +160,10 @@ describe('registering an imported template', () => {
         expect(new Uint8Array(readFileSync(vault.abs('Radial Timeline/Pandoc/imported/my-book.png')))).toEqual(new Uint8Array(PNG));
         expect(getImportedTemplatePreview(vault.plugin, registered)).toEqual({ src: 'app://vault/Radial Timeline/Pandoc/imported/my-book.png', page: 2 });
         expect(vault.saveSettings).toHaveBeenCalledOnce();
+        // Ready here, where the test PDF was built; a second computer builds its own.
+        expect(getImportedTemplateState(vault.plugin, registered)).toBe('ready');
+        vault.moveToAnotherComputer();
+        expect(getImportedTemplateState(vault.plugin, registered)).toBe('unchecked');
     });
 
     it('registers without a picture when none could be drawn', async () => {

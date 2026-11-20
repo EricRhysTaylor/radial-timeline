@@ -25,6 +25,8 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
+let thisComputer: unknown = null;
+
 function writeTempTemplate(content: string): string {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-rtts-'));
     const filePath = path.join(dir, 'template.tex');
@@ -49,6 +51,8 @@ function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTempl
     return {
         settings,
         app: {
+            // Obsidian's storage for this vault on this computer (not synced).
+            loadLocalStorage: () => thisComputer,
             vault: {
                 getMarkdownFiles: () => [metadataFile],
                 getAbstractFileByPath: () => null,
@@ -405,11 +409,17 @@ describe('PublishingValidationService imported templates', () => {
         const context = { exportType: 'manuscript', outputFormat: 'pdf', manuscriptPreset: 'novel', selectedLayoutId: layout.id } as const;
         return getExportValidationIssues(new PublishingValidationService(createValidationPlugin(layout)).collect('book-1', context), context);
     };
-    const imported = (overrides: Partial<PandocLayoutTemplate> = {}) => makeNovelLayout(TEXT, {
-        name: 'My Book', origin: 'imported',
-        importCheck: { schemaVersion: 1, sha256: hashTemplateText(TEXT), checkedAt: '2026-11-19T00:00:00.000Z', pages: 3, pageWidthPt: 432, pageHeightPt: 648, samplePage: 2 },
-        ...overrides,
-    });
+    const imported = (overrides: Partial<PandocLayoutTemplate> = {}) => {
+        const layout = makeNovelLayout(TEXT, {
+            name: 'My Book', origin: 'imported',
+            importCheck: { schemaVersion: 1, sha256: hashTemplateText(TEXT), checkedAt: '2026-11-19T00:00:00.000Z', pages: 3, pageWidthPt: 432, pageHeightPt: 648, samplePage: 2 },
+            ...overrides,
+        });
+        // The test PDF was built on this computer.
+        thisComputer = { schemaVersion: 1, passed: { [layout.id]: hashTemplateText(TEXT) } };
+        return layout;
+    };
+    afterEach(() => { thisComputer = null; });
 
     it('lets a checked imported template export', () => {
         expect(collect(imported()).filter(issue => issue.level === 'error')).toEqual([]);
@@ -426,6 +436,13 @@ describe('PublishingValidationService imported templates', () => {
 
     it('blocks an imported template with no test PDF on record', () => {
         expect(collect(imported({ importCheck: undefined })).map(issue => issue.code)).toContain('export_template_import_unchecked');
+    });
+
+    it('blocks an imported template that built its test PDF on another computer', () => {
+        const layout = imported();
+        thisComputer = null;
+        const blocker = collect(layout).find(issue => issue.code === 'export_template_import_unchecked');
+        expect(blocker?.message).toContain('on this computer');
     });
 
     it('blocks an imported template whose file is gone', () => {

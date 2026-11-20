@@ -394,6 +394,18 @@ $body$
 \end{document}
 `;
 
+// The three definitions the wiki gives for printing parts and chapters
+// (wiki/Manuscript-Export.md, "Add chapters and parts"). The test below builds
+// a PDF with exactly these lines and checks the wiki still prints them.
+const IMPORT_GUIDE_STRUCTURE = String.raw`% Part page. #1 number, #2 title, #3 epigraph, #4 who said it
+\newcommand{\rtPart}[4]{\cleardoublepage\thispagestyle{empty}\vspace*{2in}%
+  \begin{center}{\LARGE Part #1}\par\bigskip{\Large #2}\par\bigskip{\itshape #3}\par #4\end{center}\cleardoublepage}
+% Chapter opening. #1 number, #2 title
+\newcommand{\rtChapter}[2]{\clearpage\thispagestyle{plain}\vspace*{1in}%
+  \begin{center}{\large Chapter #1}\par\medskip{\LARGE #2}\end{center}\vspace{0.5in}}
+% Start of each scene. #1 the scene's number within its part, in lowercase Roman numerals
+\newcommand{\rtSceneSep}[1]{\par\bigskip\begin{center}#1\end{center}\par\medskip}`;
+
 const badLatexTemplate = (preamble: string, body = '') => String.raw`\documentclass{book}
 ` + preamble + String.raw`
 \begin{document}
@@ -497,7 +509,7 @@ describe.skipIf(!runAssemblyPdf)('Imported template compile', () => {
     // What the layout's row says: read from the file and measured, nothing guessed.
     const rows = Object.fromEntries(buildImportedTemplateFactRows({ facts: readTemplateFacts(IMPORT_GOOD_TEMPLATE), check: layout.importCheck, copyPath: layout.path }).map(row => [row.label, row.value]));
     expect(rows['Test PDF']).toMatch(new RegExp(`^${layout.importCheck!.pages} pages, 6 × 9 in, built `));
-    expect(rows).toMatchObject({ Class: 'book (11pt)', Fonts: 'None named in the template', Packages: 'geometry, fancyhdr', 'Book Details': 'Prints the title and author' });
+    expect(rows).toMatchObject({ 'Document class': 'book (11pt)', Fonts: 'None named', 'LaTeX packages': 'geometry, fancyhdr', 'Book Details': 'Title and author' });
 
     // The PDF an export with this layout builds, kept where it can be read.
     const root = process.env.RT_PUBLISH_PDF_ARTIFACT_DIR;
@@ -545,19 +557,47 @@ describe.skipIf(!runAssemblyPdf)('Imported template compile', () => {
     for (const macro of ['\\rtPart{', '\\rtChapter{', '\\rtSceneSep{']) expect(markdown).toContain(macro);
   }, 120_000);
 
-  const badCases: Array<{ id: string; file: string; text: string; issue?: string; latex?: RegExp; prepare?: (path: string) => void; restore?: (path: string) => void }> = [
+  it('prints parts and chapters once a template adds the three definitions the wiki gives', async () => {
+    // The wiki shows these lines as they are tested here.
+    const wiki = readFileSync(join(process.cwd(), 'wiki', 'Manuscript-Export.md'), 'utf8');
+    expect(wiki).toContain(IMPORT_GUIDE_STRUCTURE);
+    const template = IMPORT_GOOD_TEMPLATE.replace('\\begin{document}', () => `${IMPORT_GUIDE_STRUCTURE}\n\\begin{document}`);
+    // Before: no parts or chapters. After: sent through the template's own definitions.
+    expect(readTemplateFacts(IMPORT_GOOD_TEMPLATE).structuralMacros).toBe(false);
+    expect(readTemplateFacts(template).structuralMacros).toBe(true);
+    const source = writeSource('Guide Structure.tex', template);
+    await importThroughDialog(source);
+    const layout = layouts()[layouts().length - 1];
+    expect(layout.usesModernClassicStructure).toBe(true);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('ready');
+
+    const exportDir = mkdtempSync(join(tmpdir(), 'rt-import-guide-'));
+    try {
+      const pdfPath = await runPandocOnContent(await buildImportedTemplateCheckManuscript(layout), join(exportDir, 'guide.pdf'), {
+        targetFormat: 'pdf', templatePath: harness.abs(layout.path), workingDir: exportDir, disableShellEscape: true,
+        metadata: { title: 'Import Audit', author: 'QA Author' },
+      });
+      const text = (await execFileAsync('pdftotext', ['-layout', pdfPath, '-'])).stdout.replace(/-\n\s*/g, '').replace(/\s+/g, ' ');
+      // The part page, both chapter openings, and every line of the sample manuscript.
+      for (const phrase of ['Part I', 'Chapter 1 Chapter One', 'Chapter 2 Chapter Two', ...IMPORTED_TEMPLATE_CHECK_PHRASES]) expect(text).toContain(phrase);
+      // Scenes arrive as numbered breaks on this path, not as titled headings.
+      expect(text).not.toContain('The Harbor');
+    } finally { rmSync(exportDir, { recursive: true, force: true }); }
+  }, 120_000);
+
+  const badCases: Array<{ id: string; file: string; text: string; issue?: string; latex?: RegExp; cause?: { kind: 'font' | 'package'; name: string } | null; prepare?: (path: string) => void; restore?: (path: string) => void }> = [
     { id: 'an empty file', file: 'empty.tex', text: '', issue: 'import_empty' },
     {
       id: 'a file that cannot be read', file: 'locked.tex', text: IMPORT_GOOD_TEMPLATE, issue: 'import_source_unreadable',
       prepare: path => chmodSync(path, 0o000), restore: path => chmodSync(path, 0o644),
     },
     { id: 'a template without $body$', file: 'nobody.tex', text: badLatexTemplate('').replace('$body$', 'No placeholder here.'), issue: 'import_missing_body' },
-    { id: 'a font that is not installed', file: 'nofont.tex', text: badLatexTemplate(String.raw`\usepackage{fontspec}` + '\n' + String.raw`\setmainfont{RT No Such Font Anywhere}`), latex: /RT No Such Font Anywhere/ },
-    { id: 'a package that is not installed', file: 'nopackage.tex', text: badLatexTemplate(String.raw`\usepackage{rtnosuchpackage}`), latex: /rtnosuchpackage\.sty' not found/ },
-    { id: 'a plain LaTeX error', file: 'latexerror.tex', text: badLatexTemplate('', String.raw`\thisMacroDoesNotExist`), latex: /Undefined control sequence[\s\S]*thisMacroDoesNotExist/ },
+    { id: 'a font that is not installed', file: 'nofont.tex', text: badLatexTemplate(String.raw`\usepackage{fontspec}` + '\n' + String.raw`\setmainfont{RT No Such Font Anywhere}`), latex: /RT No Such Font Anywhere/, cause: { kind: 'font', name: 'RT No Such Font Anywhere' } },
+    { id: 'a package that is not installed', file: 'nopackage.tex', text: badLatexTemplate(String.raw`\usepackage{rtnosuchpackage}`), latex: /rtnosuchpackage\.sty' not found/, cause: { kind: 'package', name: 'rtnosuchpackage' } },
+    { id: 'a plain LaTeX error', file: 'latexerror.tex', text: badLatexTemplate('', String.raw`\thisMacroDoesNotExist`), latex: /Undefined control sequence[\s\S]*thisMacroDoesNotExist/, cause: null },
   ];
 
-  it.each(badCases)('keeps $id inactive and says why', async ({ file, text, issue, latex, prepare, restore }) => {
+  it.each(badCases)('keeps $id inactive and says why', async ({ file, text, issue, latex, cause, prepare, restore }) => {
     // chmod cannot lock a file from root, so that case proves nothing there.
     if (prepare && process.getuid?.() === 0) return;
     const source = writeSource(file, text);
@@ -590,6 +630,8 @@ describe.skipIf(!runAssemblyPdf)('Imported template compile', () => {
       expect(check.latexLines.length).toBeGreaterThan(0);
       expect(check.latexLines.length).toBeLessThanOrEqual(9);
       expect(check.latexLines.join('\n')).toMatch(latex!);
+      // A font or package this computer lacks is named, so the dialog can say so in plain words.
+      expect(check.cause).toEqual(cause);
     }
     // The dialog is on the Check step, where the reason is shown.
     expect(modal['step']).toBe(2);
@@ -642,6 +684,13 @@ describe.skipIf(!runAssemblyPdf)('Imported template compile', () => {
     expect(layout.importCheck).toEqual(goodRecord);
     expect(harness.saveSettings).not.toHaveBeenCalled();
     expect(getImportedTemplateState(harness.plugin, layout)).toBe('changed');
+
+    // The same vault on a second computer: not ready until it builds a test PDF there.
+    harness.moveToAnotherComputer();
+    writeFileSync(file, edited);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('unchecked');
+    expect((await recheckImportedTemplate(harness.plugin, layout)).ok).toBe(true);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('ready');
 
     // Deleted.
     rmSync(file);

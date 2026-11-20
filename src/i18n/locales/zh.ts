@@ -4743,7 +4743,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             stepMeta: '第 {{step}} 步，共 4 步',
         },
         importedLayoutSummary: {
-            labelStructure: '结构',
         },
         inquiryBriefingGrouping: {
             today: '今天',

@@ -4741,7 +4741,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             stepMeta: '4단계 중 {{step}}단계',
         },
         importedLayoutSummary: {
-            labelStructure: '구조',
         },
         inquiryBriefingGrouping: {
             today: '오늘',

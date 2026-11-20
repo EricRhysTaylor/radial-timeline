@@ -22,7 +22,7 @@ import type { PandocLayoutTemplate } from '../types';
 import { assembleManuscript, type ManuscriptSourceFile } from '../utils/manuscript';
 import { buildLayoutAssemblyOptions } from '../utils/manuscriptLayoutExport';
 import { sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
-import { categorizeExportError, extractLatexErrorLines } from '../utils/exportErrors';
+import { categorizeExportError, extractLatexErrorLines, identifyLatexMissingCause, type LatexMissingCause } from '../utils/exportErrors';
 import { runPandocOnContent } from '../utils/exportFormats';
 import type { TimelineChapterMarker } from '../utils/timelineChapters';
 import { hashProofInput } from './manuscriptProof';
@@ -51,7 +51,7 @@ export type ImportedTemplateCheckResult =
     /** `pdf` is the test PDF itself, so the caller can show its first page. */
     | { ok: true; record: ImportedTemplateCheckRecord; pdf: Uint8Array }
     /** `tools`: Pandoc or LaTeX could not be run. `latex`: the template did not build. `missing`: no file to check. */
-    | { ok: false; reason: 'tools' | 'latex' | 'missing'; message: string; latexLines: string[] };
+    | { ok: false; reason: 'tools' | 'latex' | 'missing'; message: string; latexLines: string[]; cause: LatexMissingCause | null };
 
 export function hashTemplateText(text: string): string {
     return hashProofInput(text);
@@ -176,6 +176,8 @@ export async function runImportedTemplateCheck(input: {
             reason: failure.category === 'missing_dependency' ? 'tools' : 'latex',
             message: failure.message,
             latexLines: extractLatexErrorLines(failure.rawOutput ?? failure.detail ?? failure.message),
+            // A font or package this computer lacks, when LaTeX said so.
+            cause: identifyLatexMissingCause(failure.rawOutput ?? failure.detail ?? failure.message),
         };
     } finally {
         await fs.promises.rm(dir, { recursive: true, force: true });

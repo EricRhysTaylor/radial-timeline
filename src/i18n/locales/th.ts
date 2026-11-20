@@ -4748,7 +4748,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "stepMeta": "ขั้นตอน {{step}} จาก 4",
         },
         "importedLayoutSummary": {
-            "labelStructure": "โครงสร้าง",
         },
         "inquiryBriefingGrouping": {
             "today": "ทุกวันนี้",

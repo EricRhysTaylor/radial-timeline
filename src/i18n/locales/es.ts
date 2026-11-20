@@ -4748,7 +4748,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "stepMeta": "Paso {{step}} de 4",
         },
         "importedLayoutSummary": {
-            "labelStructure": "Estructura",
         },
         "inquiryBriefingGrouping": {
             "today": "Hoy dia",

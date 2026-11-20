@@ -127,31 +127,67 @@ The Basic layout uses Arial, which comes with macOS and Windows but not with mos
 The dialog has four steps:
 
 1.  **Choose** — pick the `.tex` file from your vault, or drop one in from anywhere on your computer.
-2.  **Check** — Radial Timeline builds a short test PDF with the template, using Pandoc and LaTeX on this computer. The template is **Ready** once that PDF is built. If LaTeX stops, the step shows what LaTeX reported; correct the file and choose it again.
+2.  **Check** — Radial Timeline builds a short test PDF with the template, using Pandoc and LaTeX on this computer. The template is **Ready** once that PDF is built. If a font or a LaTeX package the template needs is not on this computer, the step names it. For any other stop, the step shows what LaTeX reported; correct the file and choose it again.
 3.  **Set up** — name the style, choose which manuscript preset lists it (Novel, Screenplay, or Podcast), and add a description if you like.
 4.  **Save** — the summary, then **Save template**.
 
-The Check and Save steps, and the style's card in **Settings → Publish**, show what was read from your file and measured from the test PDF:
+The Check and Save steps, and the style's card in **Settings → Publish**, show what was read from your file and measured from the test PDF. Each row ends with an **i** icon: rest the pointer on it for the full explanation. Where a row leaves you something to do, it shows where to do it.
 
 *   **Test PDF** — its page count, page size, and the day it was built, with a picture of the page where the sample manuscript starts
-*   **Class**, **Fonts**, and **Packages** — as the template names them. Anything inside a Pandoc `$if(...)$` block is listed as depending on that variable.
+*   **Document class**, **Fonts**, and **LaTeX packages** — under the names your template gives them, which are the names to search for or install. Each font is listed with its use (body text, sans-serif, monospace, math). Anything the template loads only when one of its fields is filled is marked.
 *   **Book Details** — whether the template prints the title and author
-*   **Other variables** — Pandoc variables the template reads that Radial Timeline does not fill. Pandoc sets some itself; add any your template needs under **Custom Pandoc metadata** in **Settings → Publish → Advanced Pandoc**.
-*   **Structure** — how scenes, chapters, and parts reach the template (see below)
-*   **Saved as** — where Radial Timeline's copy is
+*   **Fields to fill** — fields the template reads that Radial Timeline does not fill, such as `publisher`. The row shows where they go: **Settings › Publish › Custom Pandoc metadata**. On the card, click that location to open it. Add each field as its own line (`publisher: Your Press`); a field you leave out prints nothing. Fields you have filled are listed as filled.
+*   **Chapters and parts** — whether the template prints them. When it does not, the row names the template file to edit and links to [Add chapters and parts](#add-chapters-and-parts).
+*   **Binding margin** — shown only when the template cannot receive the paperback binding margin (see [What your template receives](#what-your-template-receives))
+*   **Template file** — Radial Timeline's copy of the template. On the card, **Open** opens it in your computer's editor for `.tex` files and **Show in folder** shows it in your file manager.
 
 ### Your file and Radial Timeline's copy
 
 Radial Timeline saves its own copy of the template in your Pandoc folder, under `imported/`, and exports with that copy. A picture of the test PDF's page is saved beside it. Your original file is left as it was.
 
-To change the style, edit the copy. Its card then reads **Changed**, and exports with it wait until you choose **Check again**, which builds a new test PDF. If the copy is deleted, the card reads **File missing**: remove the style and import the template again. Removing a style from the list leaves its files in the `imported` folder.
+To change the style, edit the copy: the **Template file** row on its card opens it. The card then reads **Changed**, and exports with it wait until you choose **Check again**, which builds a new test PDF. If the copy is deleted, the card reads **File missing**: remove the style and import the template again. Removing a style from the list leaves its files in the `imported` folder.
+
+### Fonts and LaTeX packages
+
+Radial Timeline does not install fonts or LaTeX packages for an imported template; the template prints with what is on the computer. The **Fonts** and **LaTeX packages** rows list what the template names.
+
+A missing font or package is reported at the Check step, as soon as you choose the file and before anything is saved: the step names the font or package and stops. Install it, or change the template, then choose the file again.
+
+The test PDF shows that the template prints on the computer that built it. If your vault is on a second computer, the card there reads **Not checked here**, and exports with the style wait until you choose **Check again** on that computer. A font missing there is then named in Settings, not in the middle of an export.
+
+If a font is removed or switched off after the check, the export stops and names it.
+
+### Add chapters and parts
+
+An imported template prints each scene as a heading, and no chapters or parts, until it defines three commands of its own: `\rtPart`, `\rtChapter`, and `\rtSceneSep`. When all three are defined, Radial Timeline calls them in place of the scene headings:
+
+*   `\rtPart{number}{title}{epigraph}{attribution}` where a part starts. The number is a Roman numeral.
+*   `\rtChapter{number}{title}` where a chapter starts
+*   `\rtSceneSep{number}` at the start of every scene, with the scene's number in lowercase Roman numerals. Scene titles are not sent to a template that defines these commands.
+
+To add them, find the style's card in **Settings → Publish** and choose **Open** in its **Template file** row. Paste these lines above `\begin{document}`:
+
+```latex
+% Part page. #1 number, #2 title, #3 epigraph, #4 who said it
+\newcommand{\rtPart}[4]{\cleardoublepage\thispagestyle{empty}\vspace*{2in}%
+  \begin{center}{\LARGE Part #1}\par\bigskip{\Large #2}\par\bigskip{\itshape #3}\par #4\end{center}\cleardoublepage}
+% Chapter opening. #1 number, #2 title
+\newcommand{\rtChapter}[2]{\clearpage\thispagestyle{plain}\vspace*{1in}%
+  \begin{center}{\large Chapter #1}\par\medskip{\LARGE #2}\end{center}\vspace{0.5in}}
+% Start of each scene. #1 the scene's number within its part, in lowercase Roman numerals
+\newcommand{\rtSceneSep}[1]{\par\bigskip\begin{center}#1\end{center}\par\medskip}
+```
+
+Change the design inside each command to suit your book, and save the file. Then choose **Check again** on the card. The **Chapters and parts** row now reads "Printed in the template's own styles", and the test PDF's part page and chapter openings show your design.
+
+A copy of the built-in Signature layout's `.tex` file is a fuller working example.
 
 ### What your template receives
 
 *   The manuscript arrives at `$body$`. A template without `$body$` cannot be imported.
 *   `$title$` and `$author$` come from Book Details.
 *   Each scene arrives as a second-level heading (`\subsection` in the `book` and `article` classes), with the scene number and title. To print headings without LaTeX's section numbers, add `\setcounter{secnumdepth}{-1}` to the template.
-*   Chapters and parts print only when the template defines `\rtPart`, `\rtChapter`, and `\rtSceneSep` itself, as the built-in Signature layout does. A copy of that layout's `.tex` file is a working starting point.
+*   Chapters and parts print only when the template defines `\rtPart`, `\rtChapter`, and `\rtSceneSep` itself, as the built-in Signature layout does. See [Add chapters and parts](#add-chapters-and-parts).
 *   The paperback binding margin and the custom LaTeX preamble reach the template through `$header-includes$`. Include that line in the preamble to use them.
 *   If the template loads other files (a `.sty` file, an image, a font file), give their full paths. LaTeX runs in the export folder, so a path relative to the template is not found.
 *   Front and back matter pages use `\pagestyle{fancy}`, so load the `fancyhdr` package if your book has them.

@@ -23,11 +23,16 @@ export function makeDiskVaultPlugin(root: string) {
     const abs = (vaultPath: string) => join(root, normalizePath(vaultPath));
     const saveSettings = vi.fn(async () => undefined);
     const trashFile = vi.fn(async (file: TFile) => { rmSync(abs(file.path)); });
+    // Obsidian's storage for this vault on this computer: it does not sync.
+    // Clearing it stands in for opening the same vault on another computer.
+    const thisComputer = new Map<string, unknown>();
     const plugin = {
         settings: { ...structuredClone(DEFAULT_SETTINGS), pandocFolder: 'Radial Timeline/Pandoc', pandocLayouts: [] },
         saveSettings,
         isSettingsPersistenceBlocked: () => false,
         app: {
+            loadLocalStorage: (key: string) => thisComputer.get(key) ?? null, // SAFE: mirrors Obsidian, which returns null for a key never saved
+            saveLocalStorage: (key: string, data: unknown) => { if (data === null) thisComputer.delete(key); else thisComputer.set(key, structuredClone(data)); },
             vault: {
                 adapter: new (FileSystemAdapter as unknown as new (basePath: string) => FileSystemAdapter)(root), // SAFE: the test mock takes the base path; Obsidian's own constructor is not public
                 getAbstractFileByPath: (vaultPath: string) => {
@@ -52,5 +57,5 @@ export function makeDiskVaultPlugin(root: string) {
             fileManager: { trashFile },
         },
     } as unknown as RadialTimelinePlugin;
-    return { plugin, saveSettings, trashFile, abs, listFiles: () => listFiles(root).sort() };
+    return { plugin, saveSettings, trashFile, abs, listFiles: () => listFiles(root).sort(), moveToAnotherComputer: () => thisComputer.clear() };
 }

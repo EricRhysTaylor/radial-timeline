@@ -23,6 +23,7 @@ import type { PandocLayoutTemplate, UsageContext, ValidationIssue } from '../typ
 import { getPandocFolder } from './exportFormats';
 import { readTemplateFacts, type TemplateFacts } from '../publishing/templateFacts';
 import { getImportedTemplatePreviewPath } from '../publishing/importedTemplatePreview';
+import { recordTemplateCheckedHere } from '../publishing/importedTemplateState';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
 import { hashTemplateText, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import { basename } from './paths';
@@ -262,6 +263,8 @@ export async function registerImportedTemplate(
         if (firstPagePng && previewPath) created.push(await plugin.app.vault.createBinary(previewPath, firstPagePng));
         plugin.settings.pandocLayouts = [...registeredLayouts(plugin).filter(item => item.id !== registered.id), registered];
         await plugin.saveSettings();
+        // The test PDF was built here; a second computer builds its own.
+        recordTemplateCheckedHere(plugin, registered.id, record.sha256);
     } catch (error) {
         plugin.settings.pandocLayouts = previous;
         // Take back only what this call created.

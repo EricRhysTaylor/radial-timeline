@@ -55,8 +55,10 @@ export interface TemplateFacts {
     bookDetails: Array<'title' | 'author'>;
     /** True when the template includes `$header-includes$`, where Radial Timeline's own PDF settings arrive. */
     readsHeaderIncludes: boolean;
-    /** Every other Pandoc variable the template reads, by name. */
-    otherVariables: string[];
+    /** Other fields (Pandoc variables) the template reads that nothing fills unless the author does, by name. */
+    fieldsToFill: string[];
+    /** Other fields the template reads that Pandoc fills by itself. */
+    pandocFields: string[];
     /** The template defines `\rtPart`, `\rtChapter` and `\rtSceneSep` itself. */
     structuralMacros: boolean;
 }
@@ -65,6 +67,17 @@ const FONT_ROLES: Record<string, TemplateFont['role']> = {
     setmainfont: 'main', setromanfont: 'main', setsansfont: 'sans', setmonofont: 'mono', setmathfont: 'math',
     newfontfamily: 'other', newfontface: 'other',
 };
+
+/**
+ * Fields Pandoc fills by itself when Radial Timeline calls it with a title and
+ * an author: observed with Pandoc 3.11 on a document with a table, an image,
+ * strikeout and a code block (2026-11-19). `documentclass` is among them:
+ * Pandoc sets it to `article` unless the author sets another.
+ */
+const PANDOC_FILLED_FIELDS = new Set([
+    'highlighting-macros', 'tables', 'graphics', 'strikeout', 'title-meta', 'author-meta',
+    'curdir', 'sourcefile', 'outputfile', 'pandoc-version', 'documentclass', 'meta-json', 'section-titles',
+]);
 
 // Words of Pandoc's template language, and its loop variable, which are not variables a template reads.
 const TEMPLATE_KEYWORDS = new Set(['if', 'else', 'elseif', 'endif', 'for', 'endfor', 'sep', 'it']);
@@ -172,7 +185,8 @@ export function readTemplateFacts(tex: string): TemplateFacts {
         packages,
         bookDetails,
         readsHeaderIncludes,
-        otherVariables: [...variables].sort((a, b) => a.localeCompare(b)),
+        fieldsToFill: [...variables].filter(name => !PANDOC_FILLED_FIELDS.has(name)).sort((a, b) => a.localeCompare(b)),
+        pandocFields: [...variables].filter(name => PANDOC_FILLED_FIELDS.has(name)).sort((a, b) => a.localeCompare(b)),
         structuralMacros: ['rtPart', 'rtChapter', 'rtSceneSep'].every(name => definesMacro(source, name)),
     };
 }

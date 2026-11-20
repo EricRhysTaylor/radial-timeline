@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeDiskVaultPlugin } from '../../tests/helpers/diskVault';
 import type { PandocLayoutTemplate } from '../types';
 import { hashTemplateText, type ImportedTemplateCheckRecord, type ImportedTemplateCheckResult } from './importedTemplateCheck';
-import { describeImportedTemplateBlock, getImportedTemplateState, recheckImportedTemplate } from './importedTemplateState';
+import { describeImportedTemplateBlock, getImportedTemplateState, recheckImportedTemplate, recordTemplateCheckedHere } from './importedTemplateState';
 
 // Real test PDFs are built in tests/publishing-pdf-assembly.test.ts.
 const runCheck = vi.hoisted(() => vi.fn());
@@ -30,6 +30,7 @@ beforeEach(() => {
     writeFileSync(vault.abs(PATH), TEXT);
     layout = { id: 'imported-my-book-novel', name: 'My Book', preset: 'novel', path: PATH, origin: 'imported', importCheck: recordFor(TEXT) };
     vault.plugin.settings.pandocLayouts = [layout];
+    recordTemplateCheckedHere(vault.plugin, layout.id, hashTemplateText(TEXT));
     runCheck.mockReset();
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
@@ -49,6 +50,21 @@ describe('imported template state', () => {
     it('is unchecked when no test PDF is on record', () => {
         delete layout.importCheck;
         expect(getImportedTemplateState(vault.plugin, layout)).toBe('unchecked');
+    });
+
+    it('is not ready on a second computer until it has built a test PDF there', async () => {
+        // The vault syncs, settings and template with it; the note that it
+        // built a PDF on the first computer does not.
+        vault.moveToAnotherComputer();
+        expect(getImportedTemplateState(vault.plugin, layout)).toBe('unchecked');
+        expect(describeImportedTemplateBlock(vault.plugin, layout)?.message).toContain('on this computer');
+        // A font this computer lacks is found at the check, not during an export.
+        runCheck.mockResolvedValue({ ok: false, reason: 'latex', message: 'failed', latexLines: ['! Package fontspec Error:'], cause: { kind: 'font', name: 'EB Garamond' } });
+        expect(await recheckImportedTemplate(vault.plugin, layout)).toMatchObject({ ok: false, cause: { kind: 'font', name: 'EB Garamond' } });
+        expect(getImportedTemplateState(vault.plugin, layout)).toBe('unchecked');
+        runCheck.mockImplementation(async ({ templateText }: { templateText: string }) => ({ ok: true, pdf: PDF, record: recordFor(templateText) }));
+        expect((await recheckImportedTemplate(vault.plugin, layout)).ok).toBe(true);
+        expect(getImportedTemplateState(vault.plugin, layout)).toBe('ready');
     });
 
     it('is missing when the file is gone', () => {
@@ -81,7 +97,7 @@ describe('checking an imported template again', () => {
 
     it('changes nothing when the check fails', async () => {
         writeFileSync(vault.abs(PATH), `${TEXT}\\broken`);
-        runCheck.mockResolvedValue({ ok: false, reason: 'latex', message: 'failed', latexLines: ['! Undefined control sequence.'] });
+        runCheck.mockResolvedValue({ ok: false, reason: 'latex', message: 'failed', latexLines: ['! Undefined control sequence.'], cause: null });
         const result = await recheckImportedTemplate(vault.plugin, layout);
         expect(result).toMatchObject({ ok: false, reason: 'latex' });
         expect(layout.importCheck).toEqual(recordFor(TEXT));

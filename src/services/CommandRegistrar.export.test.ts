@@ -550,7 +550,10 @@ describe('exporting with an imported template', () => {
         });
         const save = vi.fn(async () => {});
         setup.plugin.saveSettings = save;
-        return { ...setup, layout, template, save, cleanup: () => rmSync(folder, { recursive: true, force: true }) };
+        // The test PDF was built on this computer; `elsewhere()` is the same vault on another.
+        let thisComputer: unknown = { schemaVersion: 1, passed: { [layout.id]: hashTemplateText(TEMPLATE) } };
+        (setup.plugin.app as unknown as { loadLocalStorage(): unknown }).loadLocalStorage = () => thisComputer;
+        return { ...setup, layout, template, save, elsewhere: () => { thisComputer = null; }, cleanup: () => rmSync(folder, { recursive: true, force: true }) };
     }
 
     it('builds a checked template with shell escape turned off', async () => {
@@ -568,11 +571,12 @@ describe('exporting with an imported template', () => {
         expect(vi.mocked(runPandocOnContent).mock.calls[0][2]).toMatchObject({ disableShellEscape: false });
     });
 
-    it.each(['changed', 'unchecked', 'missing'] as const)('refuses a %s template without running Pandoc or writing anything', async state => {
-        const { registrar, options, layout, template, writes, writer, save, cleanup } = importedFixture();
+    it.each(['changed', 'unchecked', 'checked on another computer', 'missing'] as const)('refuses a %s template without running Pandoc or writing anything', async state => {
+        const { registrar, options, layout, template, writes, writer, save, elsewhere, cleanup } = importedFixture();
         try {
             if (state === 'changed') writeFileSync(template, `${TEMPLATE}% edited`);
             if (state === 'unchecked') delete layout.importCheck;
+            if (state === 'checked on another computer') elsewhere();
             if (state === 'missing') rmSync(template);
             expect(await exportPdf(registrar, { ...options, updateWordCounts: true })).toEqual({});
             expect(runPandocOnContent).not.toHaveBeenCalled();
@@ -595,6 +599,21 @@ describe('exporting with an imported template', () => {
             expect(failure.detail).toBe('! Undefined control sequence.\nl.42 \\authorsOwnMacro');
             expect(failure.completedPaths).toEqual([]);
             expect(save).not.toHaveBeenCalled();
+        } finally { cleanup(); }
+    });
+
+    it.each([
+        ['font', '! Package fontspec Error: \n(fontspec)                The font "EB Garamond" cannot be\n(fontspec)                found; this may be\nl.4 \\begin\n', 'needs the font "EB Garamond"'],
+        ['package', "! LaTeX Error: File `lettrine.sty' not found.\n! Emergency stop.\nl.3 \\begin\n", 'needs the LaTeX package "lettrine"'],
+    ] as const)('names a missing %s outright when an export stops for it', async (_kind, raw, expected) => {
+        const { registrar, options, cleanup } = importedFixture();
+        try {
+            const pandocFailure = new ExportFailure({ category: 'pandoc_compile_failure', message: 'generic', detail: raw });
+            pandocFailure.rawOutput = `Error producing PDF.\n${raw}`;
+            vi.mocked(runPandocOnContent).mockRejectedValueOnce(pandocFailure);
+            const failure = await exportPdf(registrar, options).catch(error => error as ExportFailure);
+            expect((failure as ExportFailure).message).toContain(expected);
+            expect((failure as ExportFailure).message).toContain('My Book');
         } finally { cleanup(); }
     });
 

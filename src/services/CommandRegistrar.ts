@@ -50,7 +50,7 @@ import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, norma
 import { convertAuthorQueriesToWordComments } from '../utils/authorQueryComments';
 import { buildLayoutAssemblyOptions } from '../utils/manuscriptLayoutExport';
 import { describeImportedTemplateBlock } from '../publishing/importedTemplateState';
-import { ExportFailure, categorizeExportError, extractLatexErrorLines } from '../utils/exportErrors';
+import { ExportFailure, categorizeExportError, extractLatexErrorLines, identifyLatexMissingCause } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
@@ -942,7 +942,11 @@ export class CommandRegistrar {
                     // Only a LaTeX error ("! ...") is the template's; anything
                     // else keeps the message it already has.
                     if (!latexLines[0]?.startsWith('!')) throw failure;
-                    failure.message = t('ui.commandRegistrar.importedTemplateFailed', { name: layout.name });
+                    // A font or package this computer lacks is named outright.
+                    const cause = identifyLatexMissingCause(failure.rawOutput ?? ''); // SAFE: no output means no cause to name
+                    failure.message = cause?.kind === 'font' ? t('ui.commandRegistrar.importedTemplateMissingFont', { name: layout.name, font: cause.name })
+                        : cause?.kind === 'package' ? t('ui.commandRegistrar.importedTemplateMissingPackage', { name: layout.name, package: cause.name })
+                        : t('ui.commandRegistrar.importedTemplateFailed', { name: layout.name });
                     failure.detail = latexLines.join('\n');
                     throw failure;
                 });

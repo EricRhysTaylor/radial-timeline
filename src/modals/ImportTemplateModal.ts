@@ -95,6 +95,8 @@ export class ImportTemplateModal extends Modal {
     private busy: 'reading' | 'building' | null = null;
     private check: TemplateCheckState = { state: 'idle' };
     private commitInFlight = false;
+    /** Set while the dialog is closed, so a Save still awaiting its check does not register after a cancel. */
+    private closed = false;
     private candidateRequestToken = 0;
     private readonly onCommit: (commit: ImportedTemplateCommit) => Promise<void> | void;
 
@@ -126,6 +128,7 @@ export class ImportTemplateModal extends Modal {
         this.busy = null;
         this.check = { state: 'idle' };
         this.commitInFlight = false;
+        this.closed = false;
         this.candidateRequestToken += 1;
         const { contentEl, modalEl, titleEl } = this;
         contentEl.empty();
@@ -155,6 +158,7 @@ export class ImportTemplateModal extends Modal {
     }
 
     onClose(): void {
+        this.closed = true;
         this.candidateRequestToken += 1;
         this.contentEl.empty();
         this.nextButton = null;
@@ -315,6 +319,9 @@ export class ImportTemplateModal extends Modal {
             // the file again; the test PDF is rebuilt unless the pass on hand
             // is for this exact text and layout.
             await this.refreshCandidate();
+            // Closed (Escape or the close button) while the check ran: that
+            // is a cancel, and the pass on hand may be for an older layout.
+            if (this.closed) return;
             const candidate = this.candidate;
             const check = this.check;
             if (!candidate?.canActivate || check.state !== 'passed') {

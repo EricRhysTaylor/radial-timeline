@@ -180,11 +180,15 @@ export class RadialTimelineView extends ItemView {
     private async closeWelcomeScreen(): Promise<void> {
         this.welcomeRequested = false;
         this.lastSnapshot = null;
-        if (this.plugin.settings.welcomeScreenClosed !== true) {
-            this.plugin.settings.welcomeScreenClosed = true;
-            await this.plugin.saveSettings();
+        try {
+            if (this.plugin.settings.welcomeScreenClosed !== true) {
+                this.plugin.settings.welcomeScreenClosed = true;
+                await this.plugin.saveSettings();
+            }
+        } finally {
+            // saveSettings has already said why a save failed; the welcome still closes.
+            this.refreshTimeline();
         }
-        this.refreshTimeline();
     }
 
     // Scene data (scenes)

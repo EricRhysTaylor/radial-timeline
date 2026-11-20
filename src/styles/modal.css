@@ -2705,3 +2705,10 @@
     line-height: 1.6;
     overflow-wrap: anywhere;
 }
+
+/* Terms of Use, Community Guidelines and the full terms, side by side. */
+.ert-release-terms__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-1) var(--size-4-4);
+}

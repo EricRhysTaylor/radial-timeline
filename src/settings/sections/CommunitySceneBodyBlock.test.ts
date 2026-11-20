@@ -69,7 +69,7 @@ function website(answer: unknown) {
     request.mockReset();
     request.mockImplementation((async (options: { body: string }) => {
         const action = (JSON.parse(options.body) as { action?: string }).action;
-        return { status: 200, text: JSON.stringify(action === 'consent' ? { ok: true, version: '2026-11-14' } : answer) };
+        return { status: 200, text: JSON.stringify(action === 'consent' ? { ok: true, version: '2026-11-20' } : answer) };
     }) as never);
     return request;
 }
@@ -122,16 +122,20 @@ describe('Share scene body', () => {
 
         const terms = dialogScreen(consentDialog());
         expect(terms.content).toContain(t('ui.sceneReleaseModal.consentTitle'));
-        // Five numbered clauses, in the website's wording.
+        // Six numbered clauses, in the website's wording (version 2026-11-20).
         const clauses = terms.all().filter(el => el.tag === 'li');
         expect(clauses.map(clause => clause.find('ert-release-terms__text')[0].text)).toEqual([
             'The text is stored on Radial Timeline\'s servers until you take it down.',
             'Each reader you name can read it. Anyone who can read it can copy it, so a release can\'t be fully recalled.',
             'You wrote it and have the right to share it.',
             'Sharing text, even privately, can matter to a publisher or a contest. Check your own agreements.',
-            'The Community\'s terms of use apply to private scenes too. A reader can report a scene that violates them. A reported scene is hidden and its text is sent to our AI provider to be checked. The scene is restored if the check finds no violation.',
+            'The Community Guidelines and Terms of Use apply to private scenes too. A reader can report a scene that violates them. A reported scene is hidden and its text is sent to our AI provider to be checked. The scene is restored if the check finds no violation.',
+            'You\'re at least 13, and you agree to the Terms of Use and Community Guidelines.',
         ]);
-        expect(clauses.map(clause => clause.find('ert-release-terms__number')[0].text)).toEqual(['1', '2', '3', '4', '5']);
+        expect(clauses.map(clause => clause.find('ert-release-terms__number')[0].text)).toEqual(['1', '2', '3', '4', '5', '6']);
+        // The Terms of Use and the Guidelines that clauses 5 and 6 name are linked.
+        const hrefs = terms.all().filter(el => el.tag === 'a').map(el => el.href);
+        expect(hrefs).toEqual(expect.arrayContaining(['https://www.radialtimeline.com/legal', expect.stringMatching(/\/guidelines$/)]));
         expect(terms.buttons.map(button => button.text)).toEqual(['Cancel', 'I agree']);
 
         await terms.buttonNamed('Cancel').click();
@@ -153,7 +157,7 @@ describe('Share scene body', () => {
         const sent = actions(request);
         expect(sent.map(body => body.action)).toEqual(['status', 'consent']);
         expect(Object.keys(sent[0]).sort()).toEqual(['action', 'connection_id', 'current_secret', 'plugin_book_key']);
-        expect(sent[1].terms_version).toBe('2026-11-14');
+        expect(sent[1].terms_version).toBe('2026-11-20');
         expect(sceneBodyShareFor(h.settings(), 'book-1')).toEqual({ profileId: 'profile-1', enabled: true, projectId: PROJECT_ID });
         expect(h.shareRow().toggle!.value).toBe(true);
         expect(h.shareRow().desc).toContain(t('ui.communityShareSection.sceneBodyOffNote'));

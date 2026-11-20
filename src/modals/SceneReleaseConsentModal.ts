@@ -11,13 +11,15 @@ import type { BookProfile } from '../types/settings';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
 import { COMMUNITY_SITE_URL } from '../communityShare/communityMailbox';
-import { SCENE_AUTHOR_AGREEMENT_VERSION } from '../communityShare/sceneAgreement';
+import { COMMUNITY_GUIDELINES_PATH, SCENE_AUTHOR_AGREEMENT_VERSION, TERMS_OF_USE_URL } from '../communityShare/sceneAgreement';
 
 /**
  * The release terms, shown once before the first release (Amendment 2, section
- * 5). The five points match the website's wording: both record the same
+ * 5). The six points match the website's wording: both record the same
  * consent, once per account. This dialog sends nothing; the caller records the
- * agreement only when it resolves true.
+ * agreement only when it resolves true. Clause 6 and the Terms of Use and
+ * Guidelines links came with version 2026-11-20 (Eric, after the private
+ * scenes legal review).
  *
  * Set as numbered clauses, each with room above and below, because this is an
  * agreement and should read as one (Eric, 2026-11-16). The same day he cut the
@@ -46,6 +48,7 @@ class SceneReleaseConsentModal extends ErtModal {
             t('ui.sceneReleaseModal.consentRights'),
             t('ui.sceneReleaseModal.consentAgreements'),
             t('ui.sceneReleaseModal.consentRules'),
+            t('ui.sceneReleaseModal.consentAge'),
         ];
         // An ordered list, so a screen reader announces each clause's place;
         // the drawn numeral is decoration over the list's own numbering.
@@ -55,7 +58,11 @@ class SceneReleaseConsentModal extends ErtModal {
             clause.createSpan({ cls: 'ert-release-terms__number', text: String(index + 1), attr: { 'aria-hidden': 'true' } });
             clause.createEl('p', { cls: 'ert-release-terms__text', text });
         });
-        this.contentEl.createEl('a', { text: t('ui.communityShareSection.sceneBodyTermsLink'), href: `${COMMUNITY_SITE_URL}/agreements#private-scene-sharing`, attr: { target: '_blank', rel: 'noopener' } });
+        // Clauses 5 and 6 name the Terms of Use and the Guidelines; both are a click away.
+        const links = this.contentEl.createDiv({ cls: 'ert-release-terms__links' });
+        links.createEl('a', { text: t('ui.sceneReleaseModal.consentTermsOfUseLink'), href: TERMS_OF_USE_URL, attr: { target: '_blank', rel: 'noopener' } });
+        links.createEl('a', { text: t('ui.sceneReleaseModal.consentGuidelinesLink'), href: `${COMMUNITY_SITE_URL}${COMMUNITY_GUIDELINES_PATH}`, attr: { target: '_blank', rel: 'noopener' } });
+        links.createEl('a', { text: t('ui.communityShareSection.sceneBodyTermsLink'), href: `${COMMUNITY_SITE_URL}/agreements#private-scene-sharing`, attr: { target: '_blank', rel: 'noopener' } });
         this.contentEl.createDiv({ text: t('ui.communityShareSection.sceneBodyTermsVersion', { version: SCENE_AUTHOR_AGREEMENT_VERSION }) });
 
         const actions = this.mountActions();

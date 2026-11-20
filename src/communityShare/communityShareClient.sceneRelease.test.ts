@@ -187,7 +187,7 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
 
     it('consent: includes the displayed agreement version, and no text', async () => {
         const h = harness();
-        const request = respond({ body: { ok: true, version: '2026-11-14' } });
+        const request = respond({ body: { ok: true, version: SCENE_AUTHOR_AGREEMENT_VERSION } });
         await acceptSceneReleaseTerms(h.plugin as never, h.book);
         const [body] = sceneCalls(request);
         expect(keysOf(body)).toEqual([...BASE_KEYS, 'terms_version'].sort());

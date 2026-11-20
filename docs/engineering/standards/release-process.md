@@ -74,6 +74,10 @@ Eric's standing rules (2026-11-20). They were added after 8.0.5 shipped the Chro
   - more than 5 screenshots;
   - a Markdown image, an unpinned `src` or missing alt text.
   It reads `docs/releases/draft-for-release-<version>.md`, so write the draft, with its screenshots, before running `npm run release`.
+- **Eric approves the version and the notes before Step 1.**
+  - Ask with a dedicated question, not inside a report, giving the version and why it is a patch, minor or major release.
+  - Include a GitHub link to the pushed draft that he can open on his phone.
+  - Run the release only after his yes. Ask again if either changes. See the repo `CLAUDE.md`, "Releases".
 
 ## Three files ship. Nothing else.
 

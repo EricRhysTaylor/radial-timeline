@@ -115,6 +115,18 @@ fixed address: `ericrhystaylor+rt-qa@gmail.com`.
   never means a public release (`npm run release`) unless Eric asks for a
   release by name. (Owner's standing order, 2026-09-29.)
 
+## Releases: Eric approves the version and the notes
+
+Owner's decision, 2026-11-20. This applies to every public release an agent runs.
+
+- **Ask before Step 1 of `npm run release`.** Step 1 pushes the new version to `main`, and Obsidian sees it at once.
+- **Ask with a dedicated question** (AskUserQuestion, or the session's equivalent), never as a line inside a report. Eric must approve:
+  - **the version number**, saying why it is a patch, minor or major release;
+  - **the draft release notes**, with a link he can open on his phone. Push `docs/releases/draft-for-release-<v>.md` to `main` first (docs only) and link it on GitHub, where its screenshots render.
+- **Run the release only after his yes** to that version and those notes. If either changes afterwards, ask again.
+- **"Release" from Eric starts this process; it is not the approval.**
+- The version rule and the screenshot rule are in `docs/engineering/standards/release-process.md`, "Release notes".
+
 ## Audit Ownership
 
 - Recurring engineering audits are agent-owned tasks, not manual user tasks.

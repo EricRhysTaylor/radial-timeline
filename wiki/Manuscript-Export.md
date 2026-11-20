@@ -153,7 +153,7 @@ Radial Timeline does not install fonts or LaTeX packages for an imported templat
 
 A missing font or package is reported at the Check step, as soon as you choose the file and before anything is saved: the step names the font or package and stops. Install it, or change the template, then choose the file again.
 
-The test PDF shows that the template prints on the computer that built it. If your vault is on a second computer, the card there reads **Not checked here**, and exports with the style wait until you choose **Check again** on that computer. A font missing there is then named in Settings, not in the middle of an export.
+The test PDF shows that the template prints on the computer that built it. If your vault is on a second computer, the card there reads **Not checked here**, and exports with the style wait until you choose **Check template** on that computer. The check makes sure the template works there and draws the card's preview page; a font missing on that computer is named in Settings, not in the middle of an export.
 
 If a font is removed or switched off after the check, the export stops and names it.
 

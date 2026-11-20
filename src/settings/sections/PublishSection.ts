@@ -1199,7 +1199,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
             if (importedState === 'changed' || importedState === 'unchecked') {
                 s.addButton(btn => {
-                    btn.setButtonText(t('ui.publishSection.importedCheckAgain'));
+                    // A first check on this computer is not a check "again".
+                    btn.setButtonText(t(importedState === 'unchecked' ? 'ui.publishSection.importedCheckNow' : 'ui.publishSection.importedCheckAgain'));
                     btn.onClick(async () => {
                         btn.setDisabled(true);
                         btn.setButtonText(t('ui.publishSection.importedChecking'));

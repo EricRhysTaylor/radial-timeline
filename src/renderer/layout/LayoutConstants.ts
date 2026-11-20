@@ -71,6 +71,9 @@ export const APR_ICON_Y = VERSION_ICON_Y - APR_ABOVE_VERSION_GAP;
 /** Where subplot rings start from center */
 export const INNER_RADIUS = 200;
 
+/** Half the side of the square that holds the zero state's centre text, inside the progress ring. */
+export const ZERO_STATE_CENTER_HALF = 160;
+
 /** Where subplot rings end in Main Plot mode (more room since beats hidden) */
 export const SUBPLOT_OUTER_RADIUS_MAINPLOT = 778;
 

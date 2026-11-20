@@ -35,6 +35,7 @@ These are the main command-palette entries.
 24. **[Canvas create subplot map](#canvas-create-subplot-map)**
 25. **[Canvas convert cards to scenes or sketches](#canvas-convert-cards-to-scenes-or-sketches)**
 26. **[Scene time assignment](Scene-Time)** ← standalone guide
+27. **[Welcome screen](#welcome-screen)**
 
 ## Conditional Visibility
 
@@ -274,3 +275,10 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh]
 ## Canvas convert cards to scenes or sketches
 
 **Radial timeline: Canvas convert cards to scenes or sketches** turns text cards on the open Canvas into scenes or sketches in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).
+
+---
+
+<a name="welcome-screen"></a>
+## Welcome screen
+
+**Radial timeline: Welcome screen** shows the welcome screen in the timeline view, in any vault, even one with scenes. Close it with the **×** in its corner to return to the timeline as it was. A new vault shows the welcome once; after you close it, an empty book opens on the empty timeline, whose small **Welcome** link brings it back.

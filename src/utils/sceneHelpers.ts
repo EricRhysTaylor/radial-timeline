@@ -62,6 +62,16 @@ export function isSceneItem(item: TimelineItem | { itemType?: string }): boolean
 }
 
 /**
+ * Whether a book has any scene notes yet. Without one the timeline is in its
+ * zero state (placeholder rings, the invitation in the centre, no grid), and
+ * a new vault may show the welcome screen. A blank book can start in the
+ * Outline without manufacturing scene notes.
+ */
+export function hasSceneNotes(items: readonly TimelineItem[]): boolean {
+    return items.some(item => item.itemType === 'Scene');
+}
+
+/**
  * Check if item is a front-matter or back-matter note (Class: Frontmatter / Backmatter).
  * These are included in manuscript export but excluded from timeline stats.
  */

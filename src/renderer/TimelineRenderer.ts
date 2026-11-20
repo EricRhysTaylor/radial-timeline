@@ -25,6 +25,7 @@ import type { PandocLayoutTemplate, RadialTimelineSettings, TimelineItem } from 
 import { dateToAngle } from '../utils/date';
 import {
     extractGradeFromScene,
+    hasSceneNotes,
     isBeatNote,
     isSceneItem,
     usesWhenOrdering,
@@ -58,6 +59,7 @@ import { renderSubplotDominanceIndicators } from './components/SubplotDominanceI
 import { renderDefs } from './components/Defs';
 import { renderEstimatedDateElements } from './components/Progress';
 import { renderActBorders } from './components/Acts';
+import { renderPlaceholderRings } from './components/PlaceholderRings';
 import { renderActLabels } from './components/ActLabels';
 import { renderTargetDateTick, type TargetTickEnhancedData } from './components/ProgressTicks';
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from './components/ProgressRing';
@@ -255,6 +257,7 @@ export function createTimelineSVG(
         subplotColors,
         ringWidths,
         ringStartRadii,
+        placeholderRings,
         lineInnerRadius,
         maxStageColor,
         subplotDominanceStates,
@@ -264,6 +267,13 @@ export function createTimelineSVG(
     } = precomputed;
 
     const NUM_RINGS = masterSubplotOrder.length;
+    // The outermost band of the stack: the outer ring, or with no rings at all
+    // (the zero state) the outermost placeholder.
+    const outerBand = NUM_RINGS > 0
+        ? { innerR: ringStartRadii[NUM_RINGS - 1], outerR: ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1] }
+        : placeholderRings[placeholderRings.length - 1];
+    // A book with no scenes yet: the view puts its invitation where the grid would be.
+    const hasSceneItems = hasSceneNotes(scenes);
     const currentMode = settings.currentMode || 'narrative';
     const shouldApplyNumberSquareColors = currentMode !== 'gossamer';
     const isNarrativeMode = currentMode === 'narrative';
@@ -328,7 +338,7 @@ export function createTimelineSVG(
 
     let outerLabels: { name: string; shortName: string; angle: number; isMajor?: boolean; isFirst?: boolean; isLast?: boolean }[];
     if (isChronologueMode) {
-        outerLabels = buildChronologueOuterLabels(plugin, scenes, ringStartRadii[NUM_RINGS - 1], ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1], options?.compressedTime);
+        outerLabels = buildChronologueOuterLabels(plugin, scenes, outerBand.innerR, outerBand.outerR, options?.compressedTime);
     } else {
         outerLabels = standardMonths;
     }
@@ -579,9 +589,10 @@ export function createTimelineSVG(
         maxStageColor // Pass for Gossamer mode beat strokes
     };
 
+    svg += renderPlaceholderRings(placeholderRings);
     svg += renderRings(ringRenderContext);
     if (compressedLayout) {
-        const radius = ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1] + 3;
+        const radius = outerBand.outerR + 3;
         if (compressedLayout.undatedCount) {
             const angle = (compressedLayout.datedEnd + 3 * Math.PI / 2) / 2;
             const r = radius + 38;
@@ -591,12 +602,16 @@ export function createTimelineSVG(
 
     stopRingRender();
 
-    // After all scenes are drawn, add just the act borders (vertical lines only)
-    svg += renderActBorders({
-        numActs,
-        innerRadius,
-        outerRadius: subplotOuterRadius,
-    });
+    // After all scenes are drawn, add just the act borders (vertical lines
+    // only). They cross the real rings only: a placeholder's outline runs
+    // unbroken round the act spokes.
+    if (NUM_RINGS > 0) {
+        svg += renderActBorders({
+            numActs,
+            innerRadius: ringStartRadii[0],
+            outerRadius: subplotOuterRadius,
+        });
+    }
 
     if (shouldShowSubplotRings(plugin)) {
         svg += renderSubplotDominanceIndicators({
@@ -609,7 +624,7 @@ export function createTimelineSVG(
     }
 
     // Calculate the actual outermost outerRadius (first ring's outer edge)
-    const actualOuterRadius = ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1];
+    const actualOuterRadius = outerBand.outerR;
 
     // (Act labels moved earlier to be under story beat labels)
 
@@ -651,7 +666,7 @@ export function createTimelineSVG(
 
 
 
-    svg += renderCenterGrid({
+    if (hasSceneItems) svg += renderCenterGrid({
         statusesForGrid,
         stagesForGrid,
         gridCounts,

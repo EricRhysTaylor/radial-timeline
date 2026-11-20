@@ -98,6 +98,16 @@ export class CommandRegistrar {
                 void this.plugin.getTimelineService().activateView();
             },
         });
+        // The welcome screen at any time, even in a book with scenes. It takes
+        // the timeline's place until closed. No default hotkey.
+        this.plugin.addCommand({
+            id: 'welcome-screen',
+            name: t('commands.welcomeScreen'),
+            callback: async () => {
+                await this.plugin.getTimelineService().activateView();
+                this.plugin.getTimelineViews()[0]?.showWelcomeScreen();
+            },
+        });
         this.plugin.addCommand({
             id: 'open-inquiry-view',
             name: t('commands.openInquiry'),

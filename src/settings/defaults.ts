@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     briefingTheme: 'auto',
     inquiryTimingHistory: {},
     dismissedAlerts: [],
+    welcomeScreenClosed: false,
     templateHotfixHistory: [],
     actCount: 3,
     actLabelsRaw: '',

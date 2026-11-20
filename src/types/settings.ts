@@ -1430,6 +1430,13 @@ export interface RadialTimelineSettings {
      */
     dismissedLatestReleaseVersion?: string;
 
+    /**
+     * True once the author closes the welcome screen in this vault (plugin data
+     * is per vault). A vault with no scenes then opens on the empty timeline;
+     * the Welcome link there, or the Welcome screen command, shows it again.
+     */
+    welcomeScreenClosed?: boolean;
+
     // Export / Pandoc (Pro)
     pandocPath?: string;
     pandocFolder: string;  // Vault path for Pandoc templates and compile scripts (always populated via DEFAULT_SETTINGS merge)

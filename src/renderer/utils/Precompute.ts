@@ -4,7 +4,7 @@
  */
 
 import type { TimelineItem } from '../../types';
-import { resolveSubplotOuterRadius, shouldRenderStoryBeats } from '../modules/ModeRenderingHelpers';
+import { placeholderRingCount, resolveSubplotOuterRadius, shouldRenderStoryBeats } from '../modules/ModeRenderingHelpers';
 import { isBeatNote, isMatterNote, sortScenes, usesWhenOrdering, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import {
     SVG_SIZE,
@@ -104,6 +104,11 @@ export interface PrecomputedRenderValues {
     plotsBySubplot: Map<string, TimelineItem[]>;
     ringWidths: number[];
     ringStartRadii: number[];
+    /**
+     * Placeholder rings inside the real ones, innermost first (see
+     * placeholderRingCount): display only, never scenes, cells or targets.
+     */
+    placeholderRings: Array<{ innerR: number; outerR: number }>;
     lineInnerRadius: number;
     maxStageColor: string;
     subplotDominanceStates: Map<string, SubplotDominanceState>;
@@ -313,17 +318,23 @@ export function computeCacheableValues(
             .map(scene => readSceneCharacters(scene, plugin.settings)))
         : [];
 
+    // Placeholder rings take the innermost bands, so the real rings keep their
+    // indices (ring 0 innermost) and every renderer reading ringStartRadii and
+    // ringWidths is unchanged; the placeholders' own bands are returned apart.
+    const placeholderCount = placeholderRingCount(currentMode, NUM_RINGS);
     const ringGeo = computeRingGeometry({
         size: SVG_SIZE,
         innerRadius: INNER_RADIUS,
         subplotOuterRadius,
         outerRadius: MONTH_LABEL_RADIUS,
-        numRings: NUM_RINGS,
+        numRings: NUM_RINGS + placeholderCount,
         monthTickTerminal: 0,
         monthTextInset: 0,
-        fixedRings,
+        fixedRings: fixedRings.map(entry => ({ ...entry, index: entry.index + placeholderCount })),
         outerRingInset: characterLaneBandWidth(characterLanes.length)
     });
+    const placeholderRings = ringGeo.ringStartRadii.slice(0, placeholderCount)
+        .map((innerR, i) => ({ innerR, outerR: innerR + ringGeo.ringWidths[i] }));
 
     const maxStageColor = getMostAdvancedStageColor(scenes, plugin.settings.publishStageColors);
 
@@ -336,8 +347,9 @@ export function computeCacheableValues(
         totalPlotNotes,
         plotIndexByKey,
         plotsBySubplot,
-        ringWidths: ringGeo.ringWidths,
-        ringStartRadii: ringGeo.ringStartRadii,
+        ringWidths: ringGeo.ringWidths.slice(placeholderCount),
+        ringStartRadii: ringGeo.ringStartRadii.slice(placeholderCount),
+        placeholderRings,
         lineInnerRadius: ringGeo.lineInnerRadius,
         maxStageColor,
         subplotDominanceStates,

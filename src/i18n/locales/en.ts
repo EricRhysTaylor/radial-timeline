@@ -1096,6 +1096,7 @@ export const en = {
         copyPerformanceReport: 'Copy performance report',
         onboardManuscript: 'Import manuscript',
         manuscriptImport: 'Manuscript import',
+        welcomeScreen: 'Welcome screen',
     },
     common: {
         cancel: 'Cancel',
@@ -7584,6 +7585,7 @@ export const en = {
             emptyTitle: "Your timeline is ready",
             emptyHint: "Drag a note or a block of text onto the timeline to add a sketch or scene, or start from an outline in Timetable.",
             openTimetable: "Open Timetable",
+            showAgain: "Welcome",
             intro: 'Radial Timeline turns long-form narratives into a single, navigable story map. Track scenes, subplots, characters, beats, and timelines across novels, sagas, memoirs, and other sustained fiction or nonfiction projects. Pick a starting point below.',
             websiteTitle: 'Visit the website',
             websiteDesc: 'Join the community and share your journey at your own comfort level. Learn about the features available using the Radial Timeline & Editorialist ecosystem and get help.',

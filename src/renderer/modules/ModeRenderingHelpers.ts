@@ -100,6 +100,33 @@ export function resolveSubplotOuterRadius(mode: string, readabilityScale: Readab
 }
 
 /**
+ * The fewest rings a ring view shows (Eric, 2026-11-19: "never allow fewer
+ * than 3 rings even if one or two are empty … A timeline with only 1 ring
+ * looks lame"). The Community wheel keeps the same minimum; see the decision
+ * "2026-11-19 Community wheel is a hybrid of Narrative and progress".
+ */
+export const MIN_TIMELINE_RINGS = 3;
+
+/**
+ * How many placeholder rings pad the inside of the timeline, toward the hub.
+ *
+ * `ringCount` is the number of real rings (`masterSubplotOrder.length`). In
+ * Narrative the outer ring holds every scene in the main plot's slot, so the
+ * count already includes it: a Main-Plot-only book is that one ring plus two
+ * placeholders, as on the Community. Progress draws the same count with Main
+ * Plot alone on the outer ring.
+ *
+ * Only the ring views (Narrative, Progress) are padded; Chronologue and
+ * Gossamer keep their own stacks. A book with no rings at all is the zero
+ * state, the same three placeholders in every mode, so the first scene lands
+ * on the outer ring without the rings moving.
+ */
+export function placeholderRingCount(mode: string, ringCount: number): number {
+    const padded = ringCount === 0 || mode === TimelineMode.NARRATIVE || mode === TimelineMode.PROGRESS;
+    return padded ? Math.max(0, MIN_TIMELINE_RINGS - ringCount) : 0;
+}
+
+/**
  * Check if subplot rings align each scene to its outer-ring angle (Sequence)
  * rather than spreading to fill their segment (Fill).
  *

@@ -34,6 +34,8 @@ import { TimelineMode } from '../modes/ModeDefinition';
 import { BugReportModal } from '../modals/BugReportModal';
 import { ModeInteractionController, createInteractionController } from '../modes/ModeInteractionController';
 import { renderWelcomeScreen } from './WelcomeScreen';
+import { shouldShowWelcomeScreen } from './welcomeScreenState';
+import { ZERO_STATE_CENTER_HALF } from '../renderer/layout/LayoutConstants';
 import {
     MONTH_LABEL_RADIUS,
     SESSION_TIMER_RING_GAP,
@@ -55,7 +57,7 @@ import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityS
 import { openMailboxMenu, paintMailboxButton, usesNativeMenus } from '../communityShare/communityMailbox';
 import { DESK_LAMP_PANEL_HELP, DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
-import { isRenderedOnTimeline } from '../utils/sceneHelpers';
+import { hasSceneNotes, isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
@@ -164,8 +166,27 @@ export class RadialTimelineView extends ItemView {
     
     // Change detection snapshot for optimizing renders
     private lastSnapshot: TimelineSnapshot | null = null;
-    private welcomeDismissed = false;
-        
+    /** The author asked for the welcome screen (Welcome link or command); it shows until closed. */
+    private welcomeRequested = false;
+
+    /** Show the welcome screen in place of the timeline until the author closes it. */
+    showWelcomeScreen(): void {
+        this.welcomeRequested = true;
+        this.lastSnapshot = null;
+        this.refreshTimeline();
+    }
+
+    /** Closing the welcome is remembered for this vault; the timeline returns as it was. */
+    private async closeWelcomeScreen(): Promise<void> {
+        this.welcomeRequested = false;
+        this.lastSnapshot = null;
+        if (this.plugin.settings.welcomeScreenClosed !== true) {
+            this.plugin.settings.welcomeScreenClosed = true;
+            await this.plugin.saveSettings();
+        }
+        this.refreshTimeline();
+    }
+
     // Scene data (scenes)
     sceneData: TimelineItem[] = [];
     
@@ -3318,6 +3339,34 @@ export class RadialTimelineView extends ItemView {
         // Note: ModeToggleController keyboard listeners are cleaned up automatically via view.register()
     }
     
+    /**
+     * The zero state's centre: title, drop hint, Open Timetable and a quiet
+     * Welcome link, in a foreignObject inside the hub so it scales with the
+     * timeline. View chrome, not timeline content: image export strips
+     * foreignObjects, so an exported empty timeline shows its rings only.
+     */
+    private renderZeroStateCenter(svg: SVGSVGElement): void {
+        const size = 2 * ZERO_STATE_CENTER_HALF;
+        const fo = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        fo.setAttribute('x', String(-ZERO_STATE_CENTER_HALF));
+        fo.setAttribute('y', String(-ZERO_STATE_CENTER_HALF));
+        fo.setAttribute('width', String(size));
+        fo.setAttribute('height', String(size));
+        fo.setAttribute('class', 'ert-timeline-zero-host');
+        const center = createDiv({ cls: 'ert-timeline-zero' });
+        center.createDiv({ cls: 'ert-timeline-zero__title', text: t('ui.welcomeScreen.emptyTitle') });
+        center.createDiv({ cls: 'ert-timeline-zero__hint', text: t('ui.welcomeScreen.emptyHint') });
+        const open = center.createEl('button', { text: t('ui.welcomeScreen.openTimetable'), cls: 'ert-timeline-zero__action' });
+        this.renderScope.registerDomEvent(open, 'click', () => { void this.plugin.openTimetable(); });
+        const welcome = center.createEl('a', { text: t('ui.welcomeScreen.showAgain'), cls: 'ert-timeline-zero__welcome', href: '#' });
+        this.renderScope.registerDomEvent(welcome, 'click', (event) => {
+            event.preventDefault();
+            this.showWelcomeScreen();
+        });
+        fo.appendChild(center);
+        svg.querySelector('#timeline-root')?.appendChild(fo);
+    }
+
     /** Draw the timeline. False when it failed, so the caller keeps no snapshot of it and the next refresh tries again. */
     renderTimeline(container: HTMLElement, scenes: TimelineItem[]): boolean {
         // Clear existing content (including the subplot key's document listeners;
@@ -3330,37 +3379,24 @@ export class RadialTimelineView extends ItemView {
         container.empty();
         container.removeClass('rt-welcome-view');
         
-        // A blank book can start in the Outline without manufacturing scene notes.
-        const hasScenes = scenes && scenes.some(item => item.itemType === 'Scene');
-        
-        if (!scenes || scenes.length === 0 || !hasScenes) {
-            if (!this.welcomeDismissed && !getActiveBook(this.plugin.settings)?.sourceFolder?.trim()) {
-                renderWelcomeScreen({
-                    container,
-                    plugin: this.plugin,
-                    scope: this.renderScope,
-                    refreshTimeline: () => this.refreshTimeline(),
-                    dismiss: () => {
-                        this.welcomeDismissed = true;
-                        this.lastSnapshot = null;
-                        this.refreshTimeline();
-                    }
-                });
-            } else {
-                this.sceneData = scenes || [];
-                const empty = container.createDiv({ cls: 'ert-timeline-empty' });
-                const wheel = empty.createDiv({ cls: 'ert-timeline-empty__wheel', attr: { 'aria-hidden': 'true' } });
-                for (let i = 0; i < 4; i++) wheel.createDiv({ cls: `ert-timeline-empty__ring ert-timeline-empty__ring--${i}` });
-                const center = empty.createDiv({ cls: 'ert-timeline-empty__center' });
-                center.createDiv({ cls: 'ert-timeline-empty__title', text: t('ui.welcomeScreen.emptyTitle') });
-                center.createDiv({ cls: 'ert-timeline-empty__hint', text: t('ui.welcomeScreen.emptyHint') });
-                const open = center.createEl('button', { text: t('ui.welcomeScreen.openTimetable'), cls: 'ert-timeline-empty__action' });
-                this.renderScope.registerDomEvent(open, 'click', () => { void this.plugin.openTimetable(); });
-            }
+        this.sceneData = scenes;
+        const hasScenes = hasSceneNotes(scenes);
+
+        if (shouldShowWelcomeScreen({
+            requested: this.welcomeRequested,
+            hasScenes,
+            closed: this.plugin.settings.welcomeScreenClosed === true,
+            hasSourceFolder: !!getActiveBook(this.plugin.settings)?.sourceFolder?.trim()
+        })) {
+            renderWelcomeScreen({
+                container,
+                plugin: this.plugin,
+                scope: this.renderScope,
+                refreshTimeline: () => this.refreshTimeline(),
+                dismiss: () => { void this.closeWelcomeScreen(); }
+            });
             return true;
         }
-        
-        this.sceneData = scenes;
 
         // Performance optimization: Create DocumentFragment to minimize reflows
         const doc = container.ownerDocument;
@@ -3387,6 +3423,9 @@ export class RadialTimelineView extends ItemView {
                 if (svgElement) {
                     // Set data-mode attribute for CSS targeting
                     svgElement.setAttribute('data-mode', this.currentMode);
+
+                    // Zero state: the rings are placeholders; the invitation sits where the grid will be.
+                    if (!hasScenes) this.renderZeroStateCenter(svgElement);
                     
                     // Preserve shift mode state across re-renders (chronologue mode only)
                     if (this.currentMode === 'chronologue' && this.chronologueState.shift) {

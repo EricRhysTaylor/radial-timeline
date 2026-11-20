@@ -7375,7 +7375,7 @@ export const en = {
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — elapsed time comparison',
             subNavCompressed: 'Time scale',
-            subNavCompressedAria: 'Space scenes by elapsed time, with long gaps shortened for readability. Infinity marks shortened gaps; minimum widths help keep scenes accessible. Undated scenes appear separately.',
+            subNavCompressedAria: 'Size the outer ring by story time: a scene that covers a long stretch of story time takes more of the ring, and a brief one takes less. Undated scenes get a section of their own.',
             compressedUndated: 'Undated',
             compressedUnavailable: 'Time scale needs at least two distinct dated positions or a date range.',
             subNavAlt: 'Alt',

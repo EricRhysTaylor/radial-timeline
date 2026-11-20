@@ -4,9 +4,9 @@ A Time scale for Chronologue, your own PDF styles and LaTeX templates, private s
 
 ### Chronologue
 
-- **Time scale:** select **Time scale** beside Fill to space the outer All Scenes ring by elapsed story time. Long empty gaps are shortened to leave room for busy stretches; ∞ marks a shortened gap. Scene wedges retain a minimum width, simultaneous scenes remain separate, and undated scenes have their own section. Subplot rings keep their usual layout.
+- **Time scale:** select **Time scale** beside **Fill** to size the outer All Scenes ring by story time. A scene that covers a long stretch of story time takes more of the ring, and a brief one takes less. Scenes at the same moment stay separate, and undated scenes get a section of their own. Subplot rings keep their usual layout.
 
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/056681744b965c03ee5d29a4786265d5d8eac079/wiki/images/release-8-1-time-scale.webp" alt="The Odyssey in Chronologue with Time scale on beside Fill: the outer All Scenes ring gives the long voyages, from Raiders, Lotus-Eaters and Cyclopes to Killing the Cows, wide stretches, packs the busy days on Ithaca into narrow wedges, and marks two shortened gaps with ∞" width="800">
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/056681744b965c03ee5d29a4786265d5d8eac079/wiki/images/release-8-1-time-scale.webp" alt="The Odyssey in Chronologue with Time scale on beside Fill: on the outer All Scenes ring, scenes that cover long stretches of the voyage, such as Raiders, Lotus-Eaters and Cyclopes and Killing the Cows, take wide sections, and the brief scenes on Ithaca take narrow ones" width="800">
 
 - **Clearer Chronologue dates:** perimeter labels show compact times and add the weekday, month and year when they change, without repeating them on every date. The start and end dates stay at the top; year changes are given priority when labels compete for space.
 - **Time reference hover:** hovering a time reference marker lights the scene it comes from and the scenes at the date it points to, and dims the rest. A marker that several references share shows them all, and its popover stays open long enough to move into it.

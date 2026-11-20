@@ -1,5 +1,5 @@
 import type { PandocLayoutTemplate } from '../types';
-import type { ManuscriptSceneHeadingMode, SceneHeadingRenderMode } from './manuscript';
+import type { AssembleManuscriptOptions, ManuscriptSceneHeadingMode, SceneHeadingRenderMode } from './manuscript';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
 
 export interface ManuscriptLayoutExportBehavior {
@@ -52,11 +52,13 @@ function layoutIdentity(layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path
 }
 
 export function getManuscriptLayoutExportBehavior(
-    layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path'> & { designedSpec?: DesignedStyleSpec; hasSceneOpenerHeadingOptions?: boolean; origin?: PandocLayoutTemplate['origin'] }
+    layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path'> & { designedSpec?: DesignedStyleSpec; hasSceneOpenerHeadingOptions?: boolean; origin?: PandocLayoutTemplate['origin']; usesModernClassicStructure?: boolean }
 ): ManuscriptLayoutExportBehavior {
     // A designed style's editable label must not opt it into legacy template
     // behavior. Its spec remains authoritative after copying or renaming.
-    const identity = layout.origin === 'designed' ? '' : layoutIdentity(layout);
+    // An imported template is the author's own LaTeX: what it is called says
+    // nothing about which macros it defines, so its name is never read either.
+    const identity = layout.origin === 'designed' || layout.origin === 'imported' ? '' : layoutIdentity(layout);
     const isStandardManuscript = layout.id === STANDARD_MANUSCRIPT_LAYOUT_ID
         || /\bstandard manuscript\b/.test(identity)
         || /rt_classic_manuscript\.tex/.test(identity);
@@ -160,11 +162,82 @@ export function getManuscriptLayoutExportBehavior(
             useRtChapterMacro: chaptersOn,
         };
     }
+    if (layout.usesModernClassicStructure === true) {
+        // The opt-in named above: an imported template that defines \rtPart,
+        // \rtChapter and \rtSceneSep itself (an edited copy of a built-in
+        // layout, say) is sent parts and chapters through those macros, the
+        // way Modern Classic is. Without this its chapters were dropped.
+        return {
+            sceneHeadingRenderMode: 'markdown-h2',
+            allowSceneHeadingModeOverride: false,
+            suppressChapterMarkers: false,
+            suppressPartMarkers: false,
+            useRtChapterMacro: false,
+        };
+    }
     return {
         sceneHeadingRenderMode: 'markdown-h2',
         allowSceneHeadingModeOverride: false,
         suppressChapterMarkers: true,
         suppressPartMarkers: true,
         useRtChapterMacro: false,
+    };
+}
+
+/** The assembly options a layout decides: which headings, markers and macros the manuscript carries. */
+export type LayoutAssemblyOptions = Pick<
+    AssembleManuscriptOptions,
+    'chapterMarkersByScenePath' | 'sceneHeadingMode' | 'sceneHeadingRenderMode'
+    | 'suppressMatterPageChrome' | 'useRtChapterMacro' | 'modernClassicStructure'
+>;
+
+export interface LayoutAssemblyInput {
+    /** Chapter markers of the scenes being exported, before the layout's own suppression. */
+    chapterMarkersByScenePath: AssembleManuscriptOptions['chapterMarkersByScenePath'];
+    /** The book's saved scene-heading choice for this layout. Used only by layouts that offer the choice. */
+    savedSceneHeadingMode?: ManuscriptSceneHeadingMode;
+    /** The book's part epigraphs for this layout. Used only by layouts that print parts. */
+    partEpigraphs?: string[];
+    partEpigraphAttributions?: string[];
+}
+
+/**
+ * How a PDF export assembles the manuscript for a given layout.
+ *
+ * One derivation for the export runner and for the test PDF built when a
+ * template is imported, so "this template printed" is said about the same
+ * markup an export will send it.
+ */
+export function buildLayoutAssemblyOptions(
+    layout: Parameters<typeof getManuscriptLayoutExportBehavior>[0],
+    input: LayoutAssemblyInput
+): LayoutAssemblyOptions {
+    const behavior = getManuscriptLayoutExportBehavior(layout);
+    const designedSpec = layout.origin === 'designed' ? layout.designedSpec : undefined;
+    const useModernClassicStructure = layout.usesModernClassicStructure === true || !!designedSpec;
+    return {
+        chapterMarkersByScenePath: behavior.suppressChapterMarkers ? {} : input.chapterMarkersByScenePath,
+        // Precedence: the book's saved choice wins only for layouts that
+        // expose a scene-opener heading control (Signature Literary). Other
+        // layouts use their spec default so stale saved options cannot drift
+        // the exported PDF away from the preview card.
+        sceneHeadingMode: (behavior.allowSceneHeadingModeOverride ? input.savedSceneHeadingMode : undefined)
+            ?? behavior.defaultSceneHeadingMode,
+        sceneHeadingRenderMode: behavior.sceneHeadingRenderMode,
+        suppressMatterPageChrome: true,
+        useRtChapterMacro: behavior.useRtChapterMacro,
+        modernClassicStructure: useModernClassicStructure
+            ? {
+                enabled: true,
+                partEpigraphs: input.partEpigraphs,
+                partEpigraphAttributions: input.partEpigraphAttributions,
+                ...(designedSpec ? {
+                    sceneOpener: designedSpec.scene.opener,
+                    suppressPartMarkers: behavior.suppressPartMarkers,
+                    resetSceneCounterOnChapter: designedSpec.chapters.resetSceneCounter,
+                    partNumberStyle: designedSpec.parts.mode === 'off' ? undefined : designedSpec.parts.mode,
+                } : {}),
+            }
+            : undefined,
     };
 }

@@ -5060,10 +5060,6 @@
   --ert-import-check-tone: var(--text-success);
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--attention {
-  --ert-import-check-tone: var(--ert-alert-warning-color);
-}
-
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--blocked {
   --ert-import-check-tone: var(--text-error);
 }
@@ -5087,7 +5083,6 @@
 }
 
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--ready .ert-import-template-stepHero-icon,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--attention .ert-import-template-stepHero-icon,
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--blocked .ert-import-template-stepHero-icon {
   border-color: color-mix(in srgb, var(--ert-import-check-tone) 36%, var(--background-modifier-border));
   background: color-mix(in srgb, var(--ert-import-check-tone) 8%, var(--background-secondary));
@@ -5107,7 +5102,6 @@
 }
 
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--ready .ert-import-template-stepHero-title,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--attention .ert-import-template-stepHero-title,
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-stepHero--blocked .ert-import-template-stepHero-title {
   color: color-mix(in srgb, var(--ert-import-check-tone) 86%, var(--text-normal));
 }
@@ -5136,6 +5130,26 @@
   font-size: 0.84rem;
   line-height: 1.35;
   color: var(--text-muted);
+}
+
+/* What LaTeX printed when the test PDF failed: shown as given, left-aligned. */
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-latexError {
+  width: 100%;
+  max-height: 20em;
+  margin: 0;
+  padding: var(--ert-gap-sm) var(--ert-pad-sm);
+  overflow: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-panel-radius);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-descriptionCell {
@@ -5199,237 +5213,8 @@
   margin-top: var(--ert-gap-cozy);
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-card {
-  gap: var(--ert-gap-cozy);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-meta {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--ert-gap-cozy) var(--ert-gap-lg);
-  align-items: center;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-line {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-normal);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-line--confidence {
-  text-align: right;
-}
-
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-card .ert-field-note {
   line-height: 1.35;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitGrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--ert-gap-md);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitTile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ert-gap-sm);
-  min-height: 112px;
-  padding: var(--ert-pad-loose) var(--ert-pad-cozy);
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 74%, transparent);
-  background:
-    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--interactive-accent) 16%, transparent), transparent 56%),
-    linear-gradient(180deg, color-mix(in srgb, var(--background-secondary) 28%, transparent), color-mix(in srgb, var(--background-primary) 22%, transparent));
-  text-align: center;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  color: color-mix(in srgb, var(--interactive-accent) 74%, var(--text-normal));
-  opacity: 0.95;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitIcon svg {
-  width: 30px;
-  height: 30px;
-  stroke-width: 1.8;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitLabel {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-normal);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ert-gap-sm);
-  align-items: center;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-wrap.is-compact {
-  gap: 0;
-  width: 100%;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-label {
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock {
-  display: flex;
-  justify-content: center;
-  padding: var(--ert-pad-xs);
-  width: 100%;
-  max-width: 248px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 78%, transparent);
-  background: color-mix(in srgb, var(--background-secondary) 24%, transparent);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact {
-  max-width: 208px;
-  padding: var(--ert-pad-tight);
-  border-radius: 12px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-page {
-  width: 176px;
-  min-height: 208px;
-  padding: var(--ert-pad-loose) var(--ert-pad-loose) var(--ert-pad-sm);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--background-primary) 84%, transparent);
-  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 76%, transparent);
-  box-shadow: var(--ert-shadow-inset-highlight-subtle);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-page {
-  width: 148px;
-  min-height: 180px;
-  padding: var(--ert-pad-sm) var(--ert-pad-sm) var(--ert-pad-cozy);
-  border-radius: 9px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-header-line {
-  width: 72%;
-  height: 2px;
-  margin: 0 auto var(--ert-gap-roomy);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-faint) 36%, transparent);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-header-line {
-  margin-bottom: 14px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-kicker {
-  margin-bottom: 6px;
-  text-align: center;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-kicker {
-  font-size: 0.62rem;
-  margin-bottom: 4px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-title {
-  text-align: center;
-  color: var(--text-normal);
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-title {
-  font-size: 0.96rem;
-  margin-bottom: 10px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-title--chaptered,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-title--literary {
-  font-size: 1.2rem;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-title--chaptered,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-title--literary {
-  font-size: 1.08rem;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-title--manuscript,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-title--generic {
-  font-size: 0.9rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-title--manuscript,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-title--generic {
-  font-size: 0.82rem;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-subtitle {
-  text-align: center;
-  font-size: 0.82rem;
-  font-style: italic;
-  color: var(--text-muted);
-  margin-top: -6px;
-  margin-bottom: 12px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-subtitle {
-  font-size: 0.74rem;
-  margin-bottom: 10px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-lines {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--ert-gap-tight) + var(--ert-gap-3xs));
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-lines {
-  gap: var(--ert-gap-tight);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-line {
-  height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-faint) 18%, transparent);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock.is-compact .ert-import-template-mock-line {
-  height: 5px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-line.is-short {
-  width: 56%;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock-line.is-mid {
-  width: 78%;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock--literary .ert-import-template-mock-page,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-mock--chaptered .ert-import-template-mock-page {
-  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
 }
 
 .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary {
@@ -5437,115 +5222,41 @@
   padding: var(--ert-pad-roomy);
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-top {
+/* What was read from the template, beside the first page of its test PDF. */
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-facts {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(164px, 220px);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--ert-gap-roomy);
   align-items: start;
+  width: 100%;
+  text-align: left;
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-details {
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-facts-rows {
   display: grid;
-  gap: var(--ert-gap-cozy);
-  align-content: start;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: var(--ert-gap-cozy) var(--ert-gap-loose);
-  align-items: baseline;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row:first-child {
-  align-items: center;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-value {
+  gap: var(--ert-gap-sm);
   min-width: 0;
-  font-size: 0.96rem;
-  line-height: 1.42;
-  color: var(--text-normal);
-  word-break: break-word;
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row:first-child .ert-import-template-summary-value {
-  font-size: 1.18rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row:nth-child(3) .ert-import-template-summary-value {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row:nth-child(4) {
-  grid-template-columns: 1fr;
-  gap: var(--ert-gap-tight);
-  margin-top: 2px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row:nth-child(4) .ert-import-template-summary-value {
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-preview {
-  display: flex;
-  justify-content: center;
-  align-items: start;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-subtitle {
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-traits,
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-issues {
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-page {
   display: grid;
-  gap: var(--ert-gap-cozy);
+  gap: var(--ert-gap-xs);
+  justify-items: center;
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitGrid--summary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ert-gap-cozy);
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-page-canvas {
+  width: 190px;
+  height: auto;
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-s);
 }
 
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitTile--summary {
-  min-height: 118px;
-  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
-  gap: var(--ert-gap-tight);
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitIcon--summary {
-  width: 38px;
-  height: 38px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitIcon--summary svg {
-  width: 24px;
-  height: 24px;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-traitText {
-  font-size: 0.73rem;
-  line-height: 1.35;
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-page-caption {
+  max-width: 190px;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: var(--text-muted);
   text-align: center;
-  text-wrap: balance;
 }
 
 @media (max-width: 720px) {
@@ -5553,34 +5264,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-meta {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-detected-line--confidence {
-    text-align: left;
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-top {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-preview {
-    order: -1;
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-summary-row {
-    grid-template-columns: 1fr;
-    gap: var(--ert-gap-tight);
-  }
-
-  .ert-ui.ert-scope--modal.ert-modal--import-template .ert-import-template-traitGrid--summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .ert-ui.ert-scope--modal.ert-modal--template-pack .ert-modal-container {
@@ -6564,7 +6247,6 @@
   color: var(--text-muted);
 }
 
-
 .ert-ui.ert-scope--settings .ert-iconBtn--active {
   color: var(--text-success);
   border-color: color-mix(in srgb, var(--text-success) 50%, transparent);
@@ -6950,7 +6632,6 @@
   flex-direction: column;
 }
 
-
 .ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting {
   --ert-row-pad: var(--ert-pad-sm);
   row-gap: var(--ert-gap-xs);
@@ -7022,6 +6703,38 @@
   background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
 }
 
+/* "Imported template": the author's own LaTeX, set apart from built-in and
+   wizard-made styles by a neutral outline rather than a status color. */
+.ert-ui.ert-scope--settings .ert-layout-status-pill.ert-layout-origin-pill {
+  color: var(--text-normal);
+  border-style: dashed;
+  border-color: var(--text-faint);
+  background: transparent;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-latexNote {
+  margin-top: var(--ert-gap-xs);
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-latexError {
+  max-height: 11.5em;
+  margin: var(--ert-gap-3xs) 0 0;
+  padding: var(--ert-gap-sm) var(--ert-pad-sm);
+  overflow: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-panel-radius);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
 .ert-ui.ert-scope--settings .ert-layout-row-desc {
   line-height: 1.35;
   display: block;
@@ -7042,25 +6755,70 @@
   min-width: 0;
 }
 
-.ert-ui.ert-scope--settings .ert-layout-imported-row {
+/* Label / value rows for an imported template: the layout's row in Settings
+   and the import dialog's Check and Save steps share them. */
+.ert-ui.ert-scope--settings .ert-layout-imported-row,
+.ert-ui.ert-scope--modal .ert-layout-imported-row {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: var(--ert-gap-xs);
   align-items: start;
   line-height: 1.3;
 }
 
-.ert-ui.ert-scope--settings .ert-layout-imported-label {
+.ert-ui.ert-scope--settings .ert-layout-imported-label,
+.ert-ui.ert-scope--modal .ert-layout-imported-label {
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-.ert-ui.ert-scope--settings .ert-layout-imported-value {
+.ert-ui.ert-scope--settings .ert-layout-imported-value,
+.ert-ui.ert-scope--modal .ert-layout-imported-value {
+  min-width: 0;
   font-size: 0.74rem;
   line-height: 1.3;
   color: var(--text-normal);
+  overflow-wrap: anywhere;
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-note,
+.ert-ui.ert-scope--modal .ert-layout-imported-note {
+  margin-top: var(--ert-gap-3xs);
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-label,
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-value {
+  font-size: 0.82rem;
+}
+
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-row {
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--modal.ert-modal--import-template .ert-layout-imported-label {
+  white-space: normal;
+}
+
+/* A page of the last test PDF. */
+.ert-ui.ert-scope--settings .ert-layout-imported-page {
+  display: block;
+  width: 156px;
+  height: auto;
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-s);
+}
+
+.ert-ui.ert-scope--settings .ert-layout-imported-pageCaption {
+  max-width: 156px;
+  margin-top: var(--ert-gap-xs);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .ert-ui.ert-scope--settings .ert-layout-imported-description {
@@ -7074,17 +6832,7 @@
 .ert-ui.ert-scope--settings .ert-layout-imported-preview {
   justify-self: end;
   min-width: 156px;
-  align-self: center;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-page {
-  width: 138px;
-  min-height: 172px;
-  padding: var(--ert-pad-sm) var(--ert-pad-sm) var(--ert-pad-cozy);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--background-primary) 84%, transparent);
-  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 76%, transparent);
-  box-shadow: var(--ert-shadow-inset-highlight-subtle);
+  align-self: start;
 }
 
 .ert-ui.ert-scope--settings .ert-layout-row .extra-setting-button.ert-layout-imported-trash {
@@ -7105,79 +6853,6 @@
   color: var(--ert-iconBtn-hover-color);
   border-color: var(--ert-accent);
   box-shadow: var(--ert-iconBtn-hover-ring);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-header-line {
-  width: 72%;
-  height: 2px;
-  margin: 0 auto var(--ert-gap-loose);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-faint) 36%, transparent);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-kicker {
-  margin-bottom: 6px;
-  text-align: center;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-title {
-  text-align: center;
-  color: var(--text-normal);
-  font-size: 0.96rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-title--chaptered,
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-title--literary {
-  font-size: 1.08rem;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-title--manuscript,
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-title--generic {
-  font-size: 0.84rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-subtitle {
-  text-align: center;
-  font-size: 0.74rem;
-  font-style: italic;
-  color: var(--text-muted);
-  margin-top: -4px;
-  margin-bottom: 10px;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-lines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ert-gap-tight);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-line {
-  height: 5px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-faint) 18%, transparent);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-line.is-short {
-  width: 56%;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-line.is-mid {
-  width: 78%;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock--literary .ert-import-template-mock-page,
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-page--literary,
-.ert-ui.ert-scope--settings .ert-layout-imported-preview .ert-import-template-mock-page--chaptered {
-  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
 }
 
 @container ert-settings (max-width: 520px) {
@@ -7343,7 +7018,6 @@
   margin: var(--ert-gap-sm) 0 var(--ert-gap-tight);
   opacity: 0.6;
 }
-
 
 /* Status lines (Acts/Chapters configured, all populated, etc.) live inside
    the description column below the prose block, separated by another divider.

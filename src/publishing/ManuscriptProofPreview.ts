@@ -4,6 +4,7 @@ interface PdfViewport { width: number; height: number }
 interface PdfRenderTask { promise: Promise<void>; cancel(): void }
 interface PdfPage {
     getViewport(options: { scale: number }): PdfViewport;
+    getTextContent(): Promise<{ items: Array<{ str?: string }> }>;
     render(options: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport }): PdfRenderTask;
 }
 interface PdfDocument { numPages: number; getPage(number: number): Promise<PdfPage> }
@@ -25,6 +26,40 @@ export async function readPdfPageCount(data: Uint8Array): Promise<number> {
     } finally { await task.destroy(); }
 }
 
+export interface PdfMeasure {
+    pages: number;
+    /** Size of the first page in PDF points (1/72 inch). */
+    widthPt: number;
+    heightPt: number;
+    /** The first page whose text contains `findText`, or 1 when none does or none was asked for. */
+    textPage: number;
+}
+
+const squash = (text: string) => text.replace(/\s+/g, '').toLowerCase();
+
+/**
+ * Page count and first-page size, measured from the PDF itself. With
+ * `findText`, also the first page that prints those words (spacing ignored),
+ * so a caller can show the page where the text starts instead of a title page.
+ */
+export async function measurePdf(data: Uint8Array, findText?: string): Promise<PdfMeasure> {
+    const task = await loadLocalPdf(data);
+    try {
+        const document = await task.promise;
+        if (!Number.isInteger(document.numPages) || document.numPages < 1) throw new Error('The PDF has no readable pages.');
+        const viewport = (await document.getPage(1)).getViewport({ scale: 1 });
+        let textPage = 1;
+        if (findText) {
+            const wanted = squash(findText);
+            for (let number = 1; number <= document.numPages; number++) {
+                const content = await (await document.getPage(number)).getTextContent();
+                if (squash(content.items.map(item => item.str ?? '').join('')).includes(wanted)) { textPage = number; break; } // SAFE: an item with no string contributes no text
+            }
+        }
+        return { pages: document.numPages, widthPt: viewport.width, heightPt: viewport.height, textPage };
+    } finally { await task.destroy(); }
+}
+
 /** Owns one local PDF document and one page render; UI state stays in the export modal. */
 export class ManuscriptProofPreview {
     private loadingTask?: PdfLoadingTask;
@@ -33,10 +68,19 @@ export class ManuscriptProofPreview {
     private revision = 0;
 
     async load(app: App, proofPath: string, ownerDocument?: Document): Promise<number | null> {
+        return this.open(async () => new Uint8Array(await app.vault.adapter.readBinary(proofPath)), ownerDocument); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+    }
+
+    /** Load a PDF already in memory, such as the test PDF of an imported template. */
+    async loadData(data: Uint8Array, ownerDocument?: Document): Promise<number | null> {
+        return this.open(async () => data, ownerDocument);
+    }
+
+    private async open(read: () => Promise<Uint8Array>, ownerDocument?: Document): Promise<number | null> {
         const revision = this.revision + 1;
         await this.destroy();
         if (revision !== this.revision) return null;
-        const data = new Uint8Array(await app.vault.adapter.readBinary(proofPath)); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+        const data = await read();
         if (revision !== this.revision) return null;
         // PDF.js must register embedded fonts in the document that owns the
         // canvas, including when Settings is open in an Obsidian popout.

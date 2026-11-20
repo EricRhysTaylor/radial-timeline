@@ -12,7 +12,7 @@ Choose from:
 *   outline-style exports
 *   filtered or ranged exports by order and subplot
 
-Export includes compiled Markdown, Word submission export, and Pandoc PDF export with the Basic, Standard, Professional, Signature, Screenplay, and Podcast Script layouts, plus custom Pandoc metadata and a custom LaTeX preamble. You can also make a PDF style of your own from any of the four novel layouts: see [Design Your Own PDF Style](#design-your-own-pdf-style). **Import template…** is in beta and not yet in release builds.
+Export includes compiled Markdown, Word submission export, and Pandoc PDF export with the Basic, Standard, Professional, Signature, Screenplay, and Podcast Script layouts, plus custom Pandoc metadata and a custom LaTeX preamble. You can also make a PDF style of your own from any of the four novel layouts: see [Design Your Own PDF Style](#design-your-own-pdf-style). To use a LaTeX template you already have, see [Import Your Own LaTeX Template](#import-your-own-latex-template).
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
 
@@ -119,6 +119,49 @@ The **Font** menu lists only fonts this computer can print with:
 A style cannot be saved with a font that is not installed. The designer shows the same install steps as the export panel's checks.
 
 The Basic layout uses Arial, which comes with macOS and Windows but not with most Linux systems; its card in **Settings → Publish** reads "Uses Arial from this computer". To print Basic's design without Arial, start a style from Basic and choose TeX Gyre Heros.
+
+## Import Your Own LaTeX Template
+
+**Settings → Publish → PDF style → Import template…** turns a Pandoc LaTeX template you already have (a `.tex` file) into a PDF style. Use it for a design the style designer's settings cannot reach. An imported style is your own template, used exactly as written: Radial Timeline has not tested it, and it is marked **Imported template** in Settings and in the export dialog.
+
+The dialog has four steps:
+
+1.  **Choose** — pick the `.tex` file from your vault, or drop one in from anywhere on your computer.
+2.  **Check** — Radial Timeline builds a short test PDF with the template, using Pandoc and LaTeX on this computer. The template is **Ready** once that PDF is built. If LaTeX stops, the step shows what LaTeX reported; correct the file and choose it again.
+3.  **Set up** — name the style, choose which manuscript preset lists it (Novel, Screenplay, or Podcast), and add a description if you like.
+4.  **Save** — the summary, then **Save template**.
+
+The Check and Save steps, and the style's card in **Settings → Publish**, show what was read from your file and measured from the test PDF:
+
+*   **Test PDF** — its page count, page size, and the day it was built, with a picture of the page where the sample manuscript starts
+*   **Class**, **Fonts**, and **Packages** — as the template names them. Anything inside a Pandoc `$if(...)$` block is listed as depending on that variable.
+*   **Book Details** — whether the template prints the title and author
+*   **Other variables** — Pandoc variables the template reads that Radial Timeline does not fill. Pandoc sets some itself; add any your template needs under **Custom Pandoc metadata** in **Settings → Publish → Advanced Pandoc**.
+*   **Structure** — how scenes, chapters, and parts reach the template (see below)
+*   **Saved as** — where Radial Timeline's copy is
+
+### Your file and Radial Timeline's copy
+
+Radial Timeline saves its own copy of the template in your Pandoc folder, under `imported/`, and exports with that copy. A picture of the test PDF's page is saved beside it. Your original file is left as it was.
+
+To change the style, edit the copy. Its card then reads **Changed**, and exports with it wait until you choose **Check again**, which builds a new test PDF. If the copy is deleted, the card reads **File missing**: remove the style and import the template again. Removing a style from the list leaves its files in the `imported` folder.
+
+### What your template receives
+
+*   The manuscript arrives at `$body$`. A template without `$body$` cannot be imported.
+*   `$title$` and `$author$` come from Book Details.
+*   Each scene arrives as a second-level heading (`\subsection` in the `book` and `article` classes), with the scene number and title. To print headings without LaTeX's section numbers, add `\setcounter{secnumdepth}{-1}` to the template.
+*   Chapters and parts print only when the template defines `\rtPart`, `\rtChapter`, and `\rtSceneSep` itself, as the built-in Signature layout does. A copy of that layout's `.tex` file is a working starting point.
+*   The paperback binding margin and the custom LaTeX preamble reach the template through `$header-includes$`. Include that line in the preamble to use them.
+*   If the template loads other files (a `.sty` file, an image, a font file), give their full paths. LaTeX runs in the export folder, so a path relative to the template is not found.
+*   Front and back matter pages use `\pagestyle{fancy}`, so load the `fancyhdr` package if your book has them.
+*   A font that comes with LaTeX is loaded by file name (`\setmainfont{texgyrepagella}[Extension=.otf, UprightFont=*-regular, …]`); a font installed on the computer is loaded by its family name.
+
+The test PDF is built from a short sample manuscript with a part, two chapters, three scenes, a block quote, and a scene break. It shows that the template prints on this computer. Your own book can still use something the sample does not, such as front matter or a contents page; if an export stops, the export dialog shows what LaTeX reported under **Details**.
+
+### What Radial Timeline does and does not control
+
+A LaTeX template is a program that your LaTeX installation runs. Radial Timeline builds imported templates with LaTeX's shell access switched off, builds the test PDF in a temporary folder outside your vault, and never writes to your original file. It does not read or change what the template itself does: import only templates you wrote or trust.
 
 ## Review the Actual PDF
 

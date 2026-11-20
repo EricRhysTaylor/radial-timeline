@@ -1,4 +1,5 @@
-import { setAccessibleLabel, withAccessibleLabel, withTooltip } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../utils/domTooltip';
+import { formatTestPdfSummary } from '../settings/sections/publish/ImportedLayoutSummary';
 import { contentsDepth } from '../publishing/documentContents';
 /*
  * Manuscript Options Modal
@@ -2747,6 +2748,12 @@ export class ManuscriptOptionsModal extends Modal {
             cls: 'ert-manuscript-layout-summary-title',
             text: profile.name,
         });
+        if (profile.origin === 'imported') {
+            // The same tag Settings → Publish puts on the row: this is the
+            // author's own template, not a built-in or wizard-made style.
+            const tag = titleRow.createSpan({ cls: 'ert-manuscript-layout-originTag', text: t('ui.publishSection.importedTag') });
+            setTooltip(tag, t('ui.publishSection.importedTagTooltip'));
+        }
         summary.createDiv({
             cls: 'ert-manuscript-layout-summary-detail',
             text: this.getTemplateProfileSummary(profile),
@@ -2846,10 +2853,15 @@ export class ManuscriptOptionsModal extends Modal {
 
     private formatTemplateProfileNameForDropdown(profile?: TemplateProfile): string | undefined {
         if (!profile) return undefined;
-        return profile.name;
+        return profile.origin === 'imported'
+            ? t('ui.manuscriptOptionsModal.layoutOptionImported', { name: profile.name })
+            : profile.name;
     }
 
     private getTemplateProfileSummary(profile: TemplateProfile): string {
+        // An imported template is described in its author's words, never with
+        // a built-in layout's description.
+        if (profile.origin === 'imported') return profile.description;
         const sourceLayout = this.findLayoutForTemplateProfile(profile);
         if (sourceLayout?.usesModernClassicStructure) {
             return t('ui.manuscriptOptionsModal.layoutSummaryBook');
@@ -3013,7 +3025,14 @@ export class ManuscriptOptionsModal extends Modal {
         // ungated it reports "Source Serif 4 is not installed" immediately
         // after that font was installed successfully, contradicting the
         // structured verdict in the same panel.
-        const useLegacyFontProbe = !structuredFontDiag.specDriven;
+        //
+        // An imported template has no spec either, but it has something
+        // better than a scan of its font names: it built a test PDF on this
+        // computer (or it would not be selectable for export). The scan is
+        // not run for it: it reports a font loaded by file name from the
+        // LaTeX folders as "not installed" beside a template that prints.
+        const isImported = selectedLayout.origin === 'imported';
+        const useLegacyFontProbe = !structuredFontDiag.specDriven && !isImported;
         const hasFontRisk = structuredFontDiag.state !== 'ok'
             || (useLegacyFontProbe && canVerifyFonts
                 && (fontDiagnostics.missingRequiredFonts.length > 0 || hasPrimaryMissing));
@@ -3027,13 +3046,15 @@ export class ManuscriptOptionsModal extends Modal {
         const resolvedFont = structuredFontDiag.specDriven && structuredFontDiag.resolvedFontName
             ? structuredFontDiag.resolvedFontName
             : this.buildFontDisplayName(displayRequestedFont, canVerifyFonts, hasPrimaryMissing, fallbackFont);
-        const fontSummaryLine = t('ui.manuscriptOptionsModal.fontSummary', { font: displayRequestedFont || resolvedFont || t('ui.manuscriptOptionsModal.defaultSerif') });
+        const fontSummaryLine = isImported && selectedLayout.importCheck
+            ? t('ui.manuscriptOptionsModal.importedTestPdf', { summary: formatTestPdfSummary(selectedLayout.importCheck) })
+            : t('ui.manuscriptOptionsModal.fontSummary', { font: displayRequestedFont || resolvedFont || t('ui.manuscriptOptionsModal.defaultSerif') });
         const layoutDesc = this.formatTemplateProfileName(selectedProfile) || selectedLayout.name || t('ui.manuscriptOptionsModal.customLayout');
         const willEmbed = fontDiagnostics.usesFontspec;
 
         // ── Build technical details (hidden by default) ──────────────
         const technicalLines: string[] = [];
-        if (displayRequestedFont) {
+        if (displayRequestedFont && !isImported) {
             const requestedType = this.getFontFamilyType(displayRequestedFont);
             technicalLines.push(t('ui.manuscriptOptionsModal.techRequestedFont', { font: displayRequestedFont, type: requestedType }));
         }
@@ -3045,7 +3066,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (willEmbed) {
             technicalLines.push(t('ui.manuscriptOptionsModal.techFontEmbedding'));
         }
-        technicalLines.push(t('ui.manuscriptOptionsModal.techResolvedFont', { font: resolvedFont }));
+        if (!isImported) technicalLines.push(t('ui.manuscriptOptionsModal.techResolvedFont', { font: resolvedFont }));
         technicalLines.push(t('ui.manuscriptOptionsModal.techPageLayout', { layout: layoutDesc }));
         technicalLines.push(...this.collectTemplateTechnicalLines());
 

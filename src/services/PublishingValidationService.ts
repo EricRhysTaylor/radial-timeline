@@ -20,6 +20,7 @@ import { isPathInFolderScope } from '../utils/pathScope';
 import { adaptPandocLayoutsToPublishingModel } from '../utils/publishingModel';
 import { BOOK_META_BACKED_ROLES } from '../utils/manuscript';
 import { validateRttsTemplateContent } from '../publishing/rttsValidation';
+import { describeImportedTemplateBlock } from '../publishing/importedTemplateState';
 import { defaultLayoutForPreset } from '../publishing/templateTiering';
 import { t } from '../i18n';
 
@@ -567,6 +568,19 @@ export class PublishingValidationService {
                 if (assetIssues.some(issue => issue.level === 'error')) {
                     pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_template_invalid', t('ui.publishingValidationService.exportTemplateInvalid'), {
                         actionable: true,
+                    });
+                }
+
+                // An imported template exports only while its file is the one
+                // that last built a test PDF. Say which of the three things
+                // happened; the PDF style section is where it is put right.
+                const importedBlock = selectedLayout.origin === 'imported'
+                    ? describeImportedTemplateBlock(this.plugin, selectedLayout)
+                    : null;
+                if (importedBlock) {
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', `export_template_import_${importedBlock.state}`, importedBlock.message, {
+                        actionable: true,
+                        field: selectedLayout.id,
                     });
                 }
 

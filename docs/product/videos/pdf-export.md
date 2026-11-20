@@ -110,7 +110,7 @@ The whole read, as one take:
 ## Found while checking (2026-11-17)
 
 - **The wizard's "Category" menu cut "Chapters" to "Chapte".** Fixed on main on 2026-11-17 (the menu is wider); it reaches authors with the release after 8.0.4.
-- **"Import template…" is still switched off** in release builds ("BETA release pending" while beta features are off).
+- **"Import template…" was switched off** in release builds when this was checked ("BETA release pending"). Changed on 2026-11-19; see below.
 
 ## Changed on 2026-11-17: "Design your own…" is out of beta
 
@@ -129,3 +129,9 @@ The caption lines above are on-screen text. Build the subtitle file from the voi
 ## Vertical cut
 
 Shots 3–7 and 9–11 happen in dialogs, so crop to the dialog. Keep shot 1 and the end card, and show shot 2 as a two-second zoom on the pencil.
+
+## Changed on 2026-11-19: "Import template…" is out of beta
+
+On main, "Import template…" in Settings → Publish works in every vault, and reaches authors with the release after 8.0.4. Nothing in this script uses it, so no shot changes. If a shot shows the buttons beside "Design your own…", "Import template…" is now an ordinary button; its tooltip reads "Use your own LaTeX template (.tex) as a PDF style."
+
+An imported style shows in the Layout menu of the export dialog as "Name (imported template)". The demo vault has none, so shot lists of the Layout menu are unchanged.

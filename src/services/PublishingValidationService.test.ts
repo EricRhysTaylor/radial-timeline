@@ -14,6 +14,7 @@ import {
     PublishingValidationService
 } from './PublishingValidationService';
 import { getExportValidationIssues } from './PublishingValidationService';
+import { hashTemplateText } from '../publishing/importedTemplateCheck';
 
 beforeEach(() => {
     vi.spyOn(exportFormats, 'isPandocAvailable').mockReturnValue(true);
@@ -395,5 +396,47 @@ describe('PublishingValidationService template compatibility', () => {
 
         expect(snapshot.templateCompatibility?.templateId).toBe(signature.id);
         expect(snapshot.preflightIssues.some(issue => issue.level === 'error')).toBe(false);
+    });
+});
+
+describe('PublishingValidationService imported templates', () => {
+    const TEXT = '\\documentclass{book}\n$title$\n$author$\n$body$';
+    const collect = (layout: PandocLayoutTemplate) => {
+        const context = { exportType: 'manuscript', outputFormat: 'pdf', manuscriptPreset: 'novel', selectedLayoutId: layout.id } as const;
+        return getExportValidationIssues(new PublishingValidationService(createValidationPlugin(layout)).collect('book-1', context), context);
+    };
+    const imported = (overrides: Partial<PandocLayoutTemplate> = {}) => makeNovelLayout(TEXT, {
+        name: 'My Book', origin: 'imported',
+        importCheck: { schemaVersion: 1, sha256: hashTemplateText(TEXT), checkedAt: '2026-11-19T00:00:00.000Z', pages: 3, pageWidthPt: 432, pageHeightPt: 648, samplePage: 2 },
+        ...overrides,
+    });
+
+    it('lets a checked imported template export', () => {
+        expect(collect(imported()).filter(issue => issue.level === 'error')).toEqual([]);
+    });
+
+    it('blocks an imported template that changed since its test PDF, and says what to do', () => {
+        const layout = imported();
+        fs.writeFileSync(layout.path, `${TEXT}\n% edited`);
+        const blocker = collect(layout).find(issue => issue.code === 'export_template_import_changed');
+        expect(blocker).toMatchObject({ level: 'error' });
+        expect(blocker?.message).toContain('My Book');
+        expect(blocker?.message).toContain('Check again');
+    });
+
+    it('blocks an imported template with no test PDF on record', () => {
+        expect(collect(imported({ importCheck: undefined })).map(issue => issue.code)).toContain('export_template_import_unchecked');
+    });
+
+    it('blocks an imported template whose file is gone', () => {
+        const layout = imported();
+        fs.rmSync(layout.path);
+        expect(collect(layout).map(issue => issue.code)).toContain('export_template_import_missing');
+    });
+
+    it('asks nothing of a layout that was not imported', () => {
+        const layout = makeNovelLayout(TEXT);
+        fs.writeFileSync(layout.path, `${TEXT}\n% edited`);
+        expect(collect(layout).some(issue => issue.code.startsWith('export_template_import_'))).toBe(false);
     });
 });

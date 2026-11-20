@@ -1,6 +1,7 @@
 import type { InquiryScope, InquiryZone } from '../inquiry/state';
 import type { AiSettingsV1, AIRoleTemplate } from '../ai/types';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
+import type { ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import type { GossamerRunTiming } from '../gossamer/runTiming';
 import type { StoryMapProvenance } from '../timetable/storyMapProvenance';
 
@@ -124,13 +125,6 @@ export interface ValidationSummary {
     errorCount: number;
     warningCount: number;
     topMessage?: string;
-}
-
-export interface ImportedTemplateDetectionSummary {
-    styleHint: 'manuscript' | 'book' | 'literary' | 'chaptered' | 'custom';
-    mockPreviewKind: 'manuscript' | 'book' | 'literary' | 'chaptered' | 'generic';
-    traits: string[];
-    confidence: 'low' | 'medium' | 'high';
 }
 
 export interface TemplateAsset {
@@ -971,7 +965,13 @@ export interface PandocLayoutTemplate {
     templateKind?: TemplateKind;
     recommendedUse?: string;
     draft?: boolean;           // staged import that should not be treated as activated yet
-    importDetection?: ImportedTemplateDetectionSummary; // inferred layout summary captured during guided import
+    /**
+     * Imported layouts only: the template text that last built a test PDF, by
+     * hash, and what that PDF measured. An imported layout whose file no
+     * longer matches cannot export until it is checked again
+     * (publishing/importedTemplateState.ts).
+     */
+    importCheck?: ImportedTemplateCheckRecord;
     usesModernClassicStructure?: boolean; // emit rtPart/rtSceneSep markers and chapter headings in PDF compilation
     hasEpigraphs?: boolean;
     hasSceneOpenerHeadingOptions?: boolean;

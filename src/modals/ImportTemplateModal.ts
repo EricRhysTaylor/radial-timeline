@@ -1,21 +1,35 @@
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, SuggestModal, TFile, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { ImportedTemplateCandidate } from '../utils/templateImport';
-import { buildImportedTemplateCandidate, buildImportedTemplateId } from '../utils/templateImport';
+import { buildImportedTemplateCandidate, finalizeImportedLayout } from '../utils/templateImport';
+import { buildImportedTemplateCheckManuscript, hashTemplateText, runImportedTemplateCheck, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
 import type { PandocLayoutTemplate, UsageContext } from '../types';
-import type { DetectedTemplateConfidence, DetectedTemplateMockPreviewKind, DetectedTemplateStyleHint } from '../publishing/templateDetection';
+import { drawPdfPage, renderPdfPagePng } from '../publishing/importedTemplatePreview';
+import { buildImportedTemplateFactRows, renderImportedTemplateFacts, type ImportedTemplateFactRow } from '../settings/sections/publish/ImportedLayoutSummary';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
 import { t } from '../i18n';
 
 type ImportTemplateStep = 1 | 2 | 3 | 4;
 
+/** What Save hands over: the layout to register, the text to copy, and the proof that text built a PDF. */
 export interface ImportedTemplateCommit {
     layout: PandocLayoutTemplate;
-    draft: boolean;
-    activate: boolean;
-    candidate: ImportedTemplateCandidate;
+    templateText: string;
+    record: ImportedTemplateCheckRecord;
+    /** The sample page of the test PDF, for the layout's row in Settings. Absent when it could not be drawn. */
+    firstPagePng?: ArrayBuffer;
 }
+
+/**
+ * The test PDF for the chosen file. `key` names what was built (the template
+ * text and how an export would assemble for the layout), so a pass is reused
+ * only for exactly that.
+ */
+type TemplateCheckState =
+    | { state: 'idle' }
+    | { state: 'passed'; key: string; record: ImportedTemplateCheckRecord; pdf: Uint8Array }
+    | { state: 'failed'; key: string; reason: 'tools' | 'latex' | 'missing'; latexLines: string[] };
 
 class TemplateFileSuggestModal extends SuggestModal<TFile> {
     private readonly onChooseFile: (path: string) => void;
@@ -70,13 +84,14 @@ export class ImportTemplateModal extends Modal {
     private step: ImportTemplateStep = 1;
     private sourcePath = '';
     private usageContext: UsageContext = 'novel';
-    private usageContextTouched = false;
     private templateName = '';
     private templateNameTouched = false;
     private templateDescription = '';
     private templateDescriptionTouched = false;
     private candidate: ImportedTemplateCandidate | null = null;
-    private candidateLoading = false;
+    /** What the dialog is waiting on: reading the file, or building the test PDF. */
+    private busy: 'reading' | 'building' | null = null;
+    private check: TemplateCheckState = { state: 'idle' };
     private commitInFlight = false;
     private candidateRequestToken = 0;
     private readonly onCommit: (commit: ImportedTemplateCommit) => Promise<void> | void;
@@ -101,13 +116,13 @@ export class ImportTemplateModal extends Modal {
         this.step = 1;
         this.sourcePath = '';
         this.usageContext = 'novel';
-        this.usageContextTouched = false;
         this.templateName = '';
         this.templateNameTouched = false;
         this.templateDescription = '';
         this.templateDescriptionTouched = false;
         this.candidate = null;
-        this.candidateLoading = false;
+        this.busy = null;
+        this.check = { state: 'idle' };
         this.commitInFlight = false;
         this.candidateRequestToken += 1;
         const { contentEl, modalEl, titleEl } = this;
@@ -164,36 +179,50 @@ export class ImportTemplateModal extends Modal {
         return value.length > 0 ? value : undefined;
     }
 
-    private resolveExistingIds(): Set<string> {
-        return new Set((this.plugin.settings.pandocLayouts || []).map(layout => layout.id));
+    /** The layout record Save will register, from the file as read and the fields as entered. */
+    private buildFinalLayout(candidate: ImportedTemplateCandidate): PandocLayoutTemplate {
+        return finalizeImportedLayout(this.plugin, candidate, {
+            name: this.templateName,
+            preset: this.usageContext,
+            description: this.templateDescription,
+        });
     }
 
+    /** Names exactly what a test PDF is built from: the template text and the manuscript assembled for this layout. */
+    private async getCheckKey(layout: PandocLayoutTemplate, templateText: string): Promise<string> {
+        return `${hashTemplateText(templateText)}|${hashTemplateText(await buildImportedTemplateCheckManuscript(layout))}`;
+    }
+
+    /**
+     * Read the chosen file again and, if nothing in the file itself blocks it,
+     * make sure a test PDF has been built from exactly this text for exactly
+     * this layout. A pass already on hand for the same text and layout is kept.
+     */
     private async refreshCandidate(): Promise<void> {
         const sourcePath = this.getCandidatePath();
         const requestToken = ++this.candidateRequestToken;
         if (!sourcePath) {
             this.candidate = null;
-            this.candidateLoading = false;
+            this.check = { state: 'idle' };
+            this.busy = null;
             this.render();
             return;
         }
 
-        this.candidateLoading = true;
+        this.busy = 'reading';
         this.render();
 
         try {
             const candidate = await buildImportedTemplateCandidate(this.plugin, {
                 sourcePath,
-                name: this.getCandidateName(),
-                preset: this.usageContextTouched ? this.usageContext : undefined,
-                description: this.getCandidateDescription(),
-                origin: 'imported',
+                // Only what the author typed is carried over: a name or
+                // description filled in from one file must not stick to the next.
+                name: this.templateNameTouched ? this.getCandidateName() : undefined,
+                preset: this.usageContext,
+                description: this.templateDescriptionTouched ? this.getCandidateDescription() : undefined,
             });
             if (requestToken !== this.candidateRequestToken) return;
 
-            if (!this.usageContextTouched) {
-                this.usageContext = candidate.layout.preset;
-            }
             if (!this.templateNameTouched) {
                 this.templateName = candidate.layout.name;
             }
@@ -201,15 +230,46 @@ export class ImportTemplateModal extends Modal {
                 this.templateDescription = candidate.layout.description || '';
             }
             this.candidate = candidate;
+            if (!candidate.canActivate) {
+                this.check = { state: 'idle' };
+                return;
+            }
+
+            const layout = this.buildFinalLayout(candidate);
+            const key = await this.getCheckKey(layout, candidate.sourceText);
+            if (requestToken !== this.candidateRequestToken) return;
+            if (this.check.state === 'passed' && this.check.key === key) return;
+            this.busy = 'building';
+            this.render();
+            const result = await runImportedTemplateCheck({
+                layout,
+                templateText: candidate.sourceText,
+                pandocPath: this.plugin.settings.pandocPath,
+            });
+            if (requestToken !== this.candidateRequestToken) return;
+            this.check = result.ok
+                ? { state: 'passed', key, record: result.record, pdf: result.pdf }
+                : { state: 'failed', key, reason: result.reason, latexLines: result.latexLines };
         } catch (error) {
             if (requestToken !== this.candidateRequestToken) return;
             this.candidate = null;
+            this.check = { state: 'idle' };
             console.error(error);
         } finally {
             if (requestToken === this.candidateRequestToken) {
-                this.candidateLoading = false;
+                this.busy = null;
                 this.render();
             }
+        }
+    }
+
+    /** The saved picture is a convenience: an import does not fail for want of it. */
+    private async renderSamplePagePng(pdf: Uint8Array, page: number): Promise<ArrayBuffer | undefined> {
+        try {
+            return await renderPdfPagePng(pdf, page, this.contentEl.ownerDocument);
+        } catch (error) { // SAFE: the layout is saved without a picture and its row shows none; the test PDF itself already passed
+            console.error(error);
+            return undefined;
         }
     }
 
@@ -248,32 +308,24 @@ export class ImportTemplateModal extends Modal {
         this.commitInFlight = true;
         this.updateActionButtons();
         try {
-            // Checks may have run several wizard steps ago. Re-read the selected
-            // file so deletion/replacement cannot activate a stale candidate.
+            // The check may have run several steps ago, and the name entered
+            // since can change how an export assembles for this layout. Read
+            // the file again; the test PDF is rebuilt unless the pass on hand
+            // is for this exact text and layout.
             await this.refreshCandidate();
-            if (!this.candidate?.canActivate || this.candidateLoading) return;
-            const existingIds = this.resolveExistingIds();
-            const id = buildImportedTemplateId(
-                this.candidate.layout.name,
-                this.candidate.layout.preset,
-                existingIds
-            );
-            const finalLayout: PandocLayoutTemplate = {
-                ...this.candidate.layout,
-                id,
-                name: this.templateName.trim() || this.candidate.layout.name,
-                preset: this.usageContext,
-                description: this.templateDescription.trim() || this.candidate.layout.description,
-                path: this.candidate.layout.path,
-                draft: false,
-                origin: 'imported',
-            };
-
+            const candidate = this.candidate;
+            const check = this.check;
+            if (!candidate?.canActivate || check.state !== 'passed') {
+                // Show why on the Check step instead of leaving Save silently inert.
+                this.step = 2;
+                this.render();
+                return;
+            }
             await this.onCommit({
-                layout: finalLayout,
-                draft: false,
-                activate: true,
-                candidate: this.candidate,
+                layout: this.buildFinalLayout(candidate),
+                templateText: candidate.sourceText,
+                record: check.record,
+                firstPagePng: await this.renderSamplePagePng(check.pdf, check.record.samplePage),
             });
             this.close();
         } catch (error) {
@@ -291,11 +343,11 @@ export class ImportTemplateModal extends Modal {
         this.updateStepRail();
 
         const panel = this.panelEl;
-        if (this.candidateLoading) {
+        if (this.busy) {
             this.renderStepHero(panel, {
                 icon: 'loader-circle',
-                title: t('ui.importTemplateModal.checkingTitle'),
-                description: t('ui.importTemplateModal.checkingDesc'),
+                title: this.busy === 'building' ? t('ui.importTemplateModal.buildingTitle') : t('ui.importTemplateModal.checkingTitle'),
+                description: this.busy === 'building' ? t('ui.importTemplateModal.buildingDesc') : t('ui.importTemplateModal.checkingDesc'),
             });
         } else {
             switch (this.step) {
@@ -319,9 +371,10 @@ export class ImportTemplateModal extends Modal {
     }
 
     private canAdvanceToNextStep(): boolean {
+        if (this.busy) return false;
         if (this.step === 1) return Boolean(this.getCandidatePath());
-        if (this.step === 2 || this.step === 3) return Boolean(this.candidate);
-        return true;
+        // Past the Check step only with a test PDF built.
+        return Boolean(this.candidate?.canActivate) && this.check.state === 'passed';
     }
 
     private createStepRail(): void {
@@ -400,26 +453,22 @@ export class ImportTemplateModal extends Modal {
     private renderStepHero(
         panel: HTMLElement,
         options: {
-            icon?: string;
-            previewKind?: DetectedTemplateMockPreviewKind;
+            icon: string;
             title: string;
             description: string;
-            tone?: 'ready' | 'attention' | 'blocked';
+            tone?: 'ready' | 'blocked';
             statusLabel?: string;
             notes?: string[];
+            /** Lines LaTeX printed, shown as given. */
+            latexLines?: string[];
         }
     ): void {
         const hero = panel.createDiv({
             cls: `ert-import-template-stepHero${options.tone ? ` ert-import-template-stepHero--${options.tone}` : ''}`,
         });
         const visual = hero.createDiv({ cls: 'ert-import-template-stepHero-visual' });
-
-        if (options.previewKind) {
-            this.renderMockPreview(visual, options.previewKind);
-        } else if (options.icon) {
-            const iconWrap = visual.createDiv({ cls: 'ert-import-template-stepHero-icon' });
-            setIcon(iconWrap, options.icon);
-        }
+        const iconWrap = visual.createDiv({ cls: 'ert-import-template-stepHero-icon' });
+        setIcon(iconWrap, options.icon);
 
         hero.createDiv({ cls: 'ert-import-template-stepHero-title', text: options.title });
         hero.createDiv({ cls: 'ert-import-template-stepHero-desc', text: options.description });
@@ -431,6 +480,9 @@ export class ImportTemplateModal extends Modal {
             options.notes.forEach((note) => {
                 notes.createDiv({ cls: 'ert-import-template-stepHero-note', text: note });
             });
+        }
+        if (options.latexLines && options.latexLines.length > 0) {
+            hero.createEl('pre', { cls: 'ert-import-template-latexError', text: options.latexLines.join('\n') });
         }
     }
 
@@ -487,29 +539,76 @@ export class ImportTemplateModal extends Modal {
         }
     }
 
+    /**
+     * What the dialog says about the template: read from the file, and
+     * measured from the test PDF once there is one. Nothing is guessed.
+     */
+    private getFactRows(copyPath?: string): ImportedTemplateFactRow[] {
+        const candidate = this.candidate;
+        if (!candidate) return [];
+        return buildImportedTemplateFactRows({
+            facts: candidate.facts,
+            check: this.check.state === 'passed' ? this.check.record : undefined,
+            copyPath,
+        });
+    }
+
+    /** Fact rows beside a page of the test PDF: the real page, drawn from the PDF. */
+    private renderFactsWithPage(panel: HTMLElement, rows: ImportedTemplateFactRow[]): void {
+        const block = panel.createDiv({ cls: 'ert-import-template-facts' });
+        renderImportedTemplateFacts(block.createDiv({ cls: 'ert-import-template-facts-rows' }), rows);
+        const check = this.check;
+        if (check.state !== 'passed') return;
+        const figure = block.createDiv({ cls: 'ert-import-template-page' });
+        const canvas = figure.createEl('canvas', { cls: 'ert-import-template-page-canvas' });
+        figure.createDiv({ cls: 'ert-import-template-page-caption', text: t('ui.importedLayoutSummary.previewCaption', { page: check.record.samplePage }) });
+        // No picture is better than a made-up one: if the page cannot be drawn, the figure goes.
+        void drawPdfPage(check.pdf, check.record.samplePage, canvas, 190).catch((error: unknown) => {
+            figure.remove();
+            console.error(error);
+        });
+    }
+
+    /**
+     * "Ready" here means one thing: this template built a test PDF on this
+     * computer. A file that only looks right is not ready.
+     */
     private renderCheckStep(panel: HTMLElement): void {
-        const status = this.candidate?.summary.state || 'ready';
+        const candidate = this.candidate;
+        const check = this.check;
+        const ready = Boolean(candidate?.canActivate) && check.state === 'passed';
+        let description = t('ui.importTemplateModal.chooseFileFirst');
+        let notes: string[] = [];
+        let latexLines: string[] = [];
+        if (candidate && !candidate.canActivate) {
+            // The file itself is the problem; each message says what to do.
+            description = t('ui.importTemplateModal.checkStatusBlocked');
+            notes = candidate.issues.slice(0, 4).map(issue => issue.message);
+        } else if (candidate && check.state === 'failed') {
+            description = check.reason === 'tools'
+                ? t('ui.importTemplateModal.checkStatusTools')
+                : t('ui.importTemplateModal.checkStatusFailed');
+            latexLines = check.reason === 'latex' ? check.latexLines : [];
+            if (latexLines.length > 0) notes = [t('ui.importTemplateModal.latexSaid')];
+        } else if (ready) {
+            description = t('ui.importTemplateModal.checkStatusReady');
+        }
         this.renderStepHero(panel, {
-            icon: status === 'blocked' ? 'octagon-alert' : status === 'warning' ? 'triangle-alert' : 'badge-check',
+            icon: ready ? 'badge-check' : 'octagon-alert',
             title: t('ui.importTemplateModal.checkTitle'),
-            description: this.candidate
-                ? this.getCheckStatusMessage(this.candidate)
-                : t('ui.importTemplateModal.chooseFileFirst'),
-            tone: status === 'blocked' ? 'blocked' : status === 'warning' ? 'attention' : 'ready',
-            statusLabel: status === 'blocked'
-                ? t('ui.importTemplateModal.statusBlocked')
-                : status === 'warning'
-                    ? t('ui.importTemplateModal.statusNeedsAttention')
-                    : t('ui.importTemplateModal.statusReady'),
-            notes: (this.candidate?.issues || []).slice(0, 4).map(issue => this.formatIssueMessage(issue.message)),
+            description,
+            tone: ready ? 'ready' : 'blocked',
+            statusLabel: !candidate ? undefined : ready ? t('ui.importTemplateModal.statusReady') : t('ui.importTemplateModal.statusBlocked'),
+            notes,
+            latexLines,
         });
 
-        this.renderDetectedLayoutCard(panel);
+        if (ready) this.renderFactsWithPage(panel, this.getFactRows());
     }
 
     private renderSetupStep(panel: HTMLElement): void {
         this.renderStepHero(panel, {
-            previewKind: this.candidate?.detectedTemplate.mockPreviewKind || 'generic',
+            icon: 'sliders-horizontal',
             title: t('ui.importTemplateModal.setupTitle'),
             description: t('ui.importTemplateModal.setupDesc'),
         });
@@ -527,15 +626,15 @@ export class ImportTemplateModal extends Modal {
             this.templateName = nameInput.value;
         });
 
+        // Which manuscript preset lists this style in the export dialog.
         const usageCell = grid.createDiv({ cls: 'ert-gridForm__cell' });
-        usageCell.createDiv({ cls: 'ert-label', text: t('ui.importTemplateModal.usageContextLabel') });
+        usageCell.createDiv({ cls: 'ert-label', text: t('ui.importTemplateModal.usageLabel') });
         this.usageDropdown = new DropdownComponent(usageCell);
         this.usageDropdown.addOption('novel', t('ui.importTemplateModal.usageNovel'));
         this.usageDropdown.addOption('screenplay', t('ui.importTemplateModal.usageScreenplay'));
         this.usageDropdown.addOption('podcast', t('ui.importTemplateModal.usagePodcast'));
         this.usageDropdown.setValue(this.usageContext);
         this.usageDropdown.onChange((value) => {
-            this.usageContextTouched = true;
             this.usageContext = value as UsageContext;
         });
 
@@ -556,208 +655,16 @@ export class ImportTemplateModal extends Modal {
         const candidate = this.candidate;
         const summary = panel.createDiv({ cls: 'ert-card ert-import-template-summary ert-stack ert-stack--tight' });
         summary.createDiv({ cls: 'ert-card__header', text: t('ui.importTemplateModal.finalSummary') });
-
-        const top = summary.createDiv({ cls: 'ert-import-template-summary-top' });
-        const details = top.createDiv({ cls: 'ert-import-template-summary-details' });
-        const preview = top.createDiv({ cls: 'ert-import-template-summary-preview' });
-
-        this.renderMockPreview(preview, candidate?.detectedTemplate.mockPreviewKind || 'generic', {
-            compact: true,
-            showLabel: false,
-        });
-
-        const rows = [
-            { label: t('ui.importTemplateModal.nameLabel'), value: this.templateName.trim() || candidate?.profile.name || t('ui.importTemplateModal.templateFallbackName') },
-            { label: t('ui.importTemplateModal.usageLabel'), value: this.formatUsageContext(this.usageContext) },
-            { label: t('ui.importTemplateModal.fileLabel'), value: this.getCandidatePath() || candidate?.layout.path || t('ui.importTemplateModal.noFileSelected') },
-            { label: t('ui.importTemplateModal.descriptionLabel'), value: this.templateDescription.trim() || candidate?.layout.description || t('ui.importTemplateModal.noDescriptionAdded') },
-            { label: t('ui.importTemplateModal.detectedLayoutLabel'), value: candidate ? this.getLikelyLayoutLabel(candidate.detectedTemplate.styleHint) : t('ui.importTemplateModal.layoutCustomUnknown') },
-            { label: t('ui.importTemplateModal.confidenceLabel'), value: candidate ? this.formatConfidence(candidate.detectedTemplate.confidence) : t('ui.importTemplateModal.confidenceLow') },
-        ];
-        rows.forEach((row) => {
-            const item = details.createDiv({ cls: 'ert-import-template-summary-row' });
-            item.createDiv({ cls: 'ert-import-template-summary-label', text: row.label });
-            item.createDiv({ cls: 'ert-import-template-summary-value', text: row.value });
-        });
-
-        if ((candidate?.detectedTemplate.traits.length || 0) > 0) {
-            const traitSection = summary.createDiv({ cls: 'ert-import-template-summary-traits' });
-            traitSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: t('ui.importTemplateModal.detectedFormatting') });
-            const traits = traitSection.createDiv({ cls: 'ert-import-template-traitGrid ert-import-template-traitGrid--summary' });
-            this.getVisibleTraitEntries(candidate?.detectedTemplate.traits || []).forEach(({ trait, visual }) => {
-                const item = traits.createDiv({ cls: 'ert-import-template-traitTile ert-import-template-traitTile--summary' });
-                const iconWrap = item.createDiv({ cls: 'ert-import-template-traitIcon ert-import-template-traitIcon--summary' });
-                setIcon(iconWrap, visual.icon);
-                item.createDiv({ cls: 'ert-import-template-traitLabel', text: visual.label });
-                item.createDiv({ cls: 'ert-import-template-summary-traitText', text: trait });
-            });
-        }
-
-        if ((candidate?.issues.length || 0) > 0) {
-            const issueSection = summary.createDiv({ cls: 'ert-import-template-summary-issues' });
-            issueSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: t('ui.importTemplateModal.openItems') });
-            candidate?.issues.slice(0, 3).forEach(issue => {
-                issueSection.createDiv({ cls: 'ert-field-note', text: this.formatIssueMessage(issue.message) });
-            });
-        }
-    }
-
-    private renderDetectedLayoutCard(panel: HTMLElement): void {
-        const candidate = this.candidate;
         if (!candidate) return;
 
-        const card = panel.createDiv({ cls: 'ert-card ert-import-template-detected-card ert-stack ert-stack--tight' });
-        const meta = card.createDiv({ cls: 'ert-import-template-detected-meta' });
-        meta.createDiv({
-            cls: 'ert-import-template-detected-line',
-            text: t('ui.importTemplateModal.detectedLayoutLine', { layout: this.getLikelyLayoutShortLabel(candidate.detectedTemplate.styleHint) }),
-        });
-        meta.createDiv({
-            cls: 'ert-import-template-detected-line ert-import-template-detected-line--confidence',
-            text: t('ui.importTemplateModal.confidenceLine', { confidence: this.formatConfidence(candidate.detectedTemplate.confidence) }),
-        });
-
-        if (candidate.detectedTemplate.traits.length > 0) {
-            const traits = card.createDiv({ cls: 'ert-import-template-traitGrid' });
-            this.getVisibleTraitEntries(candidate.detectedTemplate.traits).forEach(({ trait, visual }) => {
-                const item = traits.createDiv({ cls: 'ert-import-template-traitTile' });
-                const iconWrap = item.createDiv({ cls: 'ert-import-template-traitIcon' });
-                setIcon(iconWrap, visual.icon);
-                item.createDiv({ cls: 'ert-import-template-traitLabel', text: visual.label });
-                item.createDiv({ cls: 'ert-import-template-summary-traitText', text: trait });
-            });
-        }
-    }
-
-    private renderMockPreview(
-        container: HTMLElement,
-        kind: DetectedTemplateMockPreviewKind,
-        options: { compact?: boolean; showLabel?: boolean } = {},
-    ): void {
-        const wrap = container.createDiv({ cls: 'ert-import-template-mock-wrap' });
-        if (options.compact) {
-            wrap.addClass('is-compact');
-        }
-        if (options.showLabel !== false) {
-            wrap.createDiv({ cls: 'ert-import-template-mock-label', text: t('ui.importTemplateModal.approximatePreview') });
-        }
-
-        const mock = wrap.createDiv({ cls: `ert-import-template-mock ert-import-template-mock--${kind}${options.compact ? ' is-compact' : ''}` });
-        const page = mock.createDiv({ cls: 'ert-import-template-mock-page' });
-        if (kind === 'book' || kind === 'chaptered') {
-            page.createDiv({ cls: 'ert-import-template-mock-header-line' });
-        }
-
-        const kicker = page.createDiv({ cls: 'ert-import-template-mock-kicker' });
-        kicker.setText(kind === 'chaptered' ? t('ui.importTemplateModal.mockKickerChapterOpener') : kind === 'literary' ? t('ui.importTemplateModal.mockKickerLiterary') : kind === 'manuscript' ? t('ui.importTemplateModal.mockKickerSubmission') : kind === 'book' ? t('ui.importTemplateModal.layoutBook') : t('ui.importTemplateModal.mockKickerCustom'));
-
-        page.createDiv({
-            cls: `ert-import-template-mock-title ert-import-template-mock-title--${kind}`,
-            text: kind === 'chaptered' ? t('ui.importTemplateModal.mockTitleChapterOne') : kind === 'literary' ? t('ui.importTemplateModal.mockTitleWinterLight') : kind === 'manuscript' ? t('ui.importTemplateModal.mockTitleManuscriptPage') : kind === 'book' ? t('ui.importTemplateModal.mockTitleBookPage') : t('ui.importTemplateModal.mockTitleTemplatePreview'),
-        });
-
-        if (kind === 'literary') {
-            page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: t('ui.importTemplateModal.mockSubtitleOpeningLine') });
-        }
-
-        const lines = page.createDiv({ cls: 'ert-import-template-mock-lines' });
-        ['',' is-mid','',' is-short','',''].forEach((suffix) => {
-            lines.createDiv({ cls: `ert-import-template-mock-line${suffix}`.trim() });
-        });
-    }
-
-    private getLikelyLayoutLabel(styleHint: DetectedTemplateStyleHint): string {
-        switch (styleHint) {
-            case 'chaptered':
-                return t('ui.importTemplateModal.layoutChapteredBook');
-            case 'book':
-                return t('ui.importTemplateModal.layoutBook');
-            case 'literary':
-                return t('ui.importTemplateModal.layoutLiteraryBook');
-            case 'manuscript':
-                return t('ui.importTemplateModal.layoutSubmissionManuscript');
-            default:
-                return t('ui.importTemplateModal.layoutCustomUnknown');
-        }
-    }
-
-    private getLikelyLayoutShortLabel(styleHint: DetectedTemplateStyleHint): string {
-        switch (styleHint) {
-            case 'chaptered':
-                return t('ui.importTemplateModal.layoutShortChaptered');
-            case 'book':
-                return t('ui.importTemplateModal.layoutShortBook');
-            case 'literary':
-                return t('ui.importTemplateModal.layoutShortLiterary');
-            case 'manuscript':
-                return t('ui.importTemplateModal.layoutShortManuscript');
-            default:
-                return t('ui.importTemplateModal.layoutShortCustom');
-        }
-    }
-
-    private describeTraitVisual(trait: string): { icon: string; label: string } {
-        const normalized = trait.toLowerCase();
-        if (normalized.includes('body hook') || normalized.includes('manuscript')) {
-            return { icon: 'book-open-text', label: t('ui.importTemplateModal.traitManuscript') };
-        }
-        if (normalized.includes('header')) {
-            return { icon: 'panel-top', label: t('ui.importTemplateModal.traitHeader') };
-        }
-        if (normalized.includes('chapter') || normalized.includes('page structure') || normalized.includes('part')) {
-            return { icon: 'book-open', label: t('ui.importTemplateModal.traitStructure') };
-        }
-        if (normalized.includes('typography') || normalized.includes('font')) {
-            return { icon: 'type', label: t('ui.importTemplateModal.traitType') };
-        }
-        if (normalized.includes('margin') || normalized.includes('print layout')) {
-            return { icon: 'scan-line', label: t('ui.importTemplateModal.traitLayout') };
-        }
-        if (normalized.includes('metadata') || normalized.includes('front-page')) {
-            return { icon: 'badge-info', label: t('ui.importTemplateModal.traitMetadata') };
-        }
-        if (normalized.includes('contents')) {
-            return { icon: 'list', label: t('ui.importTemplateModal.traitContents') };
-        }
-        if (normalized.includes('spacing')) {
-            return { icon: 'move-horizontal', label: t('ui.importTemplateModal.traitSpacing') };
-        }
-        if (normalized.includes('scene break')) {
-            return { icon: 'separator-horizontal', label: t('ui.importTemplateModal.traitBreaks') };
-        }
-        if (normalized.includes('heading')) {
-            return { icon: 'heading', label: t('ui.importTemplateModal.traitHeadings') };
-        }
-        if (normalized.includes('dialogue') || normalized.includes('scene')) {
-            return { icon: 'message-square', label: t('ui.importTemplateModal.traitDialogue') };
-        }
-        return { icon: 'file-text', label: t('ui.importTemplateModal.traitCustom') };
-    }
-
-    private getVisibleTraitEntries(traits: string[]): Array<{ trait: string; visual: { icon: string; label: string } }> {
-        const entries: Array<{ trait: string; visual: { icon: string; label: string } }> = [];
-        // Dedupe on the icon: it maps 1:1 to a trait category, and unlike the
-        // label it does not depend on the current language.
-        const seenIcons = new Set<string>();
-        for (const trait of traits) {
-            const visual = this.describeTraitVisual(trait);
-            if (seenIcons.has(visual.icon)) continue;
-            seenIcons.add(visual.icon);
-            entries.push({ trait, visual });
-            if (entries.length >= 5) break;
-        }
-        return entries;
-    }
-
-    private formatConfidence(confidence: DetectedTemplateConfidence): string {
-        switch (confidence) {
-            case 'high':
-                return t('ui.importTemplateModal.confidenceHigh');
-            case 'medium':
-                return t('ui.importTemplateModal.confidenceMedium');
-            default:
-                return t('ui.importTemplateModal.confidenceLow');
-        }
+        const layout = this.buildFinalLayout(candidate);
+        this.renderFactsWithPage(summary, [
+            { label: t('ui.importTemplateModal.nameLabel'), value: layout.name },
+            { label: t('ui.importTemplateModal.usageLabel'), value: this.formatUsageContext(layout.preset) },
+            { label: t('ui.importTemplateModal.fileLabel'), value: this.getCandidatePath() },
+            ...(layout.description ? [{ label: t('ui.importTemplateModal.descriptionLabel'), value: layout.description }] : []),
+            ...this.getFactRows(layout.path),
+        ]);
     }
 
     private formatUsageContext(context: UsageContext): string {
@@ -793,34 +700,11 @@ export class ImportTemplateModal extends Modal {
         return segments.length > 0 ? segments[segments.length - 1] : targetPath;
     }
 
-    private getCheckStatusMessage(candidate: ImportedTemplateCandidate): string {
-        if (candidate.summary.state === 'blocked') {
-            return t('ui.importTemplateModal.checkStatusBlocked');
-        }
-        if (candidate.summary.state === 'warning') {
-            return t('ui.importTemplateModal.checkStatusWarning');
-        }
-        return t('ui.importTemplateModal.checkStatusReady');
-    }
-
-    private formatIssueMessage(message: string): string {
-        if (/\$body\$/i.test(message)) {
-            return t('ui.importTemplateModal.issueMissingBody');
-        }
-        if (/fontspec|xelatex|lualatex/i.test(message)) {
-            return t('ui.importTemplateModal.issueUnicodeEngine');
-        }
-        if (/\.tex/i.test(message) && /import/i.test(message)) {
-            return t('ui.importTemplateModal.issueChooseValidTex');
-        }
-        return message;
-    }
-
     private updateActionButtons(): void {
         this.backButton?.setDisabled(this.step === 1 || this.commitInFlight);
         this.nextButton?.setDisabled(this.commitInFlight || !this.canAdvanceToNextStep());
         this.nextButton?.buttonEl.classList.toggle('is-ready', this.step < 4 && this.canAdvanceToNextStep());
         this.cancelButton?.setDisabled(this.commitInFlight);
-        this.saveButton?.setDisabled(this.commitInFlight || !this.candidate || !this.candidate.canActivate);
+        this.saveButton?.setDisabled(this.commitInFlight || !this.canAdvanceToNextStep());
     }
 }

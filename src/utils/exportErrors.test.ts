@@ -31,7 +31,7 @@ describe('categorizeExportError — missing font', () => {
         expect(failure.message).not.toContain('cannot be found');
     });
 });
-import { categorizeExportError } from './exportErrors';
+import { categorizeExportError, extractLatexErrorLines } from './exportErrors';
 
 describe('export error categorization', () => {
     it('categorizes missing dependencies ahead of generic pandoc failures', () => {
@@ -49,5 +49,39 @@ describe('export error categorization', () => {
         const failure = categorizeExportError('! LaTeX Error: File `foo.sty` not found.');
         expect(failure.category).toBe('pandoc_compile_failure');
         expect(failure.detail).toContain('foo.sty');
+    });
+});
+
+// What Pandoc 3 and XeLaTeX (TeX Live 2026) print for each kind of template
+// failure, recorded on 2026-11-19.
+describe('extractLatexErrorLines', () => {
+    it('keeps the error and where LaTeX stopped', () => {
+        expect(extractLatexErrorLines('Error producing PDF.\n! Undefined control sequence.\nl.3 \\thisMacroDoesNotExist\n\n\n'))
+            .toEqual(['! Undefined control sequence.', 'l.3 \\thisMacroDoesNotExist']);
+    });
+
+    it('drops the prompts LaTeX prints for a terminal', () => {
+        const raw = "Error producing PDF.\n! LaTeX Error: \\begin{center} on input line 3 ended by \\end{document}.\n\nSee the LaTeX manual or LaTeX Companion for explanation.\nType  H <return>  for immediate help.\n ...                                              \n                                                  \nl.7 \\end{document}\n\n";
+        expect(extractLatexErrorLines(raw)).toEqual(['! LaTeX Error: \\begin{center} on input line 3 ended by \\end{document}.', 'l.7 \\end{document}']);
+    });
+
+    it('keeps a missing-font report whole and stops at the line number', () => {
+        const raw = 'Error producing PDF.\n! Package fontspec Error: \n(fontspec)                The font "RT No Such Font" cannot be\n(fontspec)                found; this may be but usually is not a fontspec\n(fontspec)                bug. Either there is a typo in the font name/file,\n(fontspec)                the font is not installed (correctly), or there is\n(fontspec)                a bug in the underlying font loading engine\n(fontspec)                (XeTeX/luaotfload).\n\nFor immediate help type H <return>.\n ...                                              \n                                                  \nl.4 \\begin\n\nAND MUCH MORE LOG\n';
+        const lines = extractLatexErrorLines(raw);
+        expect(lines[0]).toBe('! Package fontspec Error:');
+        expect(lines[1]).toBe('(fontspec) The font "RT No Such Font" cannot be');
+        expect(lines.at(-1)).toBe('l.4 \\begin');
+        expect(lines).toHaveLength(8);
+    });
+
+    it('never returns more than the limit, however long the log', () => {
+        const raw = `! First error.\n${Array.from({ length: 200 }, (_, i) => `noise line ${i}`).join('\n')}`;
+        expect(extractLatexErrorLines(raw)).toHaveLength(9);
+        expect(extractLatexErrorLines(raw, 3)).toEqual(['! First error.', 'noise line 0', 'noise line 1']);
+    });
+
+    it('falls back to the first lines when LaTeX gave no "!" error', () => {
+        expect(extractLatexErrorLines('Error producing PDF.\n[WARNING] Missing character: There is no X in font Y\n')).toEqual(['[WARNING] Missing character: There is no X in font Y']);
+        expect(extractLatexErrorLines('')).toEqual([]);
     });
 });

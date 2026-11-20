@@ -405,6 +405,19 @@
   flex-wrap: wrap;
 }
 
+/* Same tag as the Settings → Publish row: the author's own template. */
+.ert-ui.ert-scope--modal .ert-manuscript-layout-originTag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ert-gap-3xs) var(--ert-gap-sm);
+  border: 1px dashed var(--text-faint);
+  border-radius: 999px;
+  color: var(--text-normal);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 .ert-manuscript-layout-summary-detail {
   color: var(--text-muted);
   line-height: 1.45;

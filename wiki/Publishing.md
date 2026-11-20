@@ -287,7 +287,7 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 **Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%query: author queries%%` (and the older `%%ai:` spelling), HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers. In a Word export, author queries that are kept become margin comments (see [Manuscript Export](Manuscript-Export#author-queries-as-word-comments)).
 
 **Document metadata:** `title` and `author` always come from your BookMeta note. A YAML metadata block at the top of your old manuscript is *not* forwarded — use **Settings → Publish → Advanced Pandoc** instead:
-- **Custom Pandoc metadata** — extra `--metadata key: value` pairs for custom/imported templates (`lang`, `subtitle`, or any variable your template reads).
+- **Custom Pandoc metadata** — extra `--metadata key: value` pairs for custom/imported templates (`lang`, `subtitle`, or any variable your template reads). The card of an [imported template](Manuscript-Export#import-your-own-latex-template) lists the variables it reads under **Other variables**.
 - **Custom LaTeX preamble** — raw LaTeX injected into the PDF preamble after the layout's own setup, so your `\usepackage`/`\newcommand` definitions win. This is the escape hatch for reproducing an existing Pandoc setup exactly.
 
 **Word (DOCX) export** converts the same compiled Markdown via Pandoc using a bundled reference document (standard manuscript format). LaTeX commands are not rendered in DOCX output — they pass through Pandoc's raw-LaTeX handling and are dropped from the Word file, so keep LaTeX-dependent formatting on the PDF path.

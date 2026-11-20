@@ -12,6 +12,7 @@ import { ManuscriptOptionsModal } from '../modals/ManuscriptOptionsModal';
 import { checkExportDelivery } from '../publishing/exportDelivery';
 import * as exportFormats from '../utils/exportFormats';
 import { ExportFailure } from '../utils/exportErrors';
+import { hashTemplateText } from '../publishing/importedTemplateCheck';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'; // SAFE: isolated local export fixtures, removed after verification.
 import { tmpdir } from 'node:os'; // SAFE: test-only temporary folder location.
 import { join } from 'node:path'; // SAFE: test-only export fixture paths.
@@ -529,4 +530,80 @@ describe('manuscript export UI-to-runner contract', () => {
             rmSync(folder, { recursive: true, force: true });
         }
     }, 60_000);
+});
+
+describe('exporting with an imported template', () => {
+    const TEMPLATE = '\\documentclass{book}\n\\begin{document}\n$body$\n\\end{document}\n';
+    const exportPdf = (registrar: CommandRegistrar, options: ManuscriptModalResult) =>
+        registrar['handleManuscriptExport']({ ...options, outputFormat: 'pdf', selectedLayoutId: 'test-layout', saveMarkdownArtifact: false });
+
+    /** A formatted-export fixture whose one layout is an imported template on disk, checked against `TEMPLATE`. */
+    function importedFixture() {
+        const setup = formattedFixture();
+        const folder = mkdtempSync(join(tmpdir(), 'rt-imported-export-'));
+        const template = join(folder, 'my-book.tex');
+        writeFileSync(template, TEMPLATE);
+        const layout = setup.plugin.settings.pandocLayouts[0];
+        Object.assign(layout, {
+            name: 'My Book', path: template, origin: 'imported',
+            importCheck: { schemaVersion: 1, sha256: hashTemplateText(TEMPLATE), checkedAt: '2026-11-19T00:00:00.000Z', pages: 3, pageWidthPt: 432, pageHeightPt: 648, samplePage: 2 },
+        });
+        const save = vi.fn(async () => {});
+        setup.plugin.saveSettings = save;
+        return { ...setup, layout, template, save, cleanup: () => rmSync(folder, { recursive: true, force: true }) };
+    }
+
+    it('builds a checked template with shell escape turned off', async () => {
+        const { registrar, options, template, cleanup } = importedFixture();
+        try {
+            const outcome = await exportPdf(registrar, options);
+            expect(outcome.renderedPath).toBeTruthy();
+            expect(runPandocOnContent).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.objectContaining({ templatePath: template, disableShellEscape: true }));
+        } finally { cleanup(); }
+    });
+
+    it('leaves every other layout\'s Pandoc call as it was', async () => {
+        const { registrar, options } = formattedFixture();
+        await exportPdf(registrar, options);
+        expect(vi.mocked(runPandocOnContent).mock.calls[0][2]).toMatchObject({ disableShellEscape: false });
+    });
+
+    it.each(['changed', 'unchecked', 'missing'] as const)('refuses a %s template without running Pandoc or writing anything', async state => {
+        const { registrar, options, layout, template, writes, writer, save, cleanup } = importedFixture();
+        try {
+            if (state === 'changed') writeFileSync(template, `${TEMPLATE}% edited`);
+            if (state === 'unchecked') delete layout.importCheck;
+            if (state === 'missing') rmSync(template);
+            expect(await exportPdf(registrar, { ...options, updateWordCounts: true })).toEqual({});
+            expect(runPandocOnContent).not.toHaveBeenCalled();
+            expect(writes).not.toHaveBeenCalled();
+            expect(writer).not.toHaveBeenCalled();
+            expect(save).not.toHaveBeenCalled();
+        } finally { cleanup(); }
+    });
+
+    it('reports a LaTeX failure as the template\'s own, with the lines LaTeX printed, and saves nothing', async () => {
+        const { registrar, options, save, cleanup } = importedFixture();
+        try {
+            const raw = 'Error producing PDF.\n! Undefined control sequence.\nl.42 \\authorsOwnMacro\n\n';
+            const pandocFailure = new ExportFailure({ category: 'pandoc_compile_failure', message: 'Pandoc could not compile the PDF with the current LaTeX template.', detail: raw.replace(/\s+/g, ' ') });
+            pandocFailure.rawOutput = raw;
+            vi.mocked(runPandocOnContent).mockRejectedValueOnce(pandocFailure);
+            const failure = await exportPdf(registrar, options).catch(error => error as ExportFailure);
+            if (!(failure instanceof ExportFailure)) throw new Error('Expected the export to fail.');
+            expect(failure.message).toContain('My Book');
+            expect(failure.detail).toBe('! Undefined control sequence.\nl.42 \\authorsOwnMacro');
+            expect(failure.completedPaths).toEqual([]);
+            expect(save).not.toHaveBeenCalled();
+        } finally { cleanup(); }
+    });
+
+    it('keeps a non-LaTeX failure\'s own message', async () => {
+        const { registrar, options, cleanup } = importedFixture();
+        try {
+            vi.mocked(runPandocOnContent).mockRejectedValueOnce(new ExportFailure({ category: 'write_failure', message: 'Export could not write the output files.' }));
+            const failure = await exportPdf(registrar, options).catch(error => error as ExportFailure);
+            expect((failure as ExportFailure).message).toBe('Export could not write the output files.');
+        } finally { cleanup(); }
+    });
 });

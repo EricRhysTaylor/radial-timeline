@@ -1,7 +1,8 @@
 import { makeFile } from './helpers/obsidianFixtures';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import * as obsidian from 'obsidian';
 import type { TFile, Vault } from 'obsidian';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -16,6 +17,14 @@ import { promisify } from 'node:util';
 import { validateDesignedStyleSpec } from '../src/modals/DesignedStyleWizardModal';
 import { buildWizardMatrixCases, type WizardMatrixCase, type WizardMatrixMachine } from '../src/publishing/wizardControlMatrix';
 import { getFontDiagnosticForFontKey, runPandocOnContent } from '../src/utils/exportFormats';
+import { ImportTemplateModal, type ImportedTemplateCommit } from '../src/modals/ImportTemplateModal';
+import { registerImportedTemplate } from '../src/utils/templateImport';
+import { getImportedTemplateState, recheckImportedTemplate } from '../src/publishing/importedTemplateState';
+import { IMPORTED_TEMPLATE_CHECK_PHRASES, buildImportedTemplateCheckManuscript, hashTemplateText, runImportedTemplateCheck } from '../src/publishing/importedTemplateCheck';
+import { extractLatexErrorLines } from '../src/utils/exportErrors';
+import { makeDiskVaultPlugin } from './helpers/diskVault';
+import { readTemplateFacts } from '../src/publishing/templateFacts';
+import { buildImportedTemplateFactRows } from '../src/settings/sections/publish/ImportedLayoutSummary';
 
 const runAssemblyPdf = process.env.RT_PUBLISH_PDF_ASSEMBLY === '1';
 const contemporaryLongScene = Array.from({ length: 20 }, () => (
@@ -351,4 +360,322 @@ describe.skipIf(!runAssemblyPdf)('Design wizard compile matrix', () => {
       }, 180_000);
     });
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Imported template compile tests
+//
+// The evidence behind "Import template…": an author's own LaTeX becomes a
+// usable layout only after it has built a PDF, and a file that cannot build
+// one leaves nothing behind.
+//
+// Each case goes through the import dialog's own code (ImportTemplateModal
+// with the registration Settings → Publish uses), against a vault that is a
+// real folder on disk and the plugin's own Pandoc call. The one stand-in is
+// for PDF.js, which exists only inside Obsidian: page count and page size
+// are read from the same PDF by Poppler's pdfinfo instead. The first-page
+// picture needs a canvas, so no picture is saved here.
+// ─────────────────────────────────────────────────────────────────────────
+
+const IMPORT_GOOD_TEMPLATE = String.raw`\documentclass[11pt]{book}
+\usepackage[paperwidth=6in,paperheight=9in,margin=0.9in]{geometry}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{$title$}
+\fancyhead[RO]{$author$}
+\fancyfoot[C]{\thepage}
+$for(header-includes)$
+$header-includes$
+$endfor$
+\begin{document}
+IMPORTGOODMARK
+$body$
+\end{document}
+`;
+
+const badLatexTemplate = (preamble: string, body = '') => String.raw`\documentclass{book}
+` + preamble + String.raw`
+\begin{document}
+` + body + String.raw`
+$body$
+\end{document}
+`;
+
+// Prints the engine's shell-escape mode into the PDF (0 = off), then tries to
+// run a program and to write a file by name.
+const IMPORT_PROBE_TEMPLATE = String.raw`\documentclass{article}
+\begin{document}
+SHELLMODE\ifdefined\shellescape\the\shellescape\else\the\pdfshellescape\fi END
+\immediate\write18{touch rt-shell-probe.txt}
+\newwrite\rtprobe
+\immediate\openout\rtprobe=rt-openout-probe.txt
+\immediate\write\rtprobe{x}
+\immediate\closeout\rtprobe
+$body$
+\end{document}
+`;
+
+describe.skipIf(!runAssemblyPdf)('Imported template compile', () => {
+  let vaultRoot = '';
+  let sourceDir = '';
+  let harness: ReturnType<typeof makeDiskVaultPlugin>;
+
+  beforeAll(() => {
+    // PDF.js's getDocument, answered by pdfinfo and pdftotext run on the same bytes.
+    vi.spyOn(obsidian, 'loadPdfJs').mockResolvedValue({
+      getDocument: ({ data }: { data: Uint8Array }) => ({
+        destroy: async () => undefined,
+        promise: (async () => {
+          const dir = mkdtempSync(join(tmpdir(), 'rt-import-measure-'));
+          try {
+            writeFileSync(join(dir, 'measure.pdf'), data);
+            const info = (await execFileAsync('pdfinfo', [join(dir, 'measure.pdf')])).stdout;
+            const pageTexts = (await execFileAsync('pdftotext', [join(dir, 'measure.pdf'), '-'])).stdout.split('\f');
+            const size = /^Page size:\s+([\d.]+) x ([\d.]+) pts/m.exec(info);
+            if (!size) throw new Error('pdfinfo gave no page size.');
+            return {
+              numPages: Number(/^Pages:\s+(\d+)/m.exec(info)?.[1]),
+              getPage: async (number: number) => ({
+                getViewport: ({ scale }: { scale: number }) => ({ width: Number(size[1]) * scale, height: Number(size[2]) * scale }),
+                getTextContent: async () => ({ items: [{ str: pageTexts[number - 1] }] }),
+              }),
+            };
+          } finally { rmSync(dir, { recursive: true, force: true }); }
+        })(),
+      }),
+    });
+    // The dialog logs that it could not draw the first page (no canvas here).
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vaultRoot = mkdtempSync(join(tmpdir(), 'rt-import-vault-'));
+    sourceDir = mkdtempSync(join(tmpdir(), 'rt-import-source-'));
+    harness = makeDiskVaultPlugin(vaultRoot);
+  });
+  afterAll(() => {
+    vi.restoreAllMocks();
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(sourceDir, { recursive: true, force: true });
+  });
+
+  const writeSource = (name: string, text: string): string => {
+    const path = join(sourceDir, name);
+    writeFileSync(path, text);
+    return path;
+  };
+  /** Choose a file in the import dialog, name it, and press Save. */
+  const importThroughDialog = async (sourcePath: string, name?: string) => {
+    const modal = new ImportTemplateModal(harness.plugin.app, harness.plugin, async (commit: ImportedTemplateCommit) => {
+      await registerImportedTemplate(harness.plugin, commit.layout, commit.templateText, commit.record, commit.firstPagePng);
+    });
+    modal['sourcePath'] = sourcePath;
+    if (name) { modal['templateName'] = name; modal['templateNameTouched'] = true; }
+    await modal['refreshCandidate']();
+    await modal['commit']();
+    return modal;
+  };
+  const pandocFiles = () => harness.listFiles().filter(file => file.startsWith('Radial Timeline/Pandoc/'));
+  const layouts = () => harness.plugin.settings.pandocLayouts;
+
+  it('imports a good template from outside the vault: copy, record, and a PDF that prints the manuscript', async () => {
+    const source = writeSource('My Book.tex', IMPORT_GOOD_TEMPLATE);
+    await importThroughDialog(source);
+
+    expect(layouts()).toHaveLength(1);
+    const layout = layouts()[0];
+    expect(layout).toMatchObject({ id: 'imported-my-book-novel', name: 'My Book', origin: 'imported', path: 'Radial Timeline/Pandoc/imported/my-book.tex', draft: false });
+    // Radial Timeline's copy is the author's text, byte for byte; the author's file is as it was.
+    expect(readFileSync(harness.abs(layout.path), 'utf8')).toBe(IMPORT_GOOD_TEMPLATE);
+    expect(readFileSync(source, 'utf8')).toBe(IMPORT_GOOD_TEMPLATE);
+    expect(layout.importCheck).toMatchObject({ schemaVersion: 1, sha256: hashTemplateText(IMPORT_GOOD_TEMPLATE) });
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('ready');
+    // Measured from the test PDF: the 6 × 9 in page the template sets, and more than one page.
+    expect(layout.importCheck?.pages).toBeGreaterThanOrEqual(2);
+    expect(Math.round(layout.importCheck!.pageWidthPt)).toBe(432);
+    expect(Math.round(layout.importCheck!.pageHeightPt)).toBe(648);
+    // This template has no title page: the sample manuscript starts on page 1.
+    expect(layout.importCheck?.samplePage).toBe(1);
+    // What the layout's row says: read from the file and measured, nothing guessed.
+    const rows = Object.fromEntries(buildImportedTemplateFactRows({ facts: readTemplateFacts(IMPORT_GOOD_TEMPLATE), check: layout.importCheck, copyPath: layout.path }).map(row => [row.label, row.value]));
+    expect(rows['Test PDF']).toMatch(new RegExp(`^${layout.importCheck!.pages} pages, 6 × 9 in, built `));
+    expect(rows).toMatchObject({ Class: 'book (11pt)', Fonts: 'None named in the template', Packages: 'geometry, fancyhdr', 'Book Details': 'Prints the title and author' });
+
+    // The PDF an export with this layout builds, kept where it can be read.
+    const root = process.env.RT_PUBLISH_PDF_ARTIFACT_DIR;
+    const exportDir = root ? join(root, 'import-template', 'good') : mkdtempSync(join(tmpdir(), 'rt-import-export-'));
+    mkdirSync(exportDir, { recursive: true });
+    try {
+      const pdfPath = await runPandocOnContent(await buildImportedTemplateCheckManuscript(layout), join(exportDir, 'imported.pdf'), {
+        targetFormat: 'pdf', templatePath: harness.abs(layout.path), workingDir: exportDir, disableShellEscape: true,
+        metadata: { title: 'Import Audit', author: 'QA Author' },
+      });
+      const info = (await execFileAsync('pdfinfo', [pdfPath])).stdout;
+      expect(Number(info.match(/^Pages:\s+(\d+)/m)?.[1] ?? 0)).toBeGreaterThanOrEqual(2);
+      // Rejoin words LaTeX hyphenated at a line end, then flatten line breaks.
+      const text = (await execFileAsync('pdftotext', ['-layout', pdfPath, '-'])).stdout.replace(/-\n\s*/g, '').replace(/\s+/g, ' ');
+      for (const phrase of [...IMPORTED_TEMPLATE_CHECK_PHRASES, 'IMPORTGOODMARK', 'Import Audit', 'The Harbor', 'The Crossing']) expect(text).toContain(phrase);
+      // The page count on record is the count of this same build.
+      expect(Number(info.match(/^Pages:\s+(\d+)/m)?.[1])).toBe(layout.importCheck?.pages);
+      // No scratch files beside the PDF.
+      expect(readdirSync(exportDir).filter(name => name !== 'imported.pdf')).toEqual([]);
+    } finally { if (!root) rmSync(exportDir, { recursive: true, force: true }); }
+  }, 120_000);
+
+  it('imports a template picked inside the vault, and never reuses a name another file holds', async () => {
+    mkdirSync(harness.abs('Templates'), { recursive: true });
+    writeFileSync(harness.abs('Templates/My Book.tex'), IMPORT_GOOD_TEMPLATE);
+    const before = layouts().length;
+    await importThroughDialog('Templates/My Book.tex');
+    expect(layouts()).toHaveLength(before + 1);
+    const layout = layouts()[layouts().length - 1];
+    // The first import took my-book.tex; this one gets its own file and id.
+    expect(layout).toMatchObject({ id: 'imported-my-book-novel-2', path: 'Radial Timeline/Pandoc/imported/my-book-2.tex' });
+    expect(readFileSync(harness.abs('Templates/My Book.tex'), 'utf8')).toBe(IMPORT_GOOD_TEMPLATE);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('ready');
+  }, 120_000);
+
+  it('imports an edited copy of a built-in layout with its part, chapter and scene macros', async () => {
+    const source = writeSource('Signature Edit.tex', generateDesignedStyleTex(BUNDLED_FICTION_SPECS['bundled-fiction-modern-classic'], { vaultFontDir: BUNDLED_FONT_DIR }));
+    const before = layouts().length;
+    await importThroughDialog(source, 'House Style');
+    expect(layouts()).toHaveLength(before + 1);
+    const layout = layouts()[layouts().length - 1];
+    expect(layout.usesModernClassicStructure).toBe(true);
+    // The test PDF was built from \rtPart, \rtChapter and \rtSceneSep calls, as an export will send them.
+    const markdown = await buildImportedTemplateCheckManuscript(layout);
+    for (const macro of ['\\rtPart{', '\\rtChapter{', '\\rtSceneSep{']) expect(markdown).toContain(macro);
+  }, 120_000);
+
+  const badCases: Array<{ id: string; file: string; text: string; issue?: string; latex?: RegExp; prepare?: (path: string) => void; restore?: (path: string) => void }> = [
+    { id: 'an empty file', file: 'empty.tex', text: '', issue: 'import_empty' },
+    {
+      id: 'a file that cannot be read', file: 'locked.tex', text: IMPORT_GOOD_TEMPLATE, issue: 'import_source_unreadable',
+      prepare: path => chmodSync(path, 0o000), restore: path => chmodSync(path, 0o644),
+    },
+    { id: 'a template without $body$', file: 'nobody.tex', text: badLatexTemplate('').replace('$body$', 'No placeholder here.'), issue: 'import_missing_body' },
+    { id: 'a font that is not installed', file: 'nofont.tex', text: badLatexTemplate(String.raw`\usepackage{fontspec}` + '\n' + String.raw`\setmainfont{RT No Such Font Anywhere}`), latex: /RT No Such Font Anywhere/ },
+    { id: 'a package that is not installed', file: 'nopackage.tex', text: badLatexTemplate(String.raw`\usepackage{rtnosuchpackage}`), latex: /rtnosuchpackage\.sty' not found/ },
+    { id: 'a plain LaTeX error', file: 'latexerror.tex', text: badLatexTemplate('', String.raw`\thisMacroDoesNotExist`), latex: /Undefined control sequence[\s\S]*thisMacroDoesNotExist/ },
+  ];
+
+  it.each(badCases)('keeps $id inactive and says why', async ({ file, text, issue, latex, prepare, restore }) => {
+    // chmod cannot lock a file from root, so that case proves nothing there.
+    if (prepare && process.getuid?.() === 0) return;
+    const source = writeSource(file, text);
+    const layoutsBefore = structuredClone(layouts());
+    const filesBefore = pandocFiles();
+    harness.saveSettings.mockClear();
+    prepare?.(source);
+    let modal: ImportTemplateModal;
+    try { modal = await importThroughDialog(source); }
+    finally { restore?.(source); }
+
+    // Nothing registered, nothing written, the author's file as it was.
+    expect(layouts()).toEqual(layoutsBefore);
+    expect(pandocFiles()).toEqual(filesBefore);
+    expect(harness.saveSettings).not.toHaveBeenCalled();
+    expect(readFileSync(source, 'utf8')).toBe(text);
+
+    const candidate = modal['candidate'];
+    const check = modal['check'];
+    if (issue) {
+      expect(candidate?.canActivate).toBe(false);
+      const found = candidate?.issues.find(item => item.code === issue);
+      expect(found?.message.length ?? 0).toBeGreaterThan(20);
+      expect(check.state).toBe('idle');
+    } else {
+      expect(check.state).toBe('failed');
+      if (check.state !== 'failed') return;
+      expect(check.reason).toBe('latex');
+      // LaTeX's own lines, short enough to read: not the whole log.
+      expect(check.latexLines.length).toBeGreaterThan(0);
+      expect(check.latexLines.length).toBeLessThanOrEqual(9);
+      expect(check.latexLines.join('\n')).toMatch(latex!);
+    }
+    // The dialog is on the Check step, where the reason is shown.
+    expect(modal['step']).toBe(2);
+  }, 120_000);
+
+  it('leaves nothing behind when the settings save fails, and imports cleanly on the next try', async () => {
+    const source = writeSource('Retry.tex', IMPORT_GOOD_TEMPLATE);
+    const layoutsBefore = structuredClone(layouts());
+    const filesBefore = pandocFiles();
+    harness.saveSettings.mockRejectedValueOnce(new Error('QA write denied'));
+    await importThroughDialog(source);
+    expect(layouts()).toEqual(layoutsBefore);
+    expect(pandocFiles()).toEqual(filesBefore);
+
+    await importThroughDialog(source);
+    expect(layouts()).toHaveLength(layoutsBefore.length + 1);
+    expect(pandocFiles()).toContain('Radial Timeline/Pandoc/imported/retry.tex');
+  }, 120_000);
+
+  it('never replaces a file already in the imported folder', async () => {
+    mkdirSync(harness.abs('Radial Timeline/Pandoc/imported'), { recursive: true });
+    writeFileSync(harness.abs('Radial Timeline/Pandoc/imported/orphan.tex'), 'ORPHAN_SENTINEL');
+    await importThroughDialog(writeSource('Orphan.tex', IMPORT_GOOD_TEMPLATE));
+    expect(readFileSync(harness.abs('Radial Timeline/Pandoc/imported/orphan.tex'), 'utf8')).toBe('ORPHAN_SENTINEL');
+    expect(layouts()[layouts().length - 1].path).toBe('Radial Timeline/Pandoc/imported/orphan-2.tex');
+  }, 120_000);
+
+  it('reports a changed, broken or deleted template and stays unusable until a check passes', async () => {
+    const layout = layouts().find(item => item.id === 'imported-my-book-novel')!;
+    const file = harness.abs(layout.path);
+    const firstRecord = structuredClone(layout.importCheck);
+
+    // Edited: not ready until checked again; a good edit passes and is recorded.
+    const edited = IMPORT_GOOD_TEMPLATE.replace('IMPORTGOODMARK', 'IMPORTEDITEDMARK');
+    writeFileSync(file, edited);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('changed');
+    const passed = await recheckImportedTemplate(harness.plugin, layout);
+    expect(passed.ok).toBe(true);
+    expect(layout.importCheck?.sha256).toBe(hashTemplateText(edited));
+    expect(layout.importCheck?.sha256).not.toBe(firstRecord?.sha256);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('ready');
+
+    // Broken: the check fails with LaTeX's lines, and nothing is recorded.
+    const goodRecord = structuredClone(layout.importCheck);
+    writeFileSync(file, edited.replace('IMPORTEDITEDMARK', String.raw`\thisMacroDoesNotExist`));
+    harness.saveSettings.mockClear();
+    const failed = await recheckImportedTemplate(harness.plugin, layout);
+    expect(failed.ok).toBe(false);
+    if (!failed.ok) expect(failed.latexLines.join('\n')).toMatch(/Undefined control sequence/);
+    expect(layout.importCheck).toEqual(goodRecord);
+    expect(harness.saveSettings).not.toHaveBeenCalled();
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('changed');
+
+    // Deleted.
+    rmSync(file);
+    expect(getImportedTemplateState(harness.plugin, layout)).toBe('missing');
+    const missing = await recheckImportedTemplate(harness.plugin, layout);
+    expect(missing).toMatchObject({ ok: false, reason: 'missing' });
+  }, 120_000);
+
+  it('builds an imported template with shell escape off and no scratch files in the working folder', async () => {
+    const layout = { id: 'imported-probe-novel', name: 'Probe', preset: 'novel' as const, path: 'probe.tex', origin: 'imported' as const };
+    // The import check passes this template: neither attempt is an error.
+    expect((await runImportedTemplateCheck({ layout, templateText: IMPORT_PROBE_TEMPLATE })).ok).toBe(true);
+
+    const dir = mkdtempSync(join(tmpdir(), 'rt-import-probe-'));
+    try {
+      const templatePath = join(dir, 'probe.tex');
+      writeFileSync(templatePath, IMPORT_PROBE_TEMPLATE);
+      const exportDir = join(dir, 'Export');
+      mkdirSync(exportDir);
+      const pdfPath = await runPandocOnContent(await buildImportedTemplateCheckManuscript(layout), join(exportDir, 'probe.pdf'), {
+        targetFormat: 'pdf', templatePath, workingDir: exportDir, disableShellEscape: true,
+      });
+      const text = (await execFileAsync('pdftotext', ['-layout', pdfPath, '-'])).stdout;
+      // TeX takes the space after the number, so the PDF reads "SHELLMODE0END".
+      expect(text).toMatch(/SHELLMODE0\s*END/);
+      // Only the PDF: no program ran, the named file went to Pandoc's own
+      // temporary folder, and the staging folder is gone.
+      expect(readdirSync(exportDir)).toEqual(['probe.pdf']);
+      expect(readdirSync(dir).sort()).toEqual(['Export', 'probe.tex']);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  }, 120_000);
+
+  it('reduces what LaTeX printed to the lines of its first error', () => {
+    const raw = "Error producing PDF.\n! LaTeX Error: File `rtnosuchpackage.sty' not found.\n\nType X to quit or <RETURN> to proceed,\nor enter new name. (Default extension: sty)\n\nEnter file name: \n! Emergency stop.\n<read *> \n         \nl.3 \\begin\n\n";
+    expect(extractLatexErrorLines(raw)).toEqual(["! LaTeX Error: File `rtnosuchpackage.sty' not found.", '! Emergency stop.', 'l.3 \\begin']);
+  });
 });

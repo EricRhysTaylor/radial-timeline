@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as obsidian from 'obsidian';
 import type { App } from 'obsidian';
-import { ManuscriptProofPreview, readPdfPageCount } from './ManuscriptProofPreview';
+import { ManuscriptProofPreview, measurePdf, readPdfPageCount } from './ManuscriptProofPreview';
 
 
 function fixture() {
     const render = vi.fn(() => ({ promise: Promise.resolve(), cancel: vi.fn() }));
-    const page = { getViewport: ({ scale }: { scale: number }) => ({ width: 400 * scale, height: 600 * scale }), render };
-    const document = { numPages: 3, getPage: vi.fn(async (_page: number) => page) };
+    const text = ['Your Book Title', 'Contents', 'Mara fol', 'lowed the lan tern down to the harbor'];
+    const pageAt = (number: number) => ({
+        getViewport: ({ scale }: { scale: number }) => ({ width: 400 * scale, height: 600 * scale }), render,
+        // PDF.js returns text in pieces; page 3 holds the opening words, split mid-word.
+        getTextContent: async () => ({ items: number === 3 ? [{ str: text[2] }, { str: text[3] }] : [{ str: text[number - 1] }] }),
+    });
+    const document = { numPages: 3, getPage: vi.fn(async (number: number) => pageAt(number)) };
     const destroy = vi.fn(async () => {});
     const task = { promise: Promise.resolve(document), destroy };
     vi.spyOn(obsidian, 'loadPdfJs').mockResolvedValue({ getDocument: vi.fn(() => task) });
@@ -24,6 +29,27 @@ describe('actual PDF page preview', () => {
         document.numPages = 0;
         await expect(readPdfPageCount(new Uint8Array([1]))).rejects.toThrow('no readable pages');
         expect(destroy).toHaveBeenCalledTimes(2);
+    });
+    it('measures page count and first-page size from the document, and always destroys the loading task', async () => {
+        const { destroy, document } = fixture();
+        expect(await measurePdf(new Uint8Array([1, 2, 3]))).toEqual({ pages: 3, widthPt: 400, heightPt: 600, textPage: 1 });
+        expect(document.getPage).toHaveBeenCalledWith(1);
+        // The page that prints the words, however the PDF splits or spaces them; page 1 when none does.
+        expect((await measurePdf(new Uint8Array([1]), 'Mara followed the lantern')).textPage).toBe(3);
+        expect((await measurePdf(new Uint8Array([1]), 'words that are not there')).textPage).toBe(1);
+        destroy.mockClear();
+        await measurePdf(new Uint8Array([1]));
+        document.numPages = 0;
+        await expect(measurePdf(new Uint8Array([1]))).rejects.toThrow('no readable pages');
+        expect(destroy).toHaveBeenCalledTimes(2);
+    });
+    it('draws a page of a PDF held in memory', async () => {
+        const { canvas, render } = fixture();
+        const viewer = new ManuscriptProofPreview();
+        expect(await viewer.loadData(new Uint8Array([1, 2, 3]))).toBe(3);
+        expect(await viewer.renderPage(1, canvas, { width: 300, pixelRatio: 2 })).toBe(true);
+        expect(render).toHaveBeenCalledWith(expect.objectContaining({ viewport: { width: 600, height: 900 } }));
+        await viewer.destroy();
     });
     it('uses the real document page count and renders the requested page', async () => {
         const { app, canvas, render, document, destroy } = fixture();

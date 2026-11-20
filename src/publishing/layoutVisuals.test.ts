@@ -123,6 +123,8 @@ describe('getFictionVariantForLayout', () => {
 
     it('falls back to generic for unknown templates', () => {
         expect(getFictionVariantForLayout(layout({ id: 'foo', name: 'Just A Layout', path: 'foo.tex' }))).toBe('generic');
+        // An imported template never borrows a built-in layout's pictogram, whatever it is called.
+        expect(getFictionVariantForLayout(layout({ id: 'imported-my-modern-classic-novel', name: 'My Modern Classic', path: 'imported/signature.tex', origin: 'imported' }))).toBe('generic');
     });
 
     describe('designed-origin layouts use archetype mapping', () => {

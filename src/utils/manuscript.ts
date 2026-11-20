@@ -3,7 +3,7 @@
  */
 import { stripFrontmatter } from './frontmatterDocument';
 import { toRomanNumeral } from './romanNumerals';
-import { TFile, Vault, App, getFrontMatterInfo, parseYaml } from 'obsidian';
+import { TFile, App, getFrontMatterInfo, parseYaml } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem, BookMeta, MatterMeta, LegacyMatterOrder } from '../types';
 import { getScenePrefixNumber, countWords } from './text';
@@ -988,6 +988,13 @@ function generateTableOfContents(
 }
 
 /**
+ * What manuscript assembly reads from a scene file. A vault TFile has both;
+ * so does a scene held in memory, such as the sample manuscript an imported
+ * template's test PDF is built from.
+ */
+export type ManuscriptSourceFile = Pick<TFile, 'path' | 'basename'>;
+
+/**
  * Assemble full manuscript from scene files
  * @param sceneFiles - Array of TFile objects in manuscript order
  * @param vault - Obsidian vault instance
@@ -995,9 +1002,9 @@ function generateTableOfContents(
  * @param useObsidianLinks - If true, TOC uses [[#Scene Title]] clickable links (default: false for AI processing)
  * @param sortOrder - Optional description of the sort order used
  */
-export async function assembleManuscript(
-  sceneFiles: TFile[],
-  vault: Pick<Vault, 'read'>,
+export async function assembleManuscript<F extends ManuscriptSourceFile = TFile>(
+  sceneFiles: F[],
+  vault: { read(file: F): Promise<string> },
   progressCallback?: (sceneIndex: number, sceneTitle: string, totalScenes: number) => void,
   useObsidianLinks = false,
   sortOrder?: string,
@@ -1071,7 +1078,7 @@ export async function assembleManuscript(
   // the file content here (test path / files lacking a pre-resolved entry).
   // We read content once and stash it so the emit helpers don't re-read.
   interface ClassifiedFile {
-    file: TFile;
+    file: F;
     content: string | null;          // null when read failed
     readError: unknown;
     matterMeta: MatterMeta | null;

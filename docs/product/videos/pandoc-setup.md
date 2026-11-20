@@ -56,7 +56,7 @@ Two authors got stuck here (GitHub issues #29 and #34, both fixed in 7.0.2 and 7
 - Voice: "Back in Radial Timeline, click Auto locate. It finds both programs and saves the path."
 
 **6. Styles and fonts: dropped (2026-11-17)**
-- In 8.0.4 the bundled PDF styles and their fonts install themselves when the plugin loads: every style already reads "Installed", and so does the button beside "Design your own…" and "Import template…". There is no Install all step to show, so the edit leaves the line "Then install the PDF styles and their fonts with Install all." out of the read. The button ("Install all", or "Install fonts" when only fonts are missing) is still there for a vault whose Pandoc folder lost its files.
+- In 8.0.4 the bundled PDF styles and their fonts install themselves when the plugin loads: every style already reads "Installed", and so does the button beside "Design your own…" and "Import template…" (both are working buttons on main since 2026-11-19; "Import template…" was disabled in 8.0.4 release builds). There is no Install all step to show, so the edit leaves the line "Then install the PDF styles and their fonts with Install all." out of the read. The button ("Install all", or "Install fonts" when only fonts are missing) is still there for a vault whose Pandoc folder lost its files.
 
 **7. Ready (0:58–1:10)**
 - Screen: the "Export Check" card now reads "Ready to export. Generate your PDF." Click "Export manuscript": the "Export manuscript" dialog shows "Export checks · Ready".

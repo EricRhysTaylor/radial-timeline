@@ -3,7 +3,7 @@ import * as fs from 'fs'; // SAFE: isolated test fixture filesystem operations.
 import * as os from 'os'; // SAFE: test-only temporary folder locations.
 import * as path from 'path'; // SAFE: test-only fixture paths.
 
-const renderer = vi.hoisted(() => ({ mode: 'success', inputs: [] as string[], stderr: '', pdfEngine: false }));
+const renderer = vi.hoisted(() => ({ mode: 'success', inputs: [] as string[], stderr: '', pdfEngine: false, args: [] as string[][] }));
 vi.mock('fs', async importOriginal => {
     const original = await importOriginal<typeof import('fs')>();
     return { ...original, existsSync: (file: fs.PathLike) => (renderer.pdfEngine && String(file).endsWith('/pdflatex')) || original.existsSync(file) };
@@ -16,6 +16,7 @@ vi.mock('child_process', async importOriginal => {
             const outputIndex = args.indexOf('-o') + 1;
             const input = args[outputIndex + 1];
             renderer.inputs.push(input);
+            renderer.args.push(args);
             const body = fs.readFileSync(input, 'utf8');
             const header = args[args.indexOf('-t') + 1] === 'pdf' ? Buffer.from('%PDF-') : Buffer.from([0x50, 0x4b, 0x03, 0x04]);
             fs.writeFileSync(args[outputIndex], renderer.mode === 'invalid' ? '' : Buffer.concat([header, Buffer.from(body)]));
@@ -34,6 +35,7 @@ describe('rendered output safety', () => {
         renderer.inputs = [];
         renderer.stderr = '';
         renderer.pdfEngine = false;
+        renderer.args = [];
     });
     afterEach(() => fs.rmSync(folder, { recursive: true, force: true }));
 
@@ -71,6 +73,23 @@ describe('rendered output safety', () => {
             .rejects.toMatchObject({ category: 'pandoc_compile_failure', message: expect.stringMatching(/font.*characters/i), detail: renderer.stderr });
         expect(fs.readFileSync(requested, 'utf8')).toBe('Existing readable PDF');
         expect(fs.readdirSync(folder)).toEqual(['Manuscript.pdf']);
+    });
+
+    it('never asks the PDF engine for shell escape, and turns it off outright when told to', async () => {
+        renderer.pdfEngine = true;
+        await runPandocOnContent('Manuscript', path.join(folder, 'Usual.pdf'), { targetFormat: 'pdf' });
+        await runPandocOnContent('Manuscript', path.join(folder, 'Imported.pdf'), { targetFormat: 'pdf', disableShellEscape: true });
+        const [usual, imported] = renderer.args;
+        // The usual call is as it has always been: no engine options at all.
+        expect(usual.filter(arg => /engine-opt|shell-escape|write18/.test(arg))).toEqual([]);
+        expect(imported.filter(arg => /engine-opt|shell-escape|write18/.test(arg))).toEqual(['--pdf-engine-opt=--disable-write18']);
+        expect(imported.filter(arg => arg !== '--pdf-engine-opt=--disable-write18').length).toBe(usual.length);
+    });
+
+    it('keeps what the renderer printed, line breaks intact, on a failure', async () => {
+        renderer.mode = 'fail';
+        await expect(runPandocOnContent('Manuscript', path.join(folder, 'Manuscript.docx'), { targetFormat: 'docx' }))
+            .rejects.toMatchObject({ rawOutput: 'Render failed' });
     });
 
     it('still publishes a complete PDF with unrelated warnings', async () => {

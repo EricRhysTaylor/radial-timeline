@@ -44,6 +44,9 @@ export const ALL_FICTION_VARIANTS: readonly FictionLayoutVariant[] = [
 
 export function getFictionVariantForLayout(layout?: PandocLayoutTemplate): FictionLayoutVariant {
     if (!layout) return 'generic';
+    // An imported template is the author's own LaTeX. Its name says nothing
+    // about how it looks, so it never borrows a built-in layout's pictogram.
+    if (layout.origin === 'imported') return 'generic';
     // Designed styles map archetype → variant directly. The .tex file is a derived
     // artifact, so name/path heuristics must be skipped to keep the preview accurate.
     if (layout.origin === 'designed' && layout.designedSpec) {

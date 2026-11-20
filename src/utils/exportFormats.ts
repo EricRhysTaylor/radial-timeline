@@ -277,6 +277,14 @@ export interface PandocOptions {
     headerIncludes?: string;
     /** Every source line break starts a new paragraph (scenes written with single returns). */
     lineBreaksAsParagraphs?: boolean;
+    /**
+     * Pass `--disable-write18` to the PDF engine, so the template cannot run
+     * programs even from the short list LaTeX allows by default. Set for an
+     * imported template, which is the author's own LaTeX and not ours. This
+     * spelling is the one both TeX Live and MiKTeX accept (TeX Live also calls
+     * it `-no-shell-escape`; MiKTeX documents only this one).
+     */
+    disableShellEscape?: boolean;
     workingDir?: string;
     metadata?: Record<string, string | undefined>;
 }
@@ -1246,6 +1254,7 @@ export async function runPandocOnContent(
                 throw new ExportFailure({ category: 'missing_dependency', message: t('ui.exportFormats.noPdfEngine') });
             }
             args.push('--pdf-engine', pdfEngineSelection.path);
+            if (options.disableShellEscape) args.push('--pdf-engine-opt=--disable-write18');
             if (options.templatePath && options.templatePath.trim()) {
                 args.push('--template', options.templatePath.trim());
             }
@@ -1275,6 +1284,7 @@ export async function runPandocOnContent(
             execFile(binary, args, { cwd: options.workingDir, env }, (error, _stdout, stderr) => {
                 if (error) {
                     const failure = categorizeExportError(new Error(stderr || error.message));
+                    failure.rawOutput = stderr || error.message;
                     if (!isPdf && failure.category === 'pandoc_compile_failure') {
                         failure.message = t('ui.exportFormats.wordDocumentFailed');
                     }
@@ -1284,11 +1294,13 @@ export async function runPandocOnContent(
                 // LaTeX can exit successfully while replacing manuscript glyphs
                 // with boxes. Keep that render staged rather than publish it.
                 if (isPdf && /^\s*(?:\[WARNING\]\s*)?Missing character:/im.test(stderr)) {
-                    reject(new ExportFailure({
+                    const failure = new ExportFailure({
                         category: 'pandoc_compile_failure',
                         message: t('ui.exportFormats.pdfMissingGlyphs'),
                         detail: stderr.trim(),
-                    }));
+                    });
+                    failure.rawOutput = stderr;
+                    reject(failure);
                     return;
                 }
                 resolve();

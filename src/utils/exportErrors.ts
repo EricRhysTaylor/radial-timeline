@@ -17,6 +17,8 @@ export interface ExportFailureDescriptor {
 export class ExportFailure extends Error {
     category: ExportFailureCategory;
     detail?: string;
+    /** What Pandoc and LaTeX printed, line breaks intact (detail is flattened). */
+    rawOutput?: string;
     completedPaths: string[] = [];
     delivery?: ExportDeliveryReceipt;
 
@@ -92,6 +94,32 @@ function getCategoryMessage(category: ExportFailureCategory, rawMessage: string)
             return 'Pandoc export failed during PDF compilation.';
         }
     }
+}
+
+// Prompts LaTeX prints for an interactive terminal. They say nothing about the
+// error, so they are left out of what the author is shown.
+const LATEX_PROMPT_LINE = /^(?:Type\s+\S+\s.*(?:to quit|for immediate help)|or enter new name\b|Enter file name:|See the LaTeX manual\b|For immediate help\b|<read \*>|\.\.\.)/;
+
+/**
+ * The lines LaTeX gave for its first error: the `!` line, what follows it, and
+ * the `l.<n>` line that says where it stopped.
+ *
+ * Radial Timeline does not interpret them. An imported template is the
+ * author's own LaTeX, so the useful thing is to show what LaTeX said and stop.
+ * The line number counts lines of the document Pandoc built from the template,
+ * which matches the template only above `$body$`.
+ */
+export function extractLatexErrorLines(rawOutput: string, maxLines = 9): string[] {
+    const lines = rawOutput.split(/\r?\n/).map(line => line.replace(/\s+/g, ' ').trim());
+    const start = lines.findIndex(line => line.startsWith('!'));
+    const picked: string[] = [];
+    for (const line of start >= 0 ? lines.slice(start) : lines) {
+        if (!line || LATEX_PROMPT_LINE.test(line)) continue;
+        if (start < 0 && /^Error producing PDF\.?$/i.test(line)) continue;
+        picked.push(line);
+        if (/^l\.\d+/.test(line) || picked.length >= maxLines) break;
+    }
+    return picked;
 }
 
 export function categorizeExportError(error: unknown): ExportFailure {

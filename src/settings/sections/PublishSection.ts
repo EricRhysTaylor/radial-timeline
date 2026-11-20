@@ -1,6 +1,8 @@
 import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { compactLayoutOptions, readLayoutOptions } from './publish/layoutOptions';
-import { renderImportedLayoutSummary } from './publish/ImportedLayoutSummary';
+import { buildImportedTemplateFactRows, renderImportedLayoutSummary } from './publish/ImportedLayoutSummary';
+import { readTemplateFacts } from '../../publishing/templateFacts';
+import { getImportedTemplatePreview, renderPdfPagePng, writeImportedTemplatePreview } from '../../publishing/importedTemplatePreview';
 /*
  * Radial Timeline Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -67,7 +69,8 @@ import { applyMatterRepairPlan, buildMatterRepairPlan } from '../../publishing/m
 import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus } from '../../publishing/activeBookNotes';
 import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingValidationSnapshot, type MatterPreviewItem } from '../../publishing/readinessSummary';
 import { createBookMetaOnly, ensurePublishingEnvironment, generateSampleTemplates, maybeRenameTemplateFileForPathChange } from '../../publishing/starterSetup';
-import { compactTemplatePathForStorage, persistImportedTemplate } from '../../utils/templateImport';
+import { compactTemplatePathForStorage, registerImportedTemplate } from '../../utils/templateImport';
+import { inspectImportedTemplate, recheckImportedTemplate } from '../../publishing/importedTemplateState';
 import { t, tCount } from '../../i18n';
 import { toRomanNumeral } from '../../utils/romanNumerals';
 
@@ -883,7 +886,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const getVisibleLayouts = (): PandocLayoutTemplate[] => {
         const all = plugin.settings.pandocLayouts || [];
         return all.filter(layout => {
-            if (layout.preset === 'novel') return true;
+            // An author's own template is always listed, whatever it is used
+            // for: this row is where it is checked again and removed.
+            if (layout.preset === 'novel' || layout.origin === 'imported') return true;
             if (layout.preset === 'screenplay') return SHOW_SCREENPLAY_LAYOUT_CATEGORY;
             if (layout.preset === 'podcast') return SHOW_PODCAST_LAYOUT_CATEGORY;
             return false;
@@ -940,6 +945,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         }
     };
 
+    // What LaTeX printed the last time "Check again" failed, by layout id.
+    // Kept only while Settings is open: the layout's saved state already says
+    // it is not ready, this is the reason.
+    const importedCheckFailures = new Map<string, string[]>();
+
     const renderLayoutRows = () => {
         layoutRowsContainer.empty();
 
@@ -975,6 +985,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const isBundled = layout.bundled === true;
             const isImported = layout.origin === 'imported';
             const installed = getLayoutInstalledState(layout);
+            // Imported layouts have their own states: ready means the file is
+            // the one that last built a test PDF.
+            const importedTemplate = isImported ? inspectImportedTemplate(plugin, layout) : null;
+            const importedState = importedTemplate ? importedTemplate.state : null;
             const specialCapabilities = getLayoutSpecialCapabilities(layout);
             const showsSpecialOptions = hasLayoutSpecialOptions(layout);
             const expanded = expandedSpecialLayoutId === layout.id;
@@ -1016,14 +1030,46 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 } else {
                     s.nameEl.createSpan({ cls: 'ert-layout-row-title', text: displayName });
                 }
-                const pill = s.nameEl.createSpan({
-                    cls: `ert-layout-status-pill ${installed ? 'is-installed' : 'is-not-installed'}`,
-                    text: installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled')
-                });
-                setAccessibleLabel(pill, installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
+                if (importedState) {
+                    // The tag that keeps an author's own template from being
+                    // taken for a built-in or wizard-made style.
+                    const tag = s.nameEl.createSpan({ cls: 'ert-layout-status-pill ert-layout-origin-pill', text: t('ui.publishSection.importedTag') });
+                    setTooltip(tag, t('ui.publishSection.importedTagTooltip'));
+                    const stateText = importedState === 'ready' ? t('ui.publishSection.importedStateReady')
+                        : importedState === 'changed' ? t('ui.publishSection.importedStateChanged')
+                        : importedState === 'unchecked' ? t('ui.publishSection.importedStateUnchecked')
+                        : t('ui.publishSection.importedStateMissing');
+                    const pill = s.nameEl.createSpan({
+                        cls: `ert-layout-status-pill ${importedState === 'ready' ? 'is-installed' : 'is-not-installed'}`,
+                        text: stateText,
+                    });
+                    setAccessibleLabel(pill, stateText);
+                } else {
+                    const pill = s.nameEl.createSpan({
+                        cls: `ert-layout-status-pill ${installed ? 'is-installed' : 'is-not-installed'}`,
+                        text: installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled')
+                    });
+                    setAccessibleLabel(pill, installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
+                }
             }
 
-            if (useVisual && s.descEl) {
+            if (importedTemplate && s.descEl) {
+                // Facts read from the template file and measured from its test
+                // PDF, beside the real first page of that PDF. The page and
+                // the measurements are shown only while the file is the one
+                // that built them.
+                const ready = importedTemplate.state === 'ready';
+                s.descEl.addClass('ert-layout-row-desc--rich');
+                renderImportedLayoutSummary(s.descEl, {
+                    rows: importedTemplate.text === null ? [] : buildImportedTemplateFactRows({
+                        facts: readTemplateFacts(importedTemplate.text),
+                        check: ready ? layout.importCheck : undefined,
+                        copyPath: layout.path,
+                    }),
+                    description: buildLayoutDescription(layout),
+                    preview: ready ? getImportedTemplatePreview(plugin, layout) : null,
+                });
+            } else if (useVisual && s.descEl) {
                 s.descEl.addClass('ert-layout-row-desc--rich');
                 buildLayoutVisual(s.descEl, variant, {
                     layoutId: layout.id,
@@ -1043,9 +1089,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         }
                         : undefined
                 });
-            } else if (isImported && s.descEl) {
-                s.descEl.addClass('ert-layout-row-desc--rich');
-                renderImportedLayoutSummary(s.descEl, layout, buildLayoutDescription(layout));
             } else {
                 s.setDesc(buildLayoutDescription(layout));
             }
@@ -1116,6 +1159,56 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         text: t('ui.publishSection.usesComputerFont', { font: fontDiag.primaryFontName }),
                     });
                 }
+            }
+
+            // An imported template that is not ready says why and what to do
+            // next. After a failed check the lines LaTeX printed stay under it.
+            if (importedState && importedState !== 'ready' && s.descEl) {
+                const note = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--needs-system' });
+                note.createSpan({
+                    cls: 'ert-layout-font-status-badge',
+                    text: importedState === 'changed' ? t('ui.publishSection.importedNoteChanged')
+                        : importedState === 'unchecked' ? t('ui.publishSection.importedNoteUnchecked')
+                        : t('ui.publishSection.importedNoteMissing'),
+                });
+                const failedLines = importedCheckFailures.get(layout.id);
+                if (failedLines && failedLines.length > 0) {
+                    s.descEl.createDiv({ cls: 'ert-layout-imported-latexNote', text: t('ui.publishSection.importedCheckFailedLatex') });
+                    s.descEl.createEl('pre', { cls: 'ert-layout-imported-latexError', text: failedLines.join('\n') });
+                }
+            }
+            if (importedState === 'changed' || importedState === 'unchecked') {
+                s.addButton(btn => {
+                    btn.setButtonText(t('ui.publishSection.importedCheckAgain'));
+                    btn.onClick(async () => {
+                        btn.setDisabled(true);
+                        btn.setButtonText(t('ui.publishSection.importedChecking'));
+                        try {
+                            const result = await recheckImportedTemplate(plugin, layout);
+                            if (result.ok) {
+                                importedCheckFailures.delete(layout.id);
+                                // The row's picture follows the template: the sample page of the PDF just built.
+                                try {
+                                    await writeImportedTemplatePreview(plugin, layout, await renderPdfPagePng(result.pdf, result.record.samplePage, btn.buttonEl.ownerDocument));
+                                } catch (error) { // SAFE: the check passed and is saved; only the row's picture is out of date
+                                    console.error(error);
+                                }
+                                new Notice(t('ui.publishSection.importedCheckPassed', { name: layout.name }));
+                            } else {
+                                importedCheckFailures.set(layout.id, result.reason === 'latex' ? result.latexLines : []);
+                                new Notice(result.reason === 'tools'
+                                    ? t('ui.publishSection.importedCheckNeedsTools')
+                                    : result.reason === 'missing'
+                                        ? result.message
+                                        : t('ui.publishSection.importedCheckFailed', { name: layout.name }), 8000);
+                            }
+                        } catch (error) {
+                            new Notice(error instanceof Error ? error.message : String(error));
+                        }
+                        renderLayoutRows();
+                        refreshPublishingStatusCard();
+                    });
+                });
             }
 
             if (isBundled && !installed) {
@@ -1286,6 +1379,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
         const rows = layoutRowsContainer.createDiv({ cls: 'ert-layout-category-rows' });
         fictionLayouts.forEach(layout => renderLayoutRow(rows, layout));
+        // Imported templates saved for screenplay or podcast use: the only
+        // non-novel layouts listed (see getVisibleLayouts).
+        layouts.filter(layout => layout.preset !== 'novel')
+            .sort((a, b) => getLayoutDisplayName(a).localeCompare(getLayoutDisplayName(b)))
+            .forEach(layout => renderLayoutRow(rows, layout));
     };
 
     renderLayoutRows();
@@ -1297,24 +1395,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         renderLayoutRows();
     });
 
+    // Save in the import dialog: Radial Timeline's copy of the template is
+    // written, then the layout is registered. Either both happen or neither.
     const commitImportedTemplate = async (commit: ImportedTemplateCommit): Promise<void> => {
-        const nextLayout = {
-            ...commit.layout,
-            draft: commit.draft,
-            origin: 'imported' as const,
-            tier: 'pro' as const,
-            templateKind: 'custom' as const,
-            importDetection: {
-                styleHint: commit.candidate.detectedTemplate.styleHint,
-                mockPreviewKind: commit.candidate.detectedTemplate.mockPreviewKind,
-                traits: commit.candidate.detectedTemplate.traits.slice(0, 5),
-                confidence: commit.candidate.detectedTemplate.confidence,
-            },
-        };
-        await persistImportedTemplate(plugin, nextLayout);
-        new Notice(commit.activate
-            ? t('ui.publishSection.templateActivated', { name: nextLayout.name })
-            : t('ui.publishSection.templateDraftSaved', { name: nextLayout.name }));
+        const registered = await registerImportedTemplate(plugin, commit.layout, commit.templateText, commit.record, commit.firstPagePng);
+        new Notice(t('ui.publishSection.templateImported', { name: registered.name }));
         renderLayoutRows();
         refreshPublishingStatusCard();
     };
@@ -1357,10 +1442,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     //
     //   1. Design your own…  — opens the Designed Style wizard. Spec-driven,
     //      live preview, edits flow through the wizard forever after.
-    //   2. Import template…  — power-user escape hatch for hand-rolled .tex
-    //      files. Brings an existing LaTeX template into Publishing as a
-    //      static custom layout (no spec, not wizard-editable). Use when the
-    //      wizard's spec axes can't model the look you need.
+    //   2. Import template…  — brings in the author's own .tex file as a
+    //      fixed layout (no spec, not wizard-editable). The one route to a
+    //      design the wizard's ranges cannot reach.
     //
     // The wizard is the default path; Import is the long tail.
 
@@ -1372,7 +1456,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     //
     // Out of beta since the compile test (tests/publishing-pdf-assembly.test.ts,
     // "Design wizard compile matrix") builds a PDF from every setting the
-    // wizard offers. Import template… below is still gated.
+    // wizard offers.
     layoutHeading.addButton(button => {
         button.setButtonText(t('ui.publishSection.designOwnButton'));
         withTooltip(button, t('ui.publishSection.designOwnTooltip'));
@@ -1389,19 +1473,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
     // Import Template entry point — sits next to "Design your own…" so both
     // "create a custom style" paths are visible in the same place. Import is
-    // the escape hatch for users who already have a .tex file (hand-tuned
-    // LaTeX, third-party template, custom packages the spec can't express).
-    // Imported layouts are static — they don't open in the wizard.
+    // for an author who already has a .tex file (hand-tuned LaTeX, someone
+    // else's template, packages the spec can't express). It is their LaTeX,
+    // not ours: Radial Timeline has not tested it, says so, and lets it export
+    // only after it has built a test PDF on this computer (the import dialog,
+    // and tests/publishing-pdf-assembly.test.ts "Imported template compile").
+    // Imported layouts are fixed; they don't open in the wizard.
     layoutHeading.addButton(button => {
         button.setButtonText(t('ui.publishSection.importTemplateButton'));
         withTooltip(button, t('ui.publishSection.importTemplateTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
-        if (!plugin.betaFeatures) {
-            button.setDisabled(true);
-            withTooltip(button, t('ui.publishSection.importTemplateBetaTooltip'));
-            button.onClick(() => { /* no-op: BETA release pending */ });
-            return;
-        }
         button.onClick(() => {
             new ImportTemplateModal(app, plugin, commitImportedTemplate).open();
         });

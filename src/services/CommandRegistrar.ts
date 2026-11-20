@@ -48,8 +48,9 @@ import { refreshDesignedLayoutFontsForExport } from '../publishing/designedLayou
 import { defaultLayoutForPreset, getLayoutAbbreviation } from '../publishing/templateTiering';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { convertAuthorQueriesToWordComments } from '../utils/authorQueryComments';
-import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
-import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
+import { buildLayoutAssemblyOptions } from '../utils/manuscriptLayoutExport';
+import { describeImportedTemplateBlock } from '../publishing/importedTemplateState';
+import { ExportFailure, categorizeExportError, extractLatexErrorLines } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
@@ -775,6 +776,15 @@ export class CommandRegistrar {
                 new Notice(t('ui.commandRegistrar.layoutInvalid', { name: layout.name, error: String(layoutValidation.error) }));
                 return {};
             }
+            // An imported template is the author's own LaTeX. It exports only
+            // while the file is the one that last built a test PDF; the export
+            // dialog already blocks this, and the runner refuses it as well.
+            const isImportedLayout = layout.origin === 'imported';
+            const importedBlock = isImportedLayout ? describeImportedTemplateBlock(this.plugin, layout) : null;
+            if (importedBlock) {
+                new Notice(importedBlock.message, 8000);
+                return {};
+            }
 
             const absoluteOutputFolder = getVaultAbsolutePath(this.plugin, outputFolder);
             if (!absoluteOutputFolder) {
@@ -785,24 +795,15 @@ export class CommandRegistrar {
             const templatePath = resolveTemplatePath(this.plugin, layout.path);
             const shouldSaveMarkdown = !isProof && (result.saveMarkdownArtifact ?? true);
             if (isProof) dependencies.set(templatePath, { kind: 'file', path: templatePath, sha256: hashProofInput(await fs.readFile(templatePath)) });
-            const layoutExportBehavior = getManuscriptLayoutExportBehavior(layout);
-            const designedSpec = layout.origin === 'designed' ? layout.designedSpec : undefined;
-            const useModernClassicStructure = layout.usesModernClassicStructure === true || !!designedSpec;
-            const modernClassicLayoutOptions = useModernClassicStructure
-                ? this.resolveModernClassicLayoutOptions(layout.id, bookSnapshot)
-                : undefined;
-            // Precedence: user UI override wins only for layouts that expose a
-            // scene-opener heading control (Signature Literary). Other layouts
-            // use their spec default so stale saved options cannot drift the
-            // exported PDF away from the preview card.
-            const layoutSceneHeadingMode = (layoutExportBehavior.allowSceneHeadingModeOverride
-                ? this.resolveLayoutSceneHeadingMode(layout.id, bookSnapshot)
-                : undefined)
-                ?? layoutExportBehavior.defaultSceneHeadingMode;
-            const sceneHeadingRenderMode = layoutExportBehavior.sceneHeadingRenderMode;
-            const chapterMarkersByScenePath = layoutExportBehavior.suppressChapterMarkers
-                ? {}
-                : filteredSelection.chapterMarkersByScenePath;
+            // Headings, chapter and part markers, and structural macros are the
+            // layout's decision (see buildLayoutAssemblyOptions).
+            const modernClassicLayoutOptions = this.resolveModernClassicLayoutOptions(layout.id, bookSnapshot);
+            const layoutAssemblyOptions = buildLayoutAssemblyOptions(layout, {
+                chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
+                savedSceneHeadingMode: this.resolveLayoutSceneHeadingMode(layout.id, bookSnapshot),
+                partEpigraphs: modernClassicLayoutOptions?.partEpigraphs,
+                partEpigraphAttributions: modernClassicLayoutOptions?.partEpigraphAttributions,
+            });
             // Base metadata from BookMeta; custom metadata layers on top but
             // never overrides title/author (BookMeta is the single source of
             // truth for those — running heads and the title page depend on it).
@@ -827,7 +828,9 @@ export class CommandRegistrar {
             if (fontDiagnostics.fontsEmbeddedInPdf) {
                 statusMessages.push(t('ui.commandRegistrar.fontEmbedding'));
             }
-            if (fontDiagnostics.missingRequiredFonts.length > 0) {
+            // Not for an imported template: it built a test PDF with its fonts,
+            // which says more than a scan of the font names in its file.
+            if (!isImportedLayout && fontDiagnostics.missingRequiredFonts.length > 0) {
                 const fontWarning = t('ui.commandRegistrar.missingSystemFonts', { fonts: fontDiagnostics.missingRequiredFonts.join(', ') });
                 statusMessages.push(fontWarning);
                 new Notice(fontWarning);
@@ -869,27 +872,10 @@ export class CommandRegistrar {
                     {
                         sourceNotes: plainSource ? 'pdf' : undefined,
                         documentContents: result.tocMode === 'document' ? { format: 'pdf', depth: contentsDepth(result.tocDepth), chapters: filteredSelection.chapterMarkersByScenePath } : undefined,
-                        chapterMarkersByScenePath,
-                        sceneHeadingMode: layoutSceneHeadingMode,
-                        sceneHeadingRenderMode,
-                        suppressMatterPageChrome: true,
+                        ...layoutAssemblyOptions,
                         includeSceneIdInToc: result.includeSceneIdInToc === true,
                         includeSceneIdInHeading: result.includeSceneIdInHeading === true,
                         sceneIdFormat: 'plain',
-                        useRtChapterMacro: layoutExportBehavior.useRtChapterMacro,
-                        modernClassicStructure: useModernClassicStructure
-                            ? {
-                                enabled: true,
-                                partEpigraphs: modernClassicLayoutOptions?.partEpigraphs,
-                                partEpigraphAttributions: modernClassicLayoutOptions?.partEpigraphAttributions,
-                                ...(designedSpec ? {
-                                    sceneOpener: designedSpec.scene.opener,
-                                    suppressPartMarkers: layoutExportBehavior.suppressPartMarkers,
-                                    resetSceneCounterOnChapter: designedSpec.chapters.resetSceneCounter,
-                                    partNumberStyle: designedSpec.parts.mode === 'off' ? undefined : designedSpec.parts.mode,
-                                } : {}),
-                            }
-                            : undefined,
                         bookPageOrder,
                         includeMatterPages: includeMatter,
                     }
@@ -944,9 +930,21 @@ export class CommandRegistrar {
                     templatePath,
                     headerIncludes,
                     lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
+                    disableShellEscape: isImportedLayout,
                     workingDir: isProof ? path.dirname(path.dirname(absoluteOutputFolder)) : absoluteOutputFolder,
                     pandocPath: this.plugin.settings.pandocPath,
                     metadata: pandocMetadata
+                }).catch((error: unknown) => {
+                    // Say whose LaTeX failed, and show what LaTeX printed.
+                    if (!isImportedLayout) throw error;
+                    const failure = categorizeExportError(error);
+                    const latexLines = extractLatexErrorLines(failure.rawOutput ?? '');
+                    // Only a LaTeX error ("! ...") is the template's; anything
+                    // else keeps the message it already has.
+                    if (!latexLines[0]?.startsWith('!')) throw failure;
+                    failure.message = t('ui.commandRegistrar.importedTemplateFailed', { name: layout.name });
+                    failure.detail = latexLines.join('\n');
+                    throw failure;
                 });
 
                 renderedPaths.push(`${outputFolder}/${path.basename(publishedPath)}`);

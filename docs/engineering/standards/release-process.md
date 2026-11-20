@@ -54,6 +54,27 @@ still runs in two phases:
    - uploads the three assets to the release with `--clobber`.
 4. Prompts to publish the draft.
 
+## Release notes
+
+Eric's standing rules (2026-11-20). They were added after 8.0.5 shipped the Chronologue Time scale, the PDF style designer and LaTeX template import as a patch release with no screenshots, and was re-released as 8.1.0.
+
+- **The version says what changed.** Choose it from the notes, not from the last tag.
+  - A patch release (`x.y.z`) holds fixes and a few small changes.
+  - New features or major improvements make a minor release (`x.y.0`).
+  - `x.0.0` is a major release.
+  - Rule of thumb: if an author would want to hear about it, it isn't a patch.
+- **Show the major new features.** A minor or major release carries 1 to 5 screenshots of its biggest changes, so an author can see quickly what changed. A release where nothing important changed needs none.
+  - Each screenshot goes right after the item it shows, as `<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/<commit>/wiki/images/<file>.webp" alt="…" width="800">` (600 for a timeline alone). GitHub release bodies don't resolve relative paths, so pin the `src` to the commit that added the image.
+  - Images are 2x, sRGB and WebP, with about 12 px rounded corners baked into the file (GitHub strips CSS). They live in `wiki/images/`.
+  - Alt text says exactly what the picture shows: the book, the mode and what is lit or open.
+  - Capture from a test Obsidian on a copy of a demo vault, never Eric's (`Video/tools/capture/README.md`).
+- **Enforced.** `scripts/check-release-notes.mjs` runs in phase 1, before anything is committed, tagged or pushed. It stops:
+  - a patch whose draft lists more than 6 items outside its Fixes section (since 8.0, patches held at most 5);
+  - a minor or major release with no screenshots;
+  - more than 5 screenshots;
+  - a Markdown image, an unpinned `src` or missing alt text.
+  It reads `docs/releases/draft-for-release-<version>.md`, so write the draft, with its screenshots, before running `npm run release`.
+
 ## Three files ship. Nothing else.
 
 Obsidian's plugin installer downloads exactly `manifest.json`, `main.js` and
@@ -120,6 +141,7 @@ validating workflow changes on main before a tag exists.
 
 - `release-script.mjs` — orchestrator (draft, notes sync, dispatch, publish).
 - `.github/workflows/release-build.yml` — build + attest + upload.
+- `scripts/check-release-notes.mjs` — version and screenshot gate for the notes draft (phase 1).
 - `scripts/release-preflight.mjs` — pre-release audit gates.
 - `scripts/release-eyeball-check.mjs` — human review checklist of touched
   surfaces since the last tag.

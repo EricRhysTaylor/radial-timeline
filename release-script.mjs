@@ -528,6 +528,11 @@ async function main() {
         runCommand("npm run release:i18n", "Checking i18n release alignment");
     }
 
+    // Notes gate, before the tag goes public: the version must match what
+    // changed (new features make a minor release), and a minor or major
+    // release shows 1 to 5 screenshots (docs/engineering/standards/release-process.md).
+    runCommand(`node scripts/check-release-notes.mjs ${newVersion}`, `Checking release notes for ${newVersion}`);
+
     // Generate changelog
     console.log(`\n📝 Generating changelog...`);
     const autoChangelog = generateChangelog(lastTag);

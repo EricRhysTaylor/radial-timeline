@@ -186,8 +186,11 @@ export class RadialTimelineView extends ItemView {
                 this.plugin.settings.welcomeScreenClosed = true;
                 await this.plugin.saveSettings();
             }
+        } catch {
+            // SAFE: saveSettings has already shown and logged the failure (notifySaveFailure);
+            // the caller is a void click handler, so a rethrow would only be an unhandled rejection.
         } finally {
-            // saveSettings has already said why a save failed; the welcome still closes.
+            // The welcome still closes.
             this.refreshTimeline();
         }
     }

@@ -1,5 +1,6 @@
 import type { BookProfile } from '../types/settings';
 import { createBookId, normalizeBookProfile } from './books';
+import { isNarrationMode } from './pov';
 
 export interface SampleBookDefinition {
     title: string;
@@ -42,7 +43,11 @@ export function readSampleVaultManifest(fm: Record<string, unknown>): SampleVaul
             || sourceFolder.split('/').some(part => !part || part === '.' || part === '..' || part.startsWith('.'))) {
             throw new Error('Each sample book needs a title and a vault-relative manuscript folder.');
         }
-        return { title, sourceFolder };
+        const narration = book.narration_mode;
+        if (narration !== undefined && (!isNarrationMode(narration) || narration === 'off')) {
+            throw new Error('A sample book has an invalid narration mode.');
+        }
+        return { title, sourceFolder, ...(narration ? { narrationMode: narration } : {}) };
     });
     const folders = config.books.map(book => book.sourceFolder);
     if (folders.some((folder, index) => folders.some((other, otherIndex) =>

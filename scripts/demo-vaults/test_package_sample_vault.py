@@ -9,6 +9,24 @@ from vault_qa import validate_inquiry, validate_source, validate_wiki_links
 
 
 class PackagingBoundaries(unittest.TestCase):
+    def test_story_map_details_travel_with_map_and_its_scenes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            canvas = 'Radial Timeline/Story Maps/Book - Subplot Map.canvas'
+            sidecar = canvas + '.storymap.json'
+            scene = 'Book/1.md'
+            for path in (canvas, scene):
+                (root / path).parent.mkdir(parents=True, exist_ok=True)
+            node = {'id': 'a', 'type': 'file', 'file': scene}
+            (root / canvas).write_text(json.dumps({'nodes': [node], 'edges': []}))
+            (root / scene).write_text('Scene')
+            (root / sidecar).write_text(json.dumps({'schemaVersion': 1, 'bookFolder': 'Book', 'provenance': {'version': 1, 'scenes': [{'path': scene}], 'generated': {'nodes': [node], 'edges': []}}}))
+            with self.assertRaisesRegex(ValueError, 'details are not packaged'):
+                select_files(root, {'include_files': [canvas, scene]})
+            self.assertEqual(len(select_files(root, {'include_files': [canvas, sidecar, scene]})), 3)
+            with self.assertRaisesRegex(ValueError, 'no packaged Canvas'):
+                select_files(root, {'include_files': [sidecar, scene]})
+
     def test_story_map_references_must_be_included_and_base_is_parsed(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

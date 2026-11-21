@@ -10,6 +10,7 @@ import { findSafeSceneInsertionPrefix, scenePrefixBefore } from '../services/Sce
 import { mapScenes } from './StoryMapReviewModal';
 import { diffStoryMap } from './storyMapDiff';
 import { isStoryMapProvenance, matchingBaseline } from './storyMapProvenance';
+import { updateStoryMapSidecar } from './storyMapPortable';
 import { planCanvasTextDrop, type CanvasDropProblem } from './canvasTextDropPlan';
 import { CanvasLayoutError, insertCanvasSceneCard, type CanvasLayoutProblem } from './canvasTextDropLayout';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
@@ -179,6 +180,8 @@ class CanvasTextDropModal extends ErtModal {
                 const before = target.before ? updatedScenes.findIndex(item => item.path === target.before) : -1;
                 updatedScenes.splice(before >= 0 ? before : after >= 0 ? after + 1 : updatedScenes.length, 0, mapped);
                 this.plugin.settings.storyMapProvenance = { ...this.plugin.settings.storyMapProvenance, [path]: { ...record, orientationFlipped: flipped, generated: nextBaseline, scenes: updatedScenes } };
+                try { await updateStoryMapSidecar(this.plugin, path, record, this.plugin.settings.storyMapProvenance[path], book.sourceFolder); }
+                catch (error) { console.error('[Canvas text drop] Could not update portable map details', error); new Notice(t('ui.timetable.canvasDropTrackingFailed'), 10000); }
                 try { await this.plugin.saveSettings(); } catch (error) { console.error('[Canvas text drop] Could not save map details', error); new Notice(t('ui.timetable.canvasDropTrackingFailed'), 10000); }
             }
             this.plugin.refreshTimelineIfNeeded(null);

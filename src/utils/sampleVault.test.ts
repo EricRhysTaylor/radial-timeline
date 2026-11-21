@@ -27,6 +27,14 @@ describe('portable sample collections', () => {
         expect(registered.targetId).toBe('book-1');
     });
 
+    it('carries a book narration default in a portable manifest without changing existing profiles', () => {
+        const config = readSampleVaultManifest({ rt_sample_vault: true, schema_version: 1, books: [{ title: 'Book', source_folder: 'Book', narration_mode: 'omni' }] })!;
+        expect(registerSampleBookProfiles([], config.books!, 'Book', () => 'new').books[0].narrationMode).toBe('omni');
+        const existing = [{ id: 'existing', title: 'Mine', sourceFolder: 'Book', narrationMode: 'third' as const }];
+        expect(registerSampleBookProfiles(existing, config.books!, 'Book').books).toEqual(existing);
+        expect(() => readSampleVaultManifest({ rt_sample_vault: true, schema_version: 1, books: [{ title: 'Book', source_folder: 'Book', narration_mode: 'not-a-mode' }] })).toThrow('invalid narration');
+    });
+
     it('keeps author IDs, edits, saga choice and unrelated books when reopened', () => {
         const config = readSampleVaultManifest(manifest)!;
         const existing = [

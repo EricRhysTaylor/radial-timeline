@@ -8,6 +8,7 @@ import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } 
 import { storyMapFolder, storyMapPrefix } from './storyMapPaths';
 import { canvasNodeId, type StoryCanvasData } from './canvasSketches';
 import { carryLegacySelection, selectedCanvasContents, type LegacyCanvasSelection } from './storyMapLegacyCarry';
+import { storyMapSidecarPath, writeStoryMapSidecar } from './storyMapPortable';
 
 export class SubplotCanvasModal extends ErtModal {
     private bookId: string;
@@ -122,7 +123,7 @@ export class SubplotCanvasModal extends ErtModal {
             }
             const prefix = storyMapPrefix(book);
             let path = `${prefix}.canvas`;
-            for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${prefix} ${n}.canvas`;
+            for (let n = 2; this.app.vault.getAbstractFileByPath(path) || this.app.vault.getAbstractFileByPath(storyMapSidecarPath(path)); n++) path = `${prefix} ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify(data, null, 2));
             const scoped = storyRangeRows(rows, this.act, 'all').filter(row => this.subplot === null || row.subplots.includes(this.subplot));
             this.plugin.settings.storyMapProvenance = {
@@ -134,6 +135,8 @@ export class SubplotCanvasModal extends ErtModal {
                     generated,
                 },
             };
+            try { await writeStoryMapSidecar(this.plugin, file.path, this.plugin.settings.storyMapProvenance[file.path], book.sourceFolder); }
+            catch (error) { console.error('[Story map] Could not write portable map details', error); new Notice(t('ui.storyMapReview.portableSaveFailed'), 10000); }
             // The Canvas already exists; a failed details save (already reported by
             // saveSettings) must not mark the create as failed and invite a duplicate.
             try { await this.plugin.saveSettings(); } catch (error) { console.error('[Story map] Could not save map details', error); }

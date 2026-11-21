@@ -11,6 +11,7 @@ import { transposeStoryCanvas } from './canvasOrientation';
 import { canvasNodeId, type StoryCanvasData } from './canvasSketches';
 import { t } from '../i18n';
 import { selectedCanvasContents } from './storyMapLegacyCarry';
+import { hydrateStoryMap, storyMapSidecarPath, writeStoryMapSidecar } from './storyMapPortable';
 
 type LiveCanvas = { getData?: () => StoryCanvasData; selection?: Set<{ getData?: () => { id?: string } }> };
 
@@ -25,7 +26,9 @@ export function mapScenes(plugin: RadialTimelinePlugin, provenance: StoryMapProv
 export class StoryMapReviewModal extends ErtModal {
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, private readonly file: TFile, private readonly canvas: LiveCanvas) { super(app); }
 
-    onOpen(): void {
+    async onOpen(): Promise<void> {
+        await hydrateStoryMap(this.plugin, this.file.path);
+        if (!this.containerEl.isConnected) return;
         this.applyShell({ size: 'lg' });
         const record = this.plugin.settings.storyMapProvenance?.[this.file.path];
         this.mountHeader({ badge: { text: t('ui.storyMapReview.badge') }, title: t('ui.storyMapReview.title'), subtitle: this.file.basename });
@@ -114,9 +117,14 @@ export class StoryMapReviewModal extends ErtModal {
         const copy = carryCanvasEdits(original.data, live, generated);
         const base = this.file.path.replace(/\.canvas$/i, '');
         let path = `${base} - Updated.canvas`;
-        for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${base} - Updated ${n}.canvas`;
+        for (let n = 2; this.app.vault.getAbstractFileByPath(path) || this.app.vault.getAbstractFileByPath(storyMapSidecarPath(path)); n++) path = `${base} - Updated ${n}.canvas`;
         const file = await this.app.vault.create(path, JSON.stringify(copy.data, null, 2));
         this.plugin.settings.storyMapProvenance = { ...this.plugin.settings.storyMapProvenance, [path]: { ...record, orientationFlipped, generatedAt: new Date().toISOString(), scenes: mapScenes(this.plugin, record), generated } };
+        const book = this.plugin.settings.books.find(item => item.id === record.bookId);
+        if (book) {
+            try { await writeStoryMapSidecar(this.plugin, path, this.plugin.settings.storyMapProvenance[path], book.sourceFolder); }
+            catch (error) { console.error('[Story map] Could not write portable map details', error); new Notice(t('ui.storyMapReview.portableSaveFailed'), 10000); }
+        }
         // The copy already exists; a failed details save (already reported by
         // saveSettings) must not re-enable Create and invite a duplicate copy.
         try { await this.plugin.saveSettings(); } catch (error) { console.error('[Story map] Could not save map details', error); }

@@ -5722,6 +5722,8 @@ export const en = {
             previewHeadingNamed: 'Quick preview (Earth → {{planet}})',
         },
         storyMapReview: {
+            portableSaveFailed: 'The map was created, but its portable review details could not be saved.',
+            portableMoveFailed: 'Portable map details could not follow a rename. Check the map before using it on another device.',
             badge: 'RADIAL TIMELINE CANVAS',
             title: 'Review story map',
             legacy: 'This map was created before Radial Timeline recorded its original settings. Its book, scope and manual changes cannot be determined reliably. Create a clean map using your chosen settings; this Canvas stays as it is.',

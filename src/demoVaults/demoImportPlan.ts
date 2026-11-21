@@ -5,6 +5,7 @@ import { parseSessionArtifact, serializeSessionsToArtifact } from '../inquiry/se
 import { INQUIRY_SIDECAR_PATH } from '../inquiry/InquiryArtifactStore';
 import type { SampleBookDefinition } from '../utils/sampleVault';
 import { retargetFolderFilter } from '../timetable/timetableFiles';
+import { portableStoryMap, readPortableStoryMap } from '../timetable/storyMapPortable';
 
 export const DEMO_PROJECTS_FOLDER = 'Demo Projects';
 export const demoProjectFolder = (demo: Pick<BonusVaultDef, 'title'>): string => `${DEMO_PROJECTS_FOLDER}/${demo.title}`;
@@ -87,6 +88,18 @@ export async function prepareDemoImport(
                 indexedPaths.push(`${destination}/${path}`);
             }
             files.set(path, strToU8(rebaseWiki(text)));
+        } else if (path.endsWith('.canvas.storymap.json')) {
+            const raw: unknown = JSON.parse(strFromU8(data));
+            const books = demo.books.map(book => ({ id: book.sourceFolder, sourceFolder: book.sourceFolder }));
+            const record = readPortableStoryMap(raw, books);
+            if (!record || !paths.has(path.slice(0, -'.storymap.json'.length))) throw new Error('Invalid demo story map details.');
+            const folder = record.bookId;
+            const rebase = (item: string) => resolvePath(item, true);
+            const next = { ...record,
+                scenes: record.scenes.map(scene => ({ ...scene, path: rebase(scene.path) })),
+                generated: { ...record.generated, nodes: (record.generated.nodes ?? []).map(node => node.type === 'file' && typeof node.file === 'string' ? { ...node, file: rebase(node.file) } : node) }
+            };
+            files.set(path, strToU8(JSON.stringify(portableStoryMap(next, `${destination}/${folder}`), null, 2)));
         } else if (path.endsWith('.canvas')) {
             const canvas: unknown = JSON.parse(strFromU8(data));
             if (!canvas || typeof canvas !== 'object' || !Array.isArray((canvas as { nodes?: unknown }).nodes)) throw new Error('Invalid demo Canvas.');
@@ -159,7 +172,7 @@ export async function prepareDemoImport(
     const books = demoBookDefinitions(demo);
     const config = ['---', 'rt_sample_vault: true', 'schema_version: 1', `display_name: ${JSON.stringify(demo.title)}`,
         `book_folder: ${JSON.stringify(books[0].sourceFolder)}`, 'books:',
-        ...books.flatMap(book => [`  - title: ${JSON.stringify(book.title)}`, `    source_folder: ${JSON.stringify(book.sourceFolder)}`]),
+        ...books.flatMap(book => [`  - title: ${JSON.stringify(book.title)}`, `    source_folder: ${JSON.stringify(book.sourceFolder)}`, ...(book.narrationMode ? [`    narration_mode: ${JSON.stringify(book.narrationMode)}`] : [])]),
         '---', '', `# ${demo.title}`, '', 'This finished demo lives inside your vault. Select its book in Radial Timeline to explore the scenes, beats, Pulse, and Gossamer. Open Inquiry to browse the saved briefings; no API key is needed.', '',
         'New AI analysis requires enabling AI and configuring your own provider in Settings. For a collection, use the book selector to explore each novel.', ''].join('\n');
     files.set('Sample Vault Config.md', strToU8(config));

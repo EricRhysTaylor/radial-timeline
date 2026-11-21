@@ -39,6 +39,24 @@ describe('reviewed demo import plan', () => {
         const { bytes, demo, numbers } = await fixture({ 'Demo/Bad.canvas': JSON.stringify({ nodes: [{ type: 'file', file: 'Private.md' }], edges: [] }) });
         await expect(prepareDemoImport(bytes, demo, numbers)).rejects.toThrow('Missing or ambiguous');
     });
+    it('rebases a portable map baseline together with its Canvas and book folder', async () => {
+        const canvasPath = 'Radial Timeline/Story Maps/Book - Subplot Map.canvas';
+        const node = { id: 'a', type: 'file', file: 'Book/1 Start.md', x: 0, y: 0, width: 100, height: 100 };
+        const sidecar = { schemaVersion: 1, bookFolder: 'Book', provenance: { version: 1, generatedAt: '2026-11-21', act: null, subplot: null, layout: 'horizontal', initialFocus: 'all', scenes: [{ path: 'Book/1 Start.md', act: 1, subplots: ['Main Plot'] }], generated: { nodes: [node], edges: [] } } };
+        const { bytes, demo, numbers } = await fixture({ [`Demo/${canvasPath}`]: JSON.stringify({ nodes: [node], edges: [] }), [`Demo/${canvasPath}.storymap.json`]: JSON.stringify(sidecar) });
+        const plan = await prepareDemoImport(bytes, demo, numbers);
+        const restored = JSON.parse(strFromU8(plan.files.get(`${canvasPath}.storymap.json`)!));
+        expect(restored.bookFolder).toBe('Demo Projects/Test/Book');
+        expect(restored.provenance.scenes[0].path).toBe('Demo Projects/Test/Book/1 Start.md');
+        expect(restored.provenance.generated.nodes[0].file).toBe('Demo Projects/Test/Book/1 Start.md');
+    });
+    it('rejects a map baseline that refers outside its declared book', async () => {
+        const canvasPath = 'Radial Timeline/Story Maps/Book - Subplot Map.canvas';
+        const node = { id: 'a', type: 'file', file: 'Characters/Character.md', x: 0, y: 0, width: 100, height: 100 };
+        const sidecar = { schemaVersion: 1, bookFolder: 'Book', provenance: { version: 1, generatedAt: '2026-11-21', act: null, subplot: null, layout: 'horizontal', initialFocus: 'all', scenes: [{ path: 'Characters/Character.md', act: 1, subplots: [] }], generated: { nodes: [node], edges: [] } } };
+        const { bytes, demo, numbers } = await fixture({ [`Demo/${canvasPath}`]: JSON.stringify({ nodes: [node], edges: [] }), [`Demo/${canvasPath}.storymap.json`]: JSON.stringify(sidecar) });
+        await expect(prepareDemoImport(bytes, demo, numbers)).rejects.toThrow('Invalid demo story map details');
+    });
     it('rebases links, bracketed filenames, brief references and book scope without changing quotations', async () => {
         const { bytes, demo, numbers } = await fixture();
         const plan = await prepareDemoImport(bytes, demo, numbers);

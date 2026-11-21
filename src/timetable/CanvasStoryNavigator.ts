@@ -11,6 +11,7 @@ import type { StoryCanvasData } from './canvasSketches';
 import { StoryMapReviewModal, mapScenes } from './StoryMapReviewModal';
 import { diffStoryMap } from './storyMapDiff';
 import { isStoryMapProvenance } from './storyMapProvenance';
+import { hydrateStoryMap } from './storyMapPortable';
 
 type NodeData = { id?: string; type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; getData?: () => StoryCanvasData; setData?: (data: StoryCanvasData) => void; requestSave?: (pushHistory?: boolean) => void; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
@@ -148,7 +149,10 @@ export class CanvasStoryNavigator {
         setIcon(review, 'clipboard-list');
         const reviewText = review.createSpan({ cls: 'ert-story-navigator__review-text', text: t('ui.storyMapReview.outOfDate') });
         reviewText.hide();
-        const reviewStatus = (): void => {
+        const reviewStatus = async (): Promise<void> => {
+            const path = this.path;
+            await hydrateStoryMap(this.plugin, path);
+            if (path !== this.path) return;
             const record = this.plugin.settings.storyMapProvenance?.[this.path];
             let stale = false;
             if (isStoryMapProvenance(record) && this.plugin.settings.books.some(book => book.id === record.bookId)) {
@@ -168,7 +172,7 @@ export class CanvasStoryNavigator {
         let statusTimer = 0;
         const scheduleStatus = (): void => {
             window.clearTimeout(statusTimer);
-            statusTimer = window.setTimeout(reviewStatus, 500);
+            statusTimer = window.setTimeout(() => { void reviewStatus(); }, 500);
         };
         this.events.register(() => window.clearTimeout(statusTimer));
         this.events.registerEvent(this.plugin.app.metadataCache.on('changed', scheduleStatus));

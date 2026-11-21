@@ -65,6 +65,26 @@ def select_files(source, config):
             for node in canvas['nodes']:
                 if node.get('type') == 'file':
                     require(node.get('file') in included, f'Canvas file reference is not packaged: {node.get("file")}')
+            portable = f'{rel}.storymap.json'
+            require(not source.joinpath(*safe_relative(portable).parts).exists() or portable in included, f'Story map details are not packaged: {portable}')
+        if rel.endswith('.canvas.storymap.json'):
+            require(rel[:-len('.storymap.json')] in included, f'Story map details have no packaged Canvas: {rel}')
+            portable = json.loads(data)
+            require(isinstance(portable, dict) and portable.get('schemaVersion') == 1 and isinstance(portable.get('bookFolder'), str), f'Invalid story map details: {rel}')
+            folder = str(safe_relative(portable['bookFolder']))
+            provenance = portable.get('provenance')
+            require(isinstance(provenance, dict) and provenance.get('version') == 1 and isinstance(provenance.get('scenes'), list), f'Invalid story map baseline: {rel}')
+            scenes = provenance['scenes']
+            require(all(isinstance(scene, dict) and scene.get('path') in included and scene['path'].startswith(folder + '/') for scene in scenes), f'Story map scene is not packaged in its book: {rel}')
+            generated = provenance.get('generated')
+            require(isinstance(generated, dict) and isinstance(generated.get('nodes'), list) and isinstance(generated.get('edges'), list), f'Invalid story map baseline Canvas: {rel}')
+            paths = {scene['path'] for scene in scenes}
+            nodes = generated['nodes']
+            require(all(isinstance(node, dict) and isinstance(node.get('id'), str) and node['id'] for node in nodes), f'Invalid story map node: {rel}')
+            node_ids = {node['id'] for node in nodes}
+            require(len(node_ids) == len(nodes), f'Duplicate story map node: {rel}')
+            require(all(node.get('type') != 'file' or node.get('file') in paths for node in nodes), f'Story map baseline has an unexpected file: {rel}')
+            require(all(isinstance(edge, dict) and edge.get('fromNode') in node_ids and edge.get('toNode') in node_ids for edge in generated['edges']), f'Invalid story map connection: {rel}')
         if path.suffix == '.base':
             require(isinstance(yaml.safe_load(data), dict), f'Invalid Base: {rel}')
         require(not re.search(rb'(?:sk-ant-api\w*-|sk-proj-|sb_secret_)[A-Za-z0-9_-]{16,}', data), f'Credential-shaped content: {rel}')

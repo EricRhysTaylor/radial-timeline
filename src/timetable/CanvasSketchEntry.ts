@@ -11,6 +11,7 @@ import { registerCanvasSubplotMemoryUpkeep } from './CanvasSubplotMemoryUpkeep';
 import { pruneStoryMapProvenance, rebaseStoryMapProvenance } from './storyMapProvenance';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasTextCards } from './canvasSketches';
+import { rebasePortableStoryMap, storyMapSidecarPath } from './storyMapPortable';
 
 /** An open Canvas and the file it shows. */
 interface CanvasInView { canvas: OpenCanvas; path: string }
@@ -50,9 +51,29 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
     registerCanvasCardPresentation(plugin);
     registerCanvasSubplotMemoryUpkeep(plugin);
     plugin.registerEvent(plugin.app.vault.on('rename', (file, oldPath) => {
+        const newPath = file.path;
+        if (!oldPath.endsWith('.storymap.json')) void (async () => {
+            if (oldPath.endsWith('.canvas') && newPath.endsWith('.canvas')) {
+                const sidecar = plugin.app.vault.getFileByPath(storyMapSidecarPath(oldPath));
+                if (sidecar) await plugin.app.vault.rename(sidecar, storyMapSidecarPath(newPath));
+            }
+            let failed = false;
+            for (const sidecar of plugin.app.vault.getFiles().filter(candidate => candidate.path.endsWith('.canvas.storymap.json'))) {
+                try {
+                    const existing: unknown = JSON.parse(await plugin.app.vault.cachedRead(sidecar));
+                    const rebased = rebasePortableStoryMap(existing, oldPath, newPath);
+                    if (!rebased || JSON.stringify(existing) === JSON.stringify(rebased)) continue;
+                    await plugin.app.vault.process(sidecar, text => {
+                        const next = rebasePortableStoryMap(JSON.parse(text) as unknown, oldPath, newPath);
+                        return next ? JSON.stringify(next, null, 2) : text;
+                    });
+                } catch (error) { failed = true; console.error('[Story map] Could not rebase portable map details', error); }
+            }
+            if (failed) throw new Error('One or more portable map details could not follow the rename.');
+        })().catch((error: unknown) => { console.error('[Story map] Could not update portable map details after rename', error); new Notice(t('ui.storyMapReview.portableMoveFailed'), 10000); });
         const records = plugin.settings.storyMapProvenance;
         if (!records) return;
-        const next = rebaseStoryMapProvenance(records, oldPath, file.path);
+        const next = rebaseStoryMapProvenance(records, oldPath, newPath);
         if (JSON.stringify(records) === JSON.stringify(next)) return;
         plugin.settings.storyMapProvenance = next;
         void plugin.saveSettings().catch((error: unknown) => console.error('[Story map] Could not save renamed map details', error));

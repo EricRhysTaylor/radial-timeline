@@ -48,7 +48,7 @@ See [Private scenes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Sett
 
 ### Improvements
 
-- **Writing sessions go under their book:** a writing session you post to the Community now goes under the book you were writing in, when that book is public on the Community. If a session moves between books, it's posted under the book you spent the most time in.
+- **Writing sessions go under their book:** a writing session you post to the Community now goes under the book you were writing in, when that book is public on the Community. If a session moves between books, it's posted under the book you spent the most time in. You can change a post's book on the post itself in the Community feed.
 - **Community settings:** Settings → Community shows a preview of your shared timeline, says which sharing level the website shows, and keeps **Begin**, **Pause** and **Resume sharing** beside the level. When this vault's connection key is missing, the **Mailbox** menu offers **Reconnect Community**, which opens Community settings.
 - **Your Community timeline stays current on its own:** **Keep timeline updated** in Settings → Community sends your timeline to the website and updates it with your book sync, so the **Community timeline share export** command and its file are retired.
 - **Timetable sort notice:** a sort set in Bases replaces the order the Timetable's mode gives it, such as Chronologue's story order and day dividers. A line beside **Mode** now says so, for example "Sorted by Words · Chronologue order paused", and **Clear sort** puts the mode's order back.

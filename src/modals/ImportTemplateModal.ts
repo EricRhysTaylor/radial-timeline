@@ -331,11 +331,14 @@ export class ImportTemplateModal extends Modal {
                 this.render();
                 return;
             }
+            const firstPagePng = await this.renderSamplePagePng(check.pdf, check.record.samplePage);
+            // Drawing the page image takes a moment too; a close during it is still a cancel.
+            if (this.closed) return;
             await this.onCommit({
                 layout: this.buildFinalLayout(candidate),
                 templateText: candidate.sourceText,
                 record: check.record,
-                firstPagePng: await this.renderSamplePagePng(check.pdf, check.record.samplePage),
+                firstPagePng,
             });
             this.close();
         } catch (error) {

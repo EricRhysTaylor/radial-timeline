@@ -1,5 +1,5 @@
 import { withAccessibleLabel, withTooltip } from '../utils/domTooltip';
-import { App, Modal, Setting as Settings, DropdownComponent, TextComponent, ButtonComponent, ExtraButtonComponent, setIcon } from 'obsidian';
+import { App, Modal, Setting as Settings, TextComponent, ButtonComponent, ExtraButtonComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { PlanetaryProfile, PlanetaryTimeConversionDirection } from '../types';
 import { convertFromEarth, convertToEarth, getPlanetaryMonthCount, getPlanetaryMonthDayCount, getPlanetaryMonthStartDay } from '../utils/planetaryTime';
@@ -21,7 +21,6 @@ export class PlanetaryTimeModal extends Modal {
     private resultEl: HTMLElement | null = null;
     private resultTextEl: HTMLElement | null = null;
     private badgeEl: HTMLElement | null = null;
-    private profileDropdown: DropdownComponent | null = null;
     private directionButtons: Record<PlanetaryTimeConversionDirection, HTMLButtonElement | null> = {
         'earth-to-planet': null,
         'planet-to-earth': null,
@@ -71,7 +70,6 @@ export class PlanetaryTimeModal extends Modal {
             .setName(t('planetary.modal.activeProfile'))
             .setDesc(t('planetary.active.desc'));
         profileSetting.addDropdown(drop => {
-            this.profileDropdown = drop;
             drop.addOption('', t('planetary.active.disabled'));
             this.profiles.forEach(p => { drop.addOption(p.id, p.label || t('ui.planetaryTimeModal.unnamedProfile')); });
             drop.setValue(this.activeId || '');

@@ -55,7 +55,6 @@ export class GossamerProcessingModal extends ErtModal {
 
     // UI elements
     private confirmationView?: HTMLElement;
-    private subtitleEl?: HTMLElement;
     private manuscriptInfoEl?: HTMLElement;
     private priorReadingEl?: HTMLElement;
     private statusTextEl?: HTMLElement;
@@ -113,7 +112,7 @@ export class GossamerProcessingModal extends ErtModal {
 
         hero.createSpan({ text: badgeText, cls: 'ert-modal-badge' });
         hero.createDiv({ text: t('gossamer.processingModal.title', { signal: signalLabelLower }), cls: 'ert-modal-title' });
-        this.subtitleEl = hero.createDiv({ text: subtitle, cls: 'ert-modal-subtitle' });
+        hero.createDiv({ text: subtitle, cls: 'ert-modal-subtitle' });
     }
 
     onClose(): void {

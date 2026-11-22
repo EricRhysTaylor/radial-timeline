@@ -314,7 +314,6 @@ export class ManuscriptOptionsModal extends Modal {
     private outlinePreset: OutlinePreset = 'beat-sheet';
     private outputFormat: ExportFormat = 'markdown';
     private updateWordCounts: boolean = true;
-    private includeSynopsis: boolean = true;
     private includeMatter: boolean = true;
     private saveMarkdownArtifact: boolean = true;
     private lineBreaksAsParagraphs: boolean = false;
@@ -332,7 +331,6 @@ export class ManuscriptOptionsModal extends Modal {
     private sceneWhenDates: (string | null)[] = [];
     private sceneNumbers: number[] = [];
     private sceneWordCounts: (number | null)[] = [];
-    private sceneActs: (number | null)[] = [];
     private partMarkerScenePaths: string[] = [];
     private chapterMarkersByScenePath: Record<string, unknown[]> = {};
     private totalScenes = 0;
@@ -407,12 +405,6 @@ export class ManuscriptOptionsModal extends Modal {
     private manuscriptPresetDescEl?: HTMLElement;
     private manuscriptPresetGridEl?: HTMLElement;
     private outlinePresetDescEl?: HTMLElement;
-    private manuscriptPreviewToggle?: HTMLElement;
-    private manuscriptPreviewIcon?: HTMLElement;
-    private outlinePreviewToggle?: HTMLElement;
-    private outlinePreviewIcon?: HTMLElement;
-    private manuscriptPreviewExpanded: boolean = false;
-    private outlinePreviewExpanded: boolean = false;
     private splitPartsInputEl?: HTMLInputElement;
     private splitPartsContainerEl?: HTMLElement;
     private splitPreviewEl?: HTMLElement;
@@ -436,7 +428,6 @@ export class ManuscriptOptionsModal extends Modal {
     private readbackEl?: HTMLElement;
     /** Per-scene comment counts and SceneId presence for the export summary, by path. */
     private sceneMarkers = new Map<string, SceneMarkers>();
-    private defaultExportProfileId: string | null = null;
     private exportProfiles: ModalExportProfile[] = [];
     private templateProfiles: TemplateProfile[] = [];
     private selectedExportProfile?: ModalExportProfile;
@@ -506,9 +497,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.includeMatter = false;
             this.selectedLayoutId = undefined;
             this.splitMode = 'single';
-            this.includeSynopsis = this.includeSynopsisUserChoice;
         } else {
-            this.includeSynopsis = false;
             const matterCapable = mode.isPdfManuscript || mode.isDocxManuscript;
             if (matterCapable && !this.hasTouchedMatterToggle) {
                 this.includeMatterUserChoice = false;
@@ -1243,7 +1232,6 @@ export class ManuscriptOptionsModal extends Modal {
             .setValue(this.includeSynopsisUserChoice)
             .onChange((value) => {
                 this.includeSynopsisUserChoice = value;
-                this.includeSynopsis = value;
             });
         this.outlineOptionsCard.createDiv({
             cls: 'ert-sub-card-note',
@@ -1640,7 +1628,6 @@ export class ManuscriptOptionsModal extends Modal {
 
         const transientDefault = this.buildLiveProfile(undefined, 'Current settings', false);
         this.defaultExportProfile = transientDefault;
-        this.defaultExportProfileId = transientDefault.id;
 
         const activePreferences = this.getActiveBookPublishingPreferences();
         const lastUsedId = (activePreferences
@@ -2539,10 +2526,6 @@ export class ManuscriptOptionsModal extends Modal {
                 p.el.removeClass('is-active');
             }
         });
-    }
-
-    private isPdfManuscriptExport(): boolean {
-        return this.exportType === 'manuscript' && this.outputFormat === 'pdf';
     }
 
     private syncExportUi(): void {
@@ -3888,7 +3871,6 @@ export class ManuscriptOptionsModal extends Modal {
             this.sceneWhenDates = whenDates;
             this.sceneNumbers = sceneNumbers;
             this.sceneWordCounts = wordCounts;
-            this.sceneActs = acts;
             this.chapterMarkersByScenePath = (result.chapterMarkersByScenePath ?? {});
             this.partMarkerScenePaths = 'partMarkerScenePaths' in result ? result.partMarkerScenePaths ?? [] : [];
             this.totalScenes = titles.length;

@@ -189,7 +189,6 @@ export class InquiryOmnibusModal extends Modal {
     private createIndex = true;
     private runDisabledReason?: string | null;
     private badgeEl?: HTMLSpanElement;
-    private isRunning = false;
     private abortRequested = false;
     private progressEl?: HTMLDivElement;
     private progressTextEl?: HTMLDivElement;
@@ -695,7 +694,6 @@ export class InquiryOmnibusModal extends Modal {
     }
 
     switchToRunning(): void {
-        this.isRunning = true;
         this.setHidden(this.configPanel, true);
         if (this.progressEl) {
             this.setHidden(this.progressEl, false);
@@ -889,7 +887,6 @@ export class InquiryOmnibusModal extends Modal {
     }
 
     showResult(completed: number, total: number, aborted: boolean, cacheMissDetail?: string): void {
-        this.isRunning = false;
         this.setHidden(this.progressEl, true);
         // Bring the question list back so the author sees exactly which
         // questions completed before an abort/termination and which remain.

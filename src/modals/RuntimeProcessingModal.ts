@@ -78,8 +78,6 @@ export class RuntimeProcessingModal extends ErtModal {
     private progressTextEl?: HTMLElement;
     private statusTextEl?: HTMLElement;
     private runningTotalEl?: HTMLElement;
-    private queueContainer?: HTMLElement;
-    private actionButton?: ButtonComponent;
     private closeButton?: ButtonComponent;
     private aiAdvancedContext: AIRunAdvancedContext | null = null;
     private aiAdvancedPreEl?: HTMLElement;
@@ -89,7 +87,6 @@ export class RuntimeProcessingModal extends ErtModal {
 
     // Processing state
     private processedCount: number = 0;
-    private totalCount: number = 0;
     private runningTotalSeconds: number = 0;
     private abortController: AbortController | null = null;
 
@@ -305,7 +302,7 @@ export class RuntimeProcessingModal extends ErtModal {
             });
         settingsBtn.buttonEl.addClass('ert-modal-settings-btn');
 
-        this.actionButton = new ButtonComponent(buttonRow)
+        new ButtonComponent(buttonRow)
             .setButtonText(t('sceneAnalysis.runtimeModal.buttons.estimate'))
             .setCta()
             .onClick(async () => {
@@ -588,7 +585,7 @@ export class RuntimeProcessingModal extends ErtModal {
         this.runningTotalEl.setText(t('sceneAnalysis.runtimeModal.progress.runningTotalDefault'));
 
         // Queue container
-        this.queueContainer = progressCard.createDiv({ cls: 'ert-runtime-queue' });
+        progressCard.createDiv({ cls: 'ert-runtime-queue' });
 
         if (this.selectedMode === 'ai') {
             const advancedDetails = progressCard.createEl('details', { cls: 'ert-ai-advanced-details' });
@@ -616,7 +613,6 @@ export class RuntimeProcessingModal extends ErtModal {
 
     public updateProgress(current: number, total: number, sceneName: string, sceneRuntimeSeconds: number): void {
         this.processedCount = current;
-        this.totalCount = total;
         this.runningTotalSeconds += sceneRuntimeSeconds;
 
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -639,7 +635,6 @@ export class RuntimeProcessingModal extends ErtModal {
     }
 
     public setTotalCount(total: number): void {
-        this.totalCount = total;
         if (this.progressTextEl) {
             this.progressTextEl.setText(t('sceneAnalysis.runtimeModal.progress.initialProgress', { total }));
         }

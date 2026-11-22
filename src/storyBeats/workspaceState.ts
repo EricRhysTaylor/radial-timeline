@@ -16,7 +16,7 @@ import {
     getCustomBeatConfigKey,
 } from '../utils/beatSystemState';
 import { normalizeBeatNameInput, normalizeBeatSetNameInput, toBeatModelMatchKey } from '../utils/beatsInputNormalize';
-import { cloneBeatLibraryItem, getBeatLibraryItemBySource, getBuiltinBeatLibraryItems, getSavedBeatLibraryItems, getStarterBeatLibraryItems } from './libraryState';
+import { cloneBeatConfig, cloneBeatLibraryItem, getBeatLibraryItemBySource, getBuiltinBeatLibraryItems, getSavedBeatLibraryItems, getStarterBeatLibraryItems } from './libraryState';
 import { resolveBookScopedFiles } from '../services/NoteScopeResolver';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys, asBeatFrontmatter, readBeatPurpose } from '../utils/frontmatter';
 import { isStoryBeat } from '../utils/sceneHelpers';
@@ -38,15 +38,6 @@ function cloneBeatDefinition(beat: BeatDefinition): BeatDefinition {
         purpose: typeof beat.purpose === 'string' ? beat.purpose.trim() || undefined : undefined,
         id: typeof beat.id === 'string' ? beat.id.trim() || undefined : undefined,
         range: typeof beat.range === 'string' ? beat.range.trim() || undefined : undefined,
-    };
-}
-
-function cloneBeatConfig(config: BeatSystemConfig | undefined): BeatSystemConfig {
-    return {
-        beatYamlAdvanced: typeof config?.beatYamlAdvanced === 'string' ? config.beatYamlAdvanced : '',
-        beatHoverMetadataFields: Array.isArray(config?.beatHoverMetadataFields)
-            ? config.beatHoverMetadataFields.map((field) => ({ ...field }))
-            : [],
     };
 }
 

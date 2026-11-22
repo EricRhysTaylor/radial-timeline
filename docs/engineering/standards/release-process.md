@@ -79,6 +79,24 @@ Eric's standing rules (2026-11-20). They were added after 8.0.5 shipped the Chro
   - Include a GitHub link to the pushed draft that he can open on his phone.
   - Run the release only after his yes. Ask again if either changes. See the repo `CLAUDE.md`, "Releases".
 
+## Announce on the Obsidian forum
+
+Eric's standing rule (2026-11-21): every minor (`x.y.0`) and major (`x.0.0`) release gets an update on the Obsidian forum the day it is published. Patches don't.
+
+- **Where:** a reply on the plugin's own showcase thread, [Radial Timeline — see your novel's structure at a glance](https://forum.obsidian.md/t/radial-timeline-see-your-novels-structure-at-a-glance/117880), Eric's account ERTaylor. Reply rather than start a new topic: the forum prefers one thread per plugin, and a reply moves the thread back to the top of Share & showcase.
+- **Why:** Obsidian users read the forum. Backlinks, Mike Schmitz's weekly Obsidian roundup, gathers its items with a Claude-built tool, and the forum is probably one of its sources.
+- **What, built from the release notes:**
+  1. A first line that stands on its own: "**Radial Timeline x.y.0 is out**", then the headline in one clause. Roundup tools read the title and first lines.
+  2. Two to four headline features, each a short section with the release notes' own pinned screenshots.
+  3. **Videos:** new or relevant tutorials. A YouTube link on a line by itself shows as a player.
+  4. A link to the full release notes on GitHub.
+  5. Any current call (a beta, a survey) with its own `/go/` link (`forum-…`).
+- **How:**
+  - The agent writes the reply in Eric's Chrome: the thread's Reply composer, switched to the Markdown editor so images and links come through exactly.
+  - It checks that every image loads in the preview.
+  - **Eric reads it and clicks Reply himself. Agents never post.**
+  - First done for 8.1.0 (post #2 on the thread).
+
 ## Three files ship. Nothing else.
 
 Obsidian's plugin installer downloads exactly `manifest.json`, `main.js` and

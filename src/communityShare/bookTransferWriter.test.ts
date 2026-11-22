@@ -169,6 +169,20 @@ describe('writing a book from Community', () => {
         expect(JSON.stringify(seen)).not.toContain('It was cold');
     });
 
+    it('a second run of the same book while the first is writing writes nothing', async () => {
+        const w = world();
+        let release: () => void = () => undefined;
+        const held = new Promise<void>(resolve => { release = resolve; });
+        const createFolder = w.deps.vault.createFolder;
+        w.deps.vault.createFolder = async path => { await held; await createFolder(path); };
+        const first = runBookTransfer(w.deps, start());
+        const second = await runBookTransfer(w.deps, start());
+        expect(second).toEqual({ kind: 'stopped', message: 'Radial Timeline is writing this book in another window. Its progress shows there.' });
+        release();
+        expect(await first).toMatchObject({ kind: 'done' });
+        expect([...w.creates.values()].every(count => count === 1)).toBe(true);
+    });
+
     it('writes nothing outside the new folder', async () => {
         const w = world();
         await runBookTransfer(w.deps, start());

@@ -121,6 +121,9 @@ function refusalSentence(error: unknown): string | null {
     return error.code === BOOK_TRANSFER_FAILED || error.code === 'invalid_response' ? null : error.message;
 }
 
+/** Transfers being written right now: the card and the website's link can open one book twice. */
+const writing = new Set<string>();
+
 /**
  * Run or continue one transfer. Never throws for a step the author can put
  * right: those come back as `stopped`, with the record kept for Continue.
@@ -130,8 +133,23 @@ export async function runBookTransfer(
     start: BookTransferStart,
     onProgress: (progress: BookTransferProgress) => void = () => undefined
 ): Promise<BookTransferOutcome> {
-    const { vault, store } = deps;
     const transferId = start.transferId.toLowerCase();
+    if (writing.has(transferId)) return { kind: 'stopped', message: t('ui.bookFromCommunity.alreadyWriting') };
+    writing.add(transferId);
+    try {
+        return await runOnce(deps, { ...start, transferId }, onProgress);
+    } finally {
+        writing.delete(transferId);
+    }
+}
+
+async function runOnce(
+    deps: BookTransferDeps,
+    start: BookTransferStart,
+    onProgress: (progress: BookTransferProgress) => void
+): Promise<BookTransferOutcome> {
+    const { vault, store } = deps;
+    const { transferId } = start;
     let record = store.get(transferId);
     if (record?.phase === 'cancelled') return { kind: 'cancelled', title: record.title, folder: record.folder };
 

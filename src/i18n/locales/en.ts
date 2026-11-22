@@ -7025,6 +7025,7 @@ export const en = {
             noteFailed: 'Could not write {{note}} ({{reason}}). Choose Continue to write the rest.',
             noteFailedPlain: 'Could not write {{note}}. Choose Continue to write the rest.',
             writeFailed: 'Radial Timeline stopped before the book was finished. Choose Continue to pick up where it stopped.',
+            alreadyWriting: 'Radial Timeline is writing this book in another window. Its progress shows there.',
             noteNotThisBooks: '{{note}} is in the folder and was not written for this book. Rename it, then choose Continue.',
             checkMissing: '{{note}} is missing or its ID line changed. Restore it, then choose Continue.',
             checkDuplicate: 'Two notes in {{folder}} hold the scene ID {{id}}. Give the copy its own ID, then choose Continue.',

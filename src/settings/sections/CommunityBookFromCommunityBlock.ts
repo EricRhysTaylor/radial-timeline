@@ -30,41 +30,56 @@ import { t, tCount } from '../../i18n';
 
 export interface CommunityBookFromCommunityBlockProps {
     plugin: RadialTimelinePlugin;
+    /** The Community tab's own element: new each time Settings opens, kept across the section's rerenders. */
+    viewEl: HTMLElement;
     containerEl: HTMLElement;
     rerender: () => void;
 }
 
-// The section rerenders on every save, so the website's list lives here and
-// refreshes at most once per TTL, like the Timeline block's status.
-let listCache: { key: string; fetchedAt: number; offers: BookTransferOffer[] } | null = null;
-let listInflight = false;
+// The website's list of waiting books. Each time Settings opens (a new view)
+// it is read fresh, so a book the author just chose Add to my vault for shows
+// at once. The section rerenders on every save, so within one open view the
+// answer is kept, and read again at most once per TTL.
+let listCache: { view: HTMLElement; key: string; fetchedAt: number; offers: BookTransferOffer[] } | null = null;
+let listRequest: { view: HTMLElement; key: string } | null = null;
 const LIST_TTL_MS = 60 * 1000;
 
-export function renderCommunityBookFromCommunityBlock({ plugin, containerEl, rerender }: CommunityBookFromCommunityBlockProps): void {
+/** Forget the list, so the next render of any view reads it fresh. */
+export function forgetBookTransferList(): void {
+    listCache = null;
+    listRequest = null;
+}
+
+export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containerEl, rerender }: CommunityBookFromCommunityBlockProps): void {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (settings.connection.status !== 'connected' || !settings.connection.connectionId) return;
 
     const key = settings.connection.connectionId;
-    const cached = listCache?.key === key ? listCache : null;
+    const cached = listCache?.view === viewEl && listCache.key === key ? listCache : null;
     const canList = canShareTimelineToCommunity(settings) && !settings.sharingPaused;
-    if (canList && (!cached || Date.now() - cached.fetchedAt >= LIST_TTL_MS) && !listInflight) {
-        listInflight = true;
+    const asking = listRequest?.view === viewEl && listRequest.key === key;
+    if (canList && (!cached || Date.now() - cached.fetchedAt >= LIST_TTL_MS) && !asking) {
+        const request = { view: viewEl, key };
+        listRequest = request;
         void listBookTransfers(plugin)
-            // Nothing waiting, or an answer this plugin cannot read: no card, and nothing to report.
+            // Nothing waiting, a website that does not answer this call yet, or
+            // no network: no card, and nothing to report.
             .catch((): BookTransferOffer[] => [])
-            .then(offers => { listCache = { key, fetchedAt: Date.now(), offers }; })
-            .finally(() => {
-                listInflight = false;
-                rerender();
+            .then(offers => {
+                // A newer view, or a change from the preview, asked again since: this answer is out of date.
+                if (listRequest !== request) return;
+                listRequest = null;
+                listCache = { view: viewEl, key, fetchedAt: Date.now(), offers };
+                if (viewEl.isConnected) rerender();
             });
     }
 
-    const offers = canList ? cached?.offers ?? [] : []; // SAFE: before the first answer nothing is known to be waiting
+    const offers = canList ? cached?.offers ?? [] : []; // SAFE: before this view's first answer nothing is known to be waiting
     const records = bookTransferRecords(settings);
     if (offers.length === 0 && records.length === 0) return;
 
     const changed = (): void => {
-        listCache = null;
+        forgetBookTransferList();
         rerender();
     };
     const open = (transferId: string): void => {

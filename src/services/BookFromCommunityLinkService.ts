@@ -24,6 +24,7 @@ import {
 } from '../communityShare/communityShareSettings';
 import { t } from '../i18n';
 import { BookFromCommunityModal } from '../modals/BookFromCommunityModal';
+import { forgetBookTransferList } from '../settings/sections/CommunityBookFromCommunityBlock';
 
 export const BOOK_FROM_COMMUNITY_PROTOCOL_ACTION = 'radial-timeline-transfer';
 
@@ -49,6 +50,8 @@ export function registerBookFromCommunityLink(plugin: RadialTimelinePlugin): voi
             new Notice(route.text);
             return;
         }
-        new BookFromCommunityModal(plugin.app, plugin, route.transferId).open();
+        // The preview reads the book itself; the Settings card reads the list fresh after the link and after any change.
+        forgetBookTransferList();
+        new BookFromCommunityModal(plugin.app, plugin, route.transferId, { onChanged: forgetBookTransferList }).open();
     });
 }

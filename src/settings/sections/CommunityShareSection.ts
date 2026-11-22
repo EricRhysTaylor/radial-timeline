@@ -868,7 +868,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     })();
 
-    renderCommunityBookFromCommunityBlock({ plugin, containerEl: section, rerender });
+    renderCommunityBookFromCommunityBlock({ plugin, viewEl: containerEl, containerEl: section, rerender });
     renderCommunityTimelineBlock({ plugin, containerEl: section, book: activeBook, rerender });
     renderCommunitySceneBodyBlock({ plugin, containerEl: section, book: activeBook, rerender });
 

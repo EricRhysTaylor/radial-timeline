@@ -16,11 +16,12 @@ import { COMMUNITY_GUIDELINES_PATH, SCENE_AUTHOR_AGREEMENT_VERSION, TERMS_OF_USE
 
 /**
  * The release terms, shown once when the author first chooses Level 4 (contract
- * 2026-11-22; before, on the first release, Amendment 2, section 5). The six points match the website's wording: both record the same
- * consent, once per account. This dialog sends nothing; the caller records the
- * agreement only when it resolves true. Clause 6 and the Terms of Use and
- * Guidelines links came with version 2026-11-20 (Eric, after the private
- * scenes legal review).
+ * 2026-11-22; before, on the first release, Amendment 2, section 5). The seven
+ * clauses match the website's wording: both record the same consent, once per
+ * account. This dialog sends nothing; the caller records the agreement only
+ * when it resolves true. Version 2026-11-22 (Decision "Scene text goes to
+ * human review, not AI"): clause 5 says what a report is for and that a person
+ * reviews it; clause 6 says when scene text goes to an AI provider.
  *
  * Set as numbered clauses, each with room above and below, because this is an
  * agreement and should read as one (Eric, 2026-11-16). The same day he cut the
@@ -48,7 +49,8 @@ class SceneReleaseConsentModal extends ErtModal {
             t('ui.sceneReleaseModal.consentReaders'),
             t('ui.sceneReleaseModal.consentRights'),
             t('ui.sceneReleaseModal.consentAgreements'),
-            t('ui.sceneReleaseModal.consentRules'),
+            t('ui.sceneReleaseModal.consentReports'),
+            t('ui.sceneReleaseModal.consentAi'),
             t('ui.sceneReleaseModal.consentAge'),
         ];
         // An ordered list, so a screen reader announces each clause's place;
@@ -59,7 +61,7 @@ class SceneReleaseConsentModal extends ErtModal {
             clause.createSpan({ cls: 'ert-release-terms__number', text: String(index + 1), attr: { 'aria-hidden': 'true' } });
             clause.createEl('p', { cls: 'ert-release-terms__text', text });
         });
-        // Clauses 5 and 6 name the Terms of Use and the Guidelines; both are a click away.
+        // Clause 7 names the Terms of Use and the Guidelines; both are a click away.
         const links = this.contentEl.createDiv({ cls: 'ert-release-terms__links' });
         links.createEl('a', { text: t('ui.sceneReleaseModal.consentTermsOfUseLink'), href: TERMS_OF_USE_URL, attr: { target: '_blank', rel: 'noopener' } });
         links.createEl('a', { text: t('ui.sceneReleaseModal.consentGuidelinesLink'), href: `${COMMUNITY_SITE_URL}${COMMUNITY_GUIDELINES_PATH}`, attr: { target: '_blank', rel: 'noopener' } });

@@ -22,8 +22,9 @@ import { getCredential } from '../ai/credentials/credentials';
 import type { AIProviderId } from '../ai/types';
 import { getLocalLlmClient } from '../ai/localLlm/client';
 import { inferLocalLlmCapability } from '../ai/localLlm/capabilityInference';
-import { createBookId, getOverlappingBook, normalizeBookProfile } from '../utils/books';
+import { getOverlappingBook } from '../utils/books';
 import type { BookProfile } from '../types/settings';
+import { addBookToManager } from './addBook';
 import { t } from '../i18n';
 import {
   createObsidianMarkdownSource,
@@ -958,13 +959,7 @@ export class OnboardingService {
    * new folder, or a folder that is already a Radial Timeline book, joins
    * Book Manager.
    */
-  async addBook(fields: Pick<BookProfile, 'title' | 'sourceFolder'> & Partial<Pick<BookProfile, 'genre' | 'projectStage'>>): Promise<BookProfile> {
-    const inside = getOverlappingBook(this.plugin.settings.books, fields.sourceFolder);
-    if (inside) throw new Error(t('ui.onboardingModal.containsRegisteredBook', { title: inside.title }));
-    const newBook = normalizeBookProfile({ id: createBookId(), ...fields });
-    this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first book seeds an empty list
-    await this.plugin.persistBookSettings();
-    await this.plugin.setActiveBookId(newBook.id);
-    return newBook;
+  addBook(fields: Pick<BookProfile, 'title' | 'sourceFolder'> & Partial<Pick<BookProfile, 'genre' | 'projectStage'>>): Promise<BookProfile> {
+    return addBookToManager(this.plugin, fields);
   }
 }

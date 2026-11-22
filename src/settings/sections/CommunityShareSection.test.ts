@@ -6,9 +6,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildCommunityShareModeUpdate, buildDefaultCommunityShareSettings } from '../../communityShare/communityShareSettings';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import type { CommunityShareSettings } from '../../types/settings';
-import { describeCommunitySharingState } from './CommunityShareSection';
+import { describeCommunitySharingState, describeVaultToCommunity } from './CommunityShareSection';
+import { formatCommunityDate } from './CommunityTimelineBlock';
 
 function connected(next: Partial<CommunityShareSettings> = {}): CommunityShareSettings {
     const settings = buildDefaultCommunityShareSettings();
@@ -77,6 +78,26 @@ describe('the sharing level row', () => {
         expect(state.name).toBe(t('ui.communityShareSection.websiteLevelPausedName'));
     });
 
+    it('closed, Vault → Community says the level, only known counts above zero, and the sync state', () => {
+        expect(describeVaultToCommunity(level2(), {})).toBe([
+            t('ui.communityShareSection.modeShortProfileBooks'),
+            t('ui.communityShareSection.summaryNothingShared'),
+            t('ui.communityShareSection.summaryNotStarted'),
+        ].join(' · '));
+        const sending = level2();
+        sending.scheduledPublishEnabled = true;
+        sending.connection = { ...sending.connection, lastSyncedAt: '2026-11-21T10:00:00Z' };
+        expect(describeVaultToCommunity(sending, { books: 1, timelines: 0, releasedScenes: 3 })).toBe([
+            t('ui.communityShareSection.modeShortProfileBooks'),
+            tCount('sharedBook', 1),
+            tCount('releasedScene', 3),
+            t('ui.communityShareSection.summaryLastSent', { date: formatCommunityDate('2026-11-21T10:00:00Z') }),
+        ].join(' · '));
+        const paused = level2();
+        paused.sharingPaused = true;
+        expect(describeVaultToCommunity(paused, { timelines: 2 })).toContain(t('ui.communityShareSection.summaryPaused'));
+    });
+
     it('says the next step in its copy, never what will not happen', () => {
         const level = t('ui.communityShareSection.modeShortProfileBooks');
         for (const text of [
@@ -84,9 +105,20 @@ describe('the sharing level row', () => {
             t('ui.communityShareSection.notSentLiveDesc', { level }),
             t('ui.communityShareSection.pausedDesc'),
             t('ui.communityShareSection.timelineDetailsDesc'),
-            t('ui.communityShareSection.sceneBodyDesc'),
+            t('ui.communityShareSection.modeNoteSceneText'),
+            t('ui.communityShareSection.sceneTextTimelineFirst'),
+            t('ui.communityShareSection.releasedChanged'),
+            t('ui.communityShareSection.timelineShareOff'),
+            t('ui.communityShareSection.timelineStopNote'),
+            t('ui.communityShareSection.highlightPrivate'),
+            t('ui.sceneReleaseModal.sendSubtitleUpdate'),
+            t('ui.sceneReleaseModal.sendSceneMissing'),
+            t('ui.sceneReleaseModal.previewChanged'),
+            t('ui.sceneReleaseModal.revisionConflict'),
+            t('ui.communityShareClient.sceneReleasePaused'),
         ]) {
-            expect(text).not.toMatch(/\b(never|nothing|unless|won't|can't)\b/i);
+            expect(text).not.toMatch(/\b(never|nothing|unless|won't|can't|isn't|doesn't|only when|tick)\b/i);
+            expect(text).not.toMatch(/readers you name/i);
         }
     });
 });

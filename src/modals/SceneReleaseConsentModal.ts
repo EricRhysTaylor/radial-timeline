@@ -6,7 +6,8 @@
 
 import { App, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { acceptSceneReleaseTerms, type SceneReleaseStatus } from '../communityShare/communityShareClient';
+import { acceptSceneReleaseTerms, commitCommunityShare, type SceneReleaseStatus } from '../communityShare/communityShareClient';
+import { normalizeCommunityShareSettings } from '../communityShare/communityShareSettings';
 import type { BookProfile } from '../types/settings';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
@@ -14,8 +15,8 @@ import { COMMUNITY_SITE_URL } from '../communityShare/communityMailbox';
 import { COMMUNITY_GUIDELINES_PATH, SCENE_AUTHOR_AGREEMENT_VERSION, TERMS_OF_USE_URL } from '../communityShare/sceneAgreement';
 
 /**
- * The release terms, shown once before the first release (Amendment 2, section
- * 5). The six points match the website's wording: both record the same
+ * The release terms, shown once when the author first chooses Level 4 (contract
+ * 2026-11-22; before, on the first release, Amendment 2, section 5). The six points match the website's wording: both record the same
  * consent, once per account. This dialog sends nothing; the caller records the
  * agreement only when it resolves true. Clause 6 and the Terms of Use and
  * Guidelines links came with version 2026-11-20 (Eric, after the private
@@ -99,9 +100,24 @@ export function confirmSceneReleaseTerms(app: App): Promise<boolean> {
 }
 
 /**
- * The release terms, agreed once per account. Shows the consent dialog only
- * when the website has no agreement on record, and records one only when the
- * author presses I agree. Every way into a release goes through this.
+ * Choosing Level 4: the release terms, once. Shown unless this vault already
+ * holds the author's agreement to the current version; the agreement is kept
+ * in the vault and recorded on the website with the first Send. Sends nothing.
+ */
+export async function agreeToSceneTextTerms(plugin: RadialTimelinePlugin): Promise<boolean> {
+    const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (settings.sceneTextTermsVersion === SCENE_AUTHOR_AGREEMENT_VERSION) return true;
+    if (!await confirmSceneReleaseTerms(plugin.app)) return false;
+    commitCommunityShare(plugin, live => ({ ...live, sceneTextTermsVersion: SCENE_AUTHOR_AGREEMENT_VERSION }));
+    await plugin.saveSettings();
+    return true;
+}
+
+/**
+ * Before a Send: the website must hold the author's agreement. When it holds
+ * none, the agreement given in this vault on choosing Level 4 is recorded;
+ * without one, the terms are shown first. Resolves false when the author
+ * cancels them.
  */
 export async function ensureReleaseTerms(
     plugin: RadialTimelinePlugin,
@@ -109,7 +125,7 @@ export async function ensureReleaseTerms(
     status: Pick<SceneReleaseStatus, 'consent'>
 ): Promise<boolean> {
     if (status.consent) return true;
-    if (!await confirmSceneReleaseTerms(plugin.app)) return false;
+    if (!await agreeToSceneTextTerms(plugin)) return false;
     await acceptSceneReleaseTerms(plugin, book);
     return true;
 }

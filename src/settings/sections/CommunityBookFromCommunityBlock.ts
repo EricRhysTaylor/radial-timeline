@@ -5,13 +5,15 @@
  */
 
 /**
- * Settings → Community → Book from Community: a card for each book the author
- * chose Add to my vault for on the website, and for each one already on its
- * way. Review opens the preview (BookFromCommunityModal); nothing is written
- * from here.
+ * Settings → Community → Community → Vault: the website-to-vault direction.
+ * Its row counts the books waiting and opens by itself when one is; inside, a
+ * row for each book the author chose Add to my vault for on the website, and
+ * for each one already on its way. Review opens the preview
+ * (BookFromCommunityModal); nothing is written from here.
  *
- * Quiet by design: with nothing waiting, or a website that does not answer
- * this call yet, the block renders nothing and logs nothing.
+ * With nothing waiting, or a website that does not answer this call yet, the
+ * row stays closed and dimmed, "No books waiting", with how a book gets here
+ * inside. Nothing is logged.
  */
 
 import { Setting } from 'obsidian';
@@ -27,6 +29,7 @@ import {
 import { BookFromCommunityModal } from '../../modals/BookFromCommunityModal';
 import { ERT_CLASSES } from '../../ui/classes';
 import { t, tCount } from '../../i18n';
+import { renderCommunityDirection } from './communityDirectionRow';
 
 export interface CommunityBookFromCommunityBlockProps {
     plugin: RadialTimelinePlugin;
@@ -52,18 +55,16 @@ export function forgetBookTransferList(): void {
 
 export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containerEl, rerender }: CommunityBookFromCommunityBlockProps): void {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (settings.connection.status !== 'connected' || !settings.connection.connectionId) return;
-
-    const key = settings.connection.connectionId;
-    const cached = listCache?.view === viewEl && listCache.key === key ? listCache : null;
-    const canList = canShareTimelineToCommunity(settings) && !settings.sharingPaused;
+    const key = settings.connection.status === 'connected' ? settings.connection.connectionId : undefined;
+    const canList = key !== undefined && canShareTimelineToCommunity(settings) && !settings.sharingPaused;
+    const cached = canList && listCache?.view === viewEl && listCache.key === key ? listCache : null;
     const asking = listRequest?.view === viewEl && listRequest.key === key;
     if (canList && (!cached || Date.now() - cached.fetchedAt >= LIST_TTL_MS) && !asking) {
         const request = { view: viewEl, key };
         listRequest = request;
         void listBookTransfers(plugin)
             // Nothing waiting, a website that does not answer this call yet, or
-            // no network: no card, and nothing to report.
+            // no network: the count stays 0, and nothing is reported.
             .catch((): BookTransferOffer[] => [])
             .then(offers => {
                 // A newer view, or a change from the preview, asked again since: this answer is out of date.
@@ -74,9 +75,29 @@ export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containe
             });
     }
 
-    const offers = canList ? cached?.offers ?? [] : []; // SAFE: before this view's first answer nothing is known to be waiting
-    const records = bookTransferRecords(settings);
-    if (offers.length === 0 && records.length === 0) return;
+    const offers = cached?.offers ?? []; // SAFE: before this view's first answer nothing is known to be waiting
+    const records = key !== undefined ? bookTransferRecords(settings) : [];
+    const recordIds = new Set(records.map(([transferId]) => transferId));
+    const newOffers = offers.filter(offer => !recordIds.has(offer.transferId));
+    const waiting = newOffers.length + records.filter(([, record]) => record.phase !== 'cancelled').length;
+
+    // The count is known once the website can be asked: connected, at a level that shares, not paused.
+    const summary = waiting > 0
+        ? tCount('bookWaiting', waiting)
+        : t(!key
+            ? 'ui.bookFromCommunity.importConnect'
+            : settings.sharingPaused
+                ? 'ui.bookFromCommunity.importPaused'
+                : !canList ? 'ui.bookFromCommunity.importLevel' : 'ui.bookFromCommunity.importNone');
+    const groupEl = renderCommunityDirection(containerEl, {
+        view: viewEl,
+        direction: 'import',
+        name: t('ui.bookFromCommunity.importName'),
+        summary,
+        muted: waiting === 0,
+        needsAuthor: waiting > 0,
+    });
+    if (waiting === 0) groupEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.bookFromCommunity.importEmpty') });
 
     const changed = (): void => {
         forgetBookTransferList();
@@ -86,12 +107,10 @@ export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containe
         new BookFromCommunityModal(plugin.app, plugin, transferId, { onChanged: changed }).open();
     };
 
-    const block = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
-    const recordIds = new Set(records.map(([transferId]) => transferId));
     for (const [transferId, record] of records) {
-        const row = new Setting(block).setName(t('ui.bookFromCommunity.cardName'));
+        const bookRow = new Setting(groupEl).setName(record.title);
         if (record.phase === 'cancelled') {
-            row.setDesc(t('ui.bookFromCommunity.cardCancelled', { title: record.title, folder: record.folder }))
+            bookRow.setDesc(t('ui.bookFromCommunity.cancelled', { folder: record.folder }))
                 .addButton(button => button
                     .setButtonText(t('ui.bookFromCommunity.cardCancelledButton'))
                     .onClick(async () => {
@@ -106,18 +125,16 @@ export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containe
                     }));
             continue;
         }
-        const offer = offers.find(entry => entry.transferId === transferId);
-        row.setDesc(offer ? t('ui.bookFromCommunity.cardDesc', { title: record.title, scenes: tCount('scene', offer.sceneCount) }) : record.title)
+        bookRow.setDesc(t('ui.bookFromCommunity.cardStarted', { folder: record.folder }))
             .addButton(button => button
                 .setButtonText(t('ui.bookFromCommunity.cardContinue'))
                 .setCta()
                 .onClick(() => open(transferId)));
     }
-    for (const offer of offers) {
-        if (recordIds.has(offer.transferId)) continue;
-        new Setting(block)
-            .setName(t('ui.bookFromCommunity.cardName'))
-            .setDesc(t('ui.bookFromCommunity.cardDesc', { title: offer.title, scenes: tCount('scene', offer.sceneCount) }))
+    for (const offer of newOffers) {
+        new Setting(groupEl)
+            .setName(offer.title)
+            .setDesc(tCount('scene', offer.sceneCount))
             .addButton(button => button
                 .setButtonText(t('ui.bookFromCommunity.cardReview'))
                 .setCta()

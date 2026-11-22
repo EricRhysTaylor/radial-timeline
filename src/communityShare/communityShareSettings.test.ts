@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+    COMMUNITY_SHARE_MODE_TIERS,
+    SCENE_TEXT_LEVEL_INCLUDES,
     buildCommunityShareFieldPolicyForMode,
     buildCommunityShareModeUpdate,
     buildDefaultCommunityShareSettings,
@@ -9,8 +11,9 @@ import {
     expectsBookListSync,
     hasActiveCommunityConnection,
     hasCommunityConnection,
+    modeIncludesActivity,
     normalizeCommunityShareSettings,
-    sceneBodyShareFor
+    sendsDailyActivity
 } from './communityShareSettings';
 
 describe('Community Share settings', () => {
@@ -199,8 +202,7 @@ describe('hasActiveCommunityConnection', () => {
     });
 });
 
-describe('Share scene body settings', () => {
-    const PROJECT = '33333333-3333-4333-8333-333333333333';
+describe('Level 4, scene text', () => {
     const connection = {
         status: 'connected' as const,
         connectionId: 'conn-1',
@@ -209,62 +211,51 @@ describe('Share scene body settings', () => {
         secretId: 'rt.community-share.connection-secret'
     };
 
-    it('is absent by default: off for every book', () => {
-        expect(buildDefaultCommunityShareSettings().sceneBodyShares).toBeUndefined();
-        expect(normalizeCommunityShareSettings({ connection }).sceneBodyShares).toBeUndefined();
-        expect(sceneBodyShareFor(normalizeCommunityShareSettings({ connection }), 'book-1')).toBeUndefined();
+    it('is off by default', () => {
+        expect(buildDefaultCommunityShareSettings().sceneTextLevel).toBe(false);
+        expect(deriveCommunityShareMode(normalizeCommunityShareSettings({ connection }))).toBe('private');
     });
 
-    it('keeps the per-book record through a save and load', () => {
+    it('is a level of its own, sending the report of the level it includes', () => {
+        const update = buildCommunityShareModeUpdate('scene_text');
+        expect(update.sceneTextLevel).toBe(true);
+        expect(update.tier).toBe(COMMUNITY_SHARE_MODE_TIERS[SCENE_TEXT_LEVEL_INCLUDES]);
+        expect(update.fieldPolicy).toEqual(buildCommunityShareFieldPolicyForMode(SCENE_TEXT_LEVEL_INCLUDES));
+        const settings = normalizeCommunityShareSettings({ connection, ...update });
+        expect(deriveCommunityShareMode(settings)).toBe('scene_text');
+        // Any other level clears it.
+        expect(buildCommunityShareModeUpdate('progress').sceneTextLevel).toBe(false);
+        expect(deriveCommunityShareMode(normalizeCommunityShareSettings({ connection, ...buildCommunityShareModeUpdate('progress') }))).toBe('progress');
+    });
+
+    it('includes the writing activity of Level 3: Eric called it the final level', () => {
+        expect(SCENE_TEXT_LEVEL_INCLUDES).toBe('progress');
+        expect(modeIncludesActivity('scene_text')).toBe(true);
+        expect(modeIncludesActivity('progress')).toBe(true);
+        expect(modeIncludesActivity('profile_books')).toBe(false);
+        expect(modeIncludesActivity('private')).toBe(false);
+    });
+
+    it('at Level 4, the daily per-day totals and writing-time pattern are sent, so the sharing details list them', () => {
+        const level4 = normalizeCommunityShareSettings({ connection, ...buildCommunityShareModeUpdate('scene_text') });
+        expect(level4.tier).toBe(4);
+        expect(sendsDailyActivity(level4)).toBe(true);
+        expect(sendsDailyActivity(normalizeCommunityShareSettings({ connection, ...buildCommunityShareModeUpdate('progress') }))).toBe(true);
+        expect(sendsDailyActivity(normalizeCommunityShareSettings({ connection, ...buildCommunityShareModeUpdate('profile_books') }))).toBe(false);
+    });
+
+    it('does not carry over the old per-book Share scene body switch', () => {
         const settings = normalizeCommunityShareSettings({
             connection,
-            sceneBodyShares: { 'book-1': { profileId: 'profile-1', enabled: true, projectId: PROJECT } }
-        });
-        expect(settings.sceneBodyShares).toEqual({ 'book-1': { profileId: 'profile-1', enabled: true, projectId: PROJECT } });
-        // What data.json holds is what loads back.
-        const reloaded = normalizeCommunityShareSettings(JSON.parse(JSON.stringify(settings)));
-        expect(reloaded.sceneBodyShares).toEqual(settings.sceneBodyShares);
-        expect(sceneBodyShareFor(reloaded, 'book-1')?.enabled).toBe(true);
+            sceneBodyShares: { 'book-1': { profileId: 'profile-1', enabled: true } }
+        } as never);
+        expect(JSON.stringify(settings)).not.toContain('sceneBodyShares');
+        expect(deriveCommunityShareMode(settings)).toBe('private');
     });
 
-    it('drops every field it does not name, so the record can never hold scene text', () => {
-        const settings = normalizeCommunityShareSettings({
-            connection,
-            sceneBodyShares: {
-                'book-1': {
-                    profileId: 'profile-1',
-                    enabled: true,
-                    projectId: PROJECT,
-                    blocks: [{ kind: 'p', runs: ['SCENE_TEXT_TRACER'] }],
-                    text: 'SCENE_TEXT_TRACER',
-                    textHash: 'a'.repeat(64),
-                    releases: [{ scene_id: 'scn_a1b2c3d4' }]
-                } as never
-            }
-        });
-        expect(Object.keys(settings.sceneBodyShares?.['book-1'] ?? {}).sort()).toEqual(['enabled', 'profileId', 'projectId']);
-        expect(JSON.stringify(settings)).not.toContain('SCENE_TEXT_TRACER');
-        expect(JSON.stringify(settings)).not.toContain('a'.repeat(64));
-    });
-
-    it('reads anything but true as off, and keeps only a UUID as the project', () => {
-        const settings = normalizeCommunityShareSettings({
-            connection,
-            sceneBodyShares: {
-                'book-1': { profileId: 'profile-1', enabled: 'yes' as never, projectId: 'javascript:alert(1)' },
-                'book-2': { enabled: true } as never,
-                'book-3': null as never
-            }
-        });
-        expect(settings.sceneBodyShares).toEqual({ 'book-1': { profileId: 'profile-1', enabled: false } });
-    });
-
-    it('ignores a record made for another profile', () => {
-        const theirs = normalizeCommunityShareSettings({
-            connection,
-            sceneBodyShares: { 'book-1': { profileId: 'profile-2', enabled: true } }
-        });
-        expect(sceneBodyShareFor(theirs, 'book-1')).toBeUndefined();
+    it('keeps the agreed terms version, and nothing that is not a string', () => {
+        expect(normalizeCommunityShareSettings({ connection, sceneTextTermsVersion: '2026-11-20' }).sceneTextTermsVersion).toBe('2026-11-20');
+        expect(normalizeCommunityShareSettings({ connection, sceneTextTermsVersion: 1 as never }).sceneTextTermsVersion).toBeUndefined();
     });
 });
 

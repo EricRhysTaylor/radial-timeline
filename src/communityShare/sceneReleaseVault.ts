@@ -5,13 +5,13 @@
  */
 
 /**
- * What the Private scenes dialogs read from the vault, and how it lines up
- * with what the website reports.
+ * What Vault → Community reads from the vault for scene text, and how it
+ * lines up with what the website reports.
  *
  * Nothing here sends scene text. A scene's note is read, cleaned and hashed in
  * the vault; "changed since release" is that hash beside the hash the website
  * reports. The list reads only the notes of scenes that are already released,
- * and a preview reads the one scene it shows. Nothing read here is kept:
+ * and the Send dialog reads the one scene it shows. Nothing read here is kept:
  * neither text nor hash is written to settings or to disk.
  */
 
@@ -20,6 +20,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import type { BookProfile } from '../types/settings';
 import { CommunityShareError, fetchSceneReleaseStatus, type SceneReleaseStatus, type SceneReleaseSummary } from './communityShareClient';
+import { fetchSceneTextRequests, type SceneTextRequest } from './sceneTextRequests';
 import { normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
 import {
     sceneBlocksFromNote,
@@ -130,9 +131,8 @@ export interface SceneReleaseList {
 }
 
 /**
- * Everything the Release scenes dialog shows: the website's status (a request
- * with no text in it), the book's scenes from the scene data service, and the
- * local hash of each released scene.
+ * The website's status (a request with no text in it), the book's scenes from
+ * the scene data service, and the local hash of each released scene.
  */
 export async function loadSceneReleaseList(
     plugin: RadialTimelinePlugin,
@@ -144,4 +144,23 @@ export async function loadSceneReleaseList(
     const scenes = timelineSceneNotes(items, shared?.sceneIdPaths);
     const hashes = await releasedSceneHashes(plugin.app, scenes, status.releases);
     return { status, rows: buildSceneReleaseRows(scenes, status.releases, hashes) };
+}
+
+export interface SceneTextState extends SceneReleaseList {
+    /** The scenes asked for on Community, still open. */
+    requests: SceneTextRequest[];
+}
+
+/** Everything the book's scene text rows show: the released scenes and the open requests. */
+export async function loadSceneTextState(
+    plugin: RadialTimelinePlugin,
+    book: Pick<BookProfile, 'id' | 'sourceFolder'>
+): Promise<SceneTextState> {
+    const list = await loadSceneReleaseList(plugin, book);
+    return { ...list, requests: await fetchSceneTextRequests(plugin, book) };
+}
+
+/** The vault's note for the scene a request names, or undefined when this book has none. */
+export function requestedSceneNote(rows: readonly SceneReleaseRow[], request: Pick<SceneTextRequest, 'scene_id'>): TimelineSceneNote | undefined {
+    return rows.find(row => row.scene?.sceneId === request.scene_id)?.scene;
 }

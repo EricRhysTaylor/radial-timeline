@@ -148,8 +148,9 @@ function harness(notes: Record<string, string>) {
     const read = vi.fn(async (file: TFile) => notes[file.path]);
     const settings = buildDefaultCommunityShareSettings();
     settings.enabled = true;
-    settings.tier = 2;
+    settings.tier = 4;
     settings.audience = 'public';
+    settings.sceneTextLevel = true;
     settings.connection = {
         status: 'connected', connectionId: 'conn-1', profileId: 'profile-1', projectId: PROJECT_ID,
         secretId: 'rt.community-share.connection-secret'

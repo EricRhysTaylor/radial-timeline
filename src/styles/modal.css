@@ -2540,115 +2540,37 @@
 .ert-modal--writing-session .ert-writing-session-allocation-row .setting-item-control { flex: 0 1 auto; flex-wrap: wrap; gap: var(--size-4-2); }
 .ert-modal--writing-session .ert-writing-session-allocation-row input[type="number"] { width: 68px; min-width: 0; }
 
-/* Private scenes (Settings → Community): the scene list and the text preview scroll inside the dialog,
-   so its header and buttons stay in reach on a long book or a long scene. */
-.ert-scene-release-list {
-    max-height: 50vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-/* Release scenes: one scroll area. The dialog keeps its height and never scrolls; the header,
-   count and footer stay fixed and the list takes the room that is left. */
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list.modal {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh;
-    overflow: hidden;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-container {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-container > * { flex: none; }
-
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-scene-release-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: none;
-}
-
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-actions {
-    align-items: center;
-    justify-content: space-between;
-    padding-top: var(--size-4-3);
+/* Send scene to Community (SceneTextSendModal): the figures in one row, as in New book from
+   Community, then the text exactly as readers will see it, scrolling inside the dialog so the
+   header and the buttons stay in reach on a long scene. */
+.ert-ui.ert-scope--modal .ert-modal-container.ert-scene-text-send { gap: var(--size-4-4); }
+.ert-ui.ert-scope--modal .ert-scene-text-send .ert-modal-header { margin-bottom: 0; }
+.ert-ui.ert-scope--modal .ert-scene-text-send .ert-modal-actions {
+    padding-top: var(--size-4-4);
     border-top: 1px solid var(--background-modifier-border);
 }
-
-/* Release scenes, several at once: a checkbox at the start of each row, Select all above the
-   list, and the batch bar on its own row above the footer. */
-.ert-scene-release-list .setting-item { gap: var(--size-4-3); }
-/* The scene a Release scenes link named. */
-.ert-scene-release-list .setting-item.ert-scene-release-row--focus {
-    outline: 1px solid var(--interactive-accent);
-    outline-offset: -1px;
-    border-radius: var(--radius-s);
+.ert-gossamer-proc-stats.ert-scene-text-send__figures {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
 }
-.ert-scene-release-check { flex: none; margin: 0; }
-.ert-scene-release-check--none { display: inline-block; width: var(--checkbox-size, 15px); visibility: hidden; }
-.ert-scene-release-select,
-.ert-scene-release-batch {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--size-4-2);
-}
-.ert-scene-release-select:empty,
-.ert-scene-release-batch:empty,
-.ert-scene-release-batch-note:empty { display: none; }
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-scene-release-batch {
-    justify-content: flex-end;
-    padding-top: var(--size-4-3);
-    border-top: 1px solid var(--background-modifier-border);
-}
-.ert-scene-release-batch-list {
-    max-height: 40vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-.ert-scene-release-batch-result { display: grid; gap: var(--size-4-1); }
-
-/* The batch release's look at each scene: its opening and closing lines under the word count,
-   a passage that reads like a note called out, and the full text, shown under the row. */
-.ert-scene-release-excerpt {
-    display: grid;
-    gap: var(--size-2-1);
-    margin-top: var(--size-2-2);
-    color: var(--text-faint);
-    font-style: italic;
-    overflow-wrap: anywhere;
-}
-.ert-scene-release-note-hint {
-    margin-top: var(--size-2-2);
-    color: var(--text-warning);
-    overflow-wrap: anywhere;
-}
-.ert-scene-release-batch-attention {
-    padding: var(--size-4-2) var(--size-4-3);
-    border-left: 3px solid var(--text-warning);
-    border-radius: var(--radius-s);
+.ert-scene-text-send__figures .ert-gossamer-proc-stat-item {
+    min-width: 0;
     background: var(--background-secondary);
+    border-color: var(--background-modifier-border);
 }
-.ert-scene-release-batch-preview { margin-bottom: var(--size-4-3); max-height: 30vh; }
-.ert-scene-release-batch-preview[hidden] { display: none; }
-.ert-scene-release-looks-right {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--size-2-2);
-    white-space: nowrap;
-    cursor: pointer;
+/* "As readers will see it": a small label over the text box, the figures' label style. */
+.ert-scene-text-send__label {
+    margin-bottom: calc(-1 * var(--size-4-2));
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
-
-/* The release preview's rating: two pills, as on the website. */
-.ert-scene-release-rating {
-    display: flex;
-    gap: var(--size-4-2);
+.ert-scene-text-send__figures .ert-gossamer-proc-stat-value {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
 }
-
-.ert-ui.ert-scope--modal .ert-scene-release-rating button[data-ert-toggle] { border-radius: 999px; }
 
 .ert-scene-release-preview {
     max-height: 42vh;
@@ -2661,8 +2583,9 @@
     overflow-wrap: anywhere;
 }
 
-.ert-scene-release-preview p { margin-block: 0 var(--size-4-3); }
-.ert-scene-release-preview p:last-child { margin-block-end: 0; }
+/* Scoped like the modal's own paragraph reset, so the space between paragraphs survives it. */
+.ert-ui.ert-scope--modal .ert-scene-release-preview p { margin-block: 0 var(--size-4-3); }
+.ert-ui.ert-scope--modal .ert-scene-release-preview p:last-child { margin-block-end: 0; }
 .ert-scene-release-preview__break { text-align: center; }
 
 /* The release terms (SceneReleaseConsentModal), set as an agreement: numbered clauses, a rule
@@ -2728,6 +2651,12 @@
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
+}
+
+/* Theme surfaces, so the cells read in the light theme as well as the dark. */
+.ert-bookFromCommunity__figures .ert-gossamer-proc-stat-item {
+    background: var(--background-secondary);
+    border-color: var(--background-modifier-border);
 }
 
 .ert-bookFromCommunity__folder {

@@ -5,16 +5,14 @@
  */
 
 /**
- * The Release scenes link from the Community website:
+ * The Send scene link from the Community website:
  *
- *   obsidian://radial-timeline-release?book=<Community book id>[&scene=<scene id>]
+ *   obsidian://radial-timeline-release?book=<Community book id>&scene=<scene id>&request=<request id>
  *
- * Opens the Release scenes list for that book, or the preview for one scene.
- * The decisions are in communityShare/sceneReleaseLink.ts; this wires them to
- * Notices, Settings and the dialogs. Opening a link sends status reads only,
- * the same ones Settings → Community sends. Share scene body is never turned
- * on here, and the release terms are asked for exactly as the Release scenes
- * button asks.
+ * Opens the Send scene to Community dialog for that request, or Settings →
+ * Community at the book. The decisions are in communityShare/sceneReleaseLink.ts;
+ * this wires them to Notices, Settings and the dialog. Opening a link sends
+ * the status and requests reads only, the same ones Settings → Community sends.
  */
 
 import { Notice, type ObsidianProtocolData } from 'obsidian';
@@ -29,11 +27,9 @@ import {
     sceneReleaseLinkOpen,
     type SceneReleaseLink,
 } from '../communityShare/sceneReleaseLink';
-import { loadSceneReleaseList } from '../communityShare/sceneReleaseVault';
+import { loadSceneTextState } from '../communityShare/sceneReleaseVault';
 import { t } from '../i18n';
-import { ensureReleaseTerms } from '../modals/SceneReleaseConsentModal';
-import { SceneReleaseListModal } from '../modals/SceneReleaseListModal';
-import { SceneReleasePreviewModal } from '../modals/SceneReleasePreviewModal';
+import { forgetSceneTextState, openSceneTextRequest } from '../settings/sections/CommunitySceneTextBlock';
 import { COMMUNITY_PRIVATE_SCENES_SECTION_KEY } from '../settings/settingsAnchors';
 import type { BookProfile } from '../types/settings';
 import { openSettingsTab } from '../utils/obsidianInternals';
@@ -42,8 +38,8 @@ function errorText(error: unknown, fallback: string): string {
     return error instanceof CommunityShareError ? error.message : fallback;
 }
 
-/** Settings → Community, scrolled to Private scenes. */
-function openPrivateScenesSettings(plugin: RadialTimelinePlugin): void {
+/** Settings → Community, scrolled to the active book's scene text. */
+function openSceneTextSettings(plugin: RadialTimelinePlugin): void {
     const settingsTab = plugin.settingsTab;
     settingsTab?.setActiveTab('community');
     if (!openSettingsTab(plugin.app)) return;
@@ -75,7 +71,7 @@ export async function openSceneReleaseLink(plugin: RadialTimelinePlugin, params:
         return;
     }
     if (gate.kind === 'settings') {
-        openPrivateScenesSettings(plugin);
+        openSceneTextSettings(plugin);
         new Notice(gate.text);
         return;
     }
@@ -87,9 +83,7 @@ export async function openSceneReleaseLink(plugin: RadialTimelinePlugin, params:
         new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
         return;
     }
-    // The settings are read again: the author may have changed them while the website answered.
     const route = sceneReleaseLinkBook(
-        normalizeCommunityShareSettings(plugin.settings.communityShare),
         plugin.settings.books ?? [], // SAFE: a vault with no Book Manager books holds no book the link can name
         projects,
         link
@@ -99,9 +93,9 @@ export async function openSceneReleaseLink(plugin: RadialTimelinePlugin, params:
         return;
     }
     if (route.kind === 'settings') {
-        // Private scenes shows the active book: make the link's book the active one first.
+        // Settings shows the active book: make the link's book the active one first.
         if (route.book && plugin.settings.activeBookId !== route.book.id) await plugin.setActiveBookId(route.book.id);
-        openPrivateScenesSettings(plugin);
+        openSceneTextSettings(plugin);
         new Notice(route.text);
         return;
     }
@@ -109,29 +103,23 @@ export async function openSceneReleaseLink(plugin: RadialTimelinePlugin, params:
 }
 
 async function openForBook(plugin: RadialTimelinePlugin, book: BookProfile, link: SceneReleaseLink): Promise<void> {
-    let list;
+    let state;
     try {
-        list = await loadSceneReleaseList(plugin, book);
-    } catch (error) {
-        new Notice(errorText(error, t('ui.sceneReleaseModal.listFailed')));
-        return;
-    }
-    const open = sceneReleaseLinkOpen(list.status, list.rows, link);
-    if (open.kind === 'notice') {
-        new Notice(open.text);
-        return;
-    }
-    // The terms gate the Release scenes button runs.
-    try {
-        if (!await ensureReleaseTerms(plugin, book, list.status)) return;
+        state = await loadSceneTextState(plugin, book);
     } catch (error) {
         new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
         return;
     }
-    if (open.kind === 'preview') {
-        new SceneReleasePreviewModal(plugin.app, { plugin, book, scene: open.scene, onDone: () => {} }).open();
+    const open = sceneReleaseLinkOpen(state.status, state.requests, link);
+    if (open.kind === 'notice') {
+        new Notice(open.text);
         return;
     }
-    new SceneReleaseListModal(plugin.app, plugin, book, () => {}, open.focusSceneId).open();
-    if (open.notice) new Notice(open.notice);
+    if (open.kind === 'settings') {
+        if (plugin.settings.activeBookId !== book.id) await plugin.setActiveBookId(book.id);
+        openSceneTextSettings(plugin);
+        if (open.notice) new Notice(open.notice);
+        return;
+    }
+    openSceneTextRequest(plugin, book, state, open.request, forgetSceneTextState);
 }

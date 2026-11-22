@@ -1704,11 +1704,15 @@
   font-size: var(--font-ui-small);
 }
 
+/* Review sharing details: a quiet link under Sharing level, in small text, lined up with the
+   row text below it (Eric, 2026-11-22). */
 .ert-ui.ert-scope--settings .ert-communityPreviewDetails > summary {
   color: var(--text-accent);
   cursor: pointer;
-  font-weight: 600;
-  padding: var(--ert-gap-sm) 0;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-medium);
+  /* The settings rows here are inset 16px; the disclosure starts where their text does. */
+  padding: var(--ert-gap-xs) 0 var(--ert-gap-xs) var(--size-4-4);
 }
 
 .ert-ui.ert-scope--settings .ert-communityPreviewDetails > summary:focus-visible {
@@ -10176,6 +10180,74 @@
 .ert-story-act-heading .markdown-rendered h1::before,
 .ert-story-act-heading--bold .markdown-rendered p:first-child::before { content: ''; display: inline-block; width: 29px; height: 29px; margin-right: 12px; vertical-align: -2px; background: var(--text-accent); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 7v14M3 18V4.5A1.5 1.5 0 0 1 4.5 3H6a8 8 0 0 1 6 2.5A8 8 0 0 1 18 3h1.5A1.5 1.5 0 0 1 21 4.5V18a1 1 0 0 1-1 1h-2a8 8 0 0 0-6 2 8 8 0 0 0-6-2H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .ert-story-act-heading:not(.ert-story-act-heading--bold) .markdown-rendered p { margin: 2px 0 0; font-size: 12px; line-height: 1.1; }
+
+/* Community tab: the two directions, Vault → Community and Community → Vault.
+   Each is a collapsible card in the Writing stats pattern (Sessions): a summary
+   row with a chevron, the state in one line while closed, and a large arrow the
+   way the book travels (right: vault to website; left: back). */
+.ert-ui.ert-scope--settings .ert-community-direction {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--ert-panel-radius);
+    background: var(--background-secondary);
+    overflow: hidden;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__summary {
+    display: flex;
+    align-items: center;
+    gap: var(--ert-gap-md);
+    padding: var(--ert-pad-cozy) var(--ert-pad-comfy);
+    cursor: pointer;
+    list-style: none;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__summary::marker,
+.ert-ui.ert-scope--settings .ert-community-direction__summary::-webkit-details-marker {
+    display: none;
+    content: '';
+}
+.ert-ui.ert-scope--settings .ert-community-direction__summary:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: -2px;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__chevron {
+    display: inline-flex;
+    color: var(--text-muted);
+}
+.ert-ui.ert-scope--settings .ert-community-direction__chevron .svg-icon {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ert-gap-2xs);
+    flex: 1;
+    min-width: 0;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__name {
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+    font-weight: 700;
+}
+.ert-ui.ert-scope--settings .ert-community-direction__line {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+/* Open, the controls below say the state: the summary line would repeat it. */
+.ert-ui.ert-scope--settings .ert-community-direction[open] .ert-community-direction__line { display: none; }
+.ert-ui.ert-scope--settings .ert-community-direction__arrow {
+    display: inline-flex;
+    color: var(--text-muted);
+}
+.ert-ui.ert-scope--settings .ert-community-direction__arrow .svg-icon {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.75;
+}
+.ert-ui.ert-scope--settings .ert-community-direction.is-muted > .ert-community-direction__summary { opacity: 0.6; }
+.ert-ui.ert-scope--settings .ert-community-direction__body {
+    padding: 0 var(--ert-pad-comfy) var(--ert-pad-comfy);
+}
 
 /* Community: the same geometry-only wheel used on the website's book card. */
 .ert-community-wheel-card { display: flex; align-items: center; gap: var(--size-4-4); padding: var(--size-4-4); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); }

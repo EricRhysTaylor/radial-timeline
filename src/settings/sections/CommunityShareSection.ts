@@ -4,8 +4,12 @@ import type RadialTimelinePlugin from '../../main';
 import {
     COMMUNITY_SHARE_FIELD_KEYS,
     buildCommunityShareModeUpdate,
+    canShareTimelineToCommunity,
     deriveCommunityShareMode,
+    modeIncludesActivity,
     normalizeCommunityShareSettings,
+    sendsDailyActivity,
+    timelineShareFor,
     type CommunityShareMode
 } from '../../communityShare/communityShareSettings';
 import {
@@ -30,10 +34,12 @@ import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
 import { formatCommunityDate, renderCommunityTimelineBlock } from './CommunityTimelineBlock';
-import { renderCommunitySceneBodyBlock } from './CommunitySceneBodyBlock';
+import { knownSceneTextCounts, renderCommunitySceneTextBlock } from './CommunitySceneTextBlock';
+import { agreeToSceneTextTerms } from '../../modals/SceneReleaseConsentModal';
 import { renderCommunityBookFromCommunityBlock } from './CommunityBookFromCommunityBlock';
+import { renderCommunityDirection } from './communityDirectionRow';
 import { fitSelectToSelectedLabel } from '../selectSizing';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import { docsUrl } from '../../utils/docsUrl';
 import { getSecret } from '../../ai/credentials/secretStorage';
 
@@ -70,13 +76,15 @@ const getFieldLabels = (): Record<CommunityShareFieldKey, string> => ({
 const getModeLabels = (): Record<CommunityShareMode, string> => ({
     private: t('ui.communityShareSection.modeLabelPrivate'),
     profile_books: t('ui.communityShareSection.modeLabelProfileBooks'),
-    progress: t('ui.communityShareSection.modeLabelProgress')
+    progress: t('ui.communityShareSection.modeLabelProgress'),
+    scene_text: t('ui.communityShareSection.modeLabelSceneText')
 });
 
 const getModeNotes = (): Record<CommunityShareMode, string> => ({
     private: t('ui.communityShareSection.modeNotePrivate'),
     profile_books: t('ui.communityShareSection.modeNoteProfileBooks'),
-    progress: t('ui.communityShareSection.modeNoteProgress')
+    progress: t('ui.communityShareSection.modeNoteProgress'),
+    scene_text: t(modeIncludesActivity('scene_text') ? 'ui.communityShareSection.modeNoteSceneText' : 'ui.communityShareSection.modeNoteSceneTextBooks')
 });
 
 
@@ -183,7 +191,8 @@ function formatGeneratedAt(value?: string): string {
 const getModeShortLabels = (): Record<CommunityShareMode, string> => ({
     private: t('ui.communityShareSection.modeShortPrivate'),
     profile_books: t('ui.communityShareSection.modeShortProfileBooks'),
-    progress: t('ui.communityShareSection.modeShortProgress')
+    progress: t('ui.communityShareSection.modeShortProgress'),
+    scene_text: t('ui.communityShareSection.modeShortSceneText')
 });
 
 /** The row under the level picker: what the website shows now, and the one action that changes it. */
@@ -239,90 +248,116 @@ export function describeCommunitySharingState(settings: CommunityShareSettings):
     };
 }
 
-/** Begin, pause or resume sharing, right under the level picker, with what the website shows now. */
+/** What is on Community now, counted; a count is left out until it is known. */
+export interface CommunitySharedCounts {
+    books?: number;
+    timelines?: number;
+    releasedScenes?: number;
+    /** Scenes asked for on Community, waiting for Send or Decline here. */
+    askedScenes?: number;
+}
+
+/**
+ * The Vault → Community row's line while it is closed: the sharing level,
+ * what is on Community now (only counts that are known and above zero), and
+ * whether updates are going out.
+ */
+export function describeVaultToCommunity(settings: CommunityShareSettings, counts: CommunitySharedCounts): string {
+    const shared = [
+        counts.books ? tCount('sharedBook', counts.books) : null,
+        counts.timelines ? tCount('sharedTimeline', counts.timelines) : null,
+        counts.releasedScenes ? tCount('releasedScene', counts.releasedScenes) : null,
+        counts.askedScenes ? tCount('sceneAsked', counts.askedScenes) : null,
+    ].filter((part): part is string => part !== null);
+    const lastSent = settings.connection.lastSyncedAt;
+    const sync = settings.sharingPaused
+        ? t('ui.communityShareSection.summaryPaused')
+        : settings.scheduledPublishEnabled
+            ? lastSent ? t('ui.communityShareSection.summaryLastSent', { date: formatCommunityDate(lastSent) }) : t('ui.communityShareSection.summarySending')
+            : t('ui.communityShareSection.summaryNotStarted');
+    return [
+        getModeShortLabels()[deriveCommunityShareMode(settings)],
+        ...(shared.length ? shared : [t('ui.communityShareSection.summaryNothingShared')]),
+        sync,
+    ].join(' · ');
+}
+
+/** What the website shows now, with Begin, Pause or Resume sharing. */
 function renderSharingStateRow(plugin: RadialTimelinePlugin, containerEl: HTMLElement, parentEl: HTMLElement, settings: CommunityShareSettings): void {
     const state = describeCommunitySharingState(settings);
-    const { canBegin } = state;
+    const row = new Setting(parentEl).setDesc(state.desc);
+    if (state.name) row.setName(state.name);
+    renderSharingAction(plugin, containerEl, row, state, state.canBegin);
+}
+
+/** Begin, pause or resume sharing: the state row's one button. */
+function renderSharingAction(plugin: RadialTimelinePlugin, containerEl: HTMLElement, row: Setting, state: CommunitySharingState, canBegin: boolean): void {
     if (state.action === 'resume') {
-        const pausedRow = new Setting(parentEl);
-        if (state.name) pausedRow.setName(state.name);
-        pausedRow
-            .setDesc(state.desc)
-            .addButton(button => button
-                .setButtonText(t('ui.communityShareSection.resumeButton'))
-                .setCta()
-                .onClick(async () => {
-                    button.setDisabled(true);
-                    button.setButtonText(t('ui.communityShareSection.resumingButton'));
-                    try {
-                        await resumeCommunitySharing(plugin);
-                        new Notice(t('ui.communityShareSection.resumedNotice'));
+        row.addButton(button => button
+            .setButtonText(t('ui.communityShareSection.resumeButton'))
+            .setCta()
+            .onClick(async () => {
+                button.setDisabled(true);
+                button.setButtonText(t('ui.communityShareSection.resumingButton'));
+                try {
+                    await resumeCommunitySharing(plugin);
+                    new Notice(t('ui.communityShareSection.resumedNotice'));
+                    containerEl.empty();
+                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                } catch (error) {
+                    const message = error instanceof CommunityShareError
+                        ? error.message
+                        : t('ui.communityShareSection.resumeFailed');
+                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                    plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
+                    void plugin.saveSettings();
+                    new Notice(message);
+                    button.setButtonText(t('ui.communityShareSection.resumeButton'));
+                    button.setDisabled(false);
+                }
+            }));
+    } else {
+        row.addButton(button => {
+            if (state.action === 'pause') {
+                button
+                    .setButtonText(t('ui.communityShareSection.pauseButton'))
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        await pauseCommunitySharing(plugin);
+                        new Notice(t('ui.communityShareSection.pausedNotice'));
                         containerEl.empty();
                         renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                    } catch (error) {
-                        const message = error instanceof CommunityShareError
-                            ? error.message
-                            : t('ui.communityShareSection.resumeFailed');
-                        const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                        plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
-                        void plugin.saveSettings();
-                        new Notice(message);
-                        button.setButtonText(t('ui.communityShareSection.resumeButton'));
-                        button.setDisabled(false);
-                    }
-                }));
-    } else {
-        const shareRow = new Setting(parentEl);
-        if (state.name) shareRow.setName(state.name);
-        shareRow
-            .setDesc(state.desc)
-            .addButton(button => {
-                if (state.action === 'pause') {
-                    button
-                        .setButtonText(t('ui.communityShareSection.pauseButton'))
-                        .onClick(async () => {
-                            button.setDisabled(true);
-                            await pauseCommunitySharing(plugin);
-                            new Notice(t('ui.communityShareSection.pausedNotice'));
+                    });
+            } else {
+                button
+                    .setButtonText(t('ui.communityShareSection.beginButton'))
+                    .setCta()
+                    .setDisabled(!canBegin)
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        button.setButtonText(t('ui.communityShareSection.startingButton'));
+                        try {
+                            await beginCommunitySharing(plugin);
+                            new Notice(t('ui.communityShareSection.sharingOnNotice'));
                             containerEl.empty();
                             renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                        });
-                } else {
-                    button
-                        .setButtonText(t('ui.communityShareSection.beginButton'))
-                        .setCta()
-                        .setDisabled(!canBegin)
-                        .onClick(async () => {
-                            button.setDisabled(true);
-                            button.setButtonText(t('ui.communityShareSection.startingButton'));
-                            try {
-                                await beginCommunitySharing(plugin);
-                                new Notice(t('ui.communityShareSection.sharingOnNotice'));
-                                containerEl.empty();
-                                renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                            } catch (error) {
-                                const message = error instanceof CommunityShareError
-                                    ? error.message
-                                    : t('ui.communityShareSection.beginFailed');
-                                const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                                plugin.settings.communityShare = normalizeCommunityShareSettings({
-                                    ...current,
-                                    lastError: message
-                                });
-                                void plugin.saveSettings();
-                                new Notice(message);
-                                button.setButtonText(t('ui.communityShareSection.beginButton'));
-                                button.setDisabled(!canBegin);
-                            }
-                        });
-                }
-            });
-        if (state.action === 'pause') {
-            shareRow.descEl.createDiv({
-                cls: ERT_CLASSES.FIELD_NOTE,
-                text: t('ui.communityShareSection.pauseNote')
-            });
-        }
+                        } catch (error) {
+                            const message = error instanceof CommunityShareError
+                                ? error.message
+                                : t('ui.communityShareSection.beginFailed');
+                            const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                                ...current,
+                                lastError: message
+                            });
+                            void plugin.saveSettings();
+                            new Notice(message);
+                            button.setButtonText(t('ui.communityShareSection.beginButton'));
+                            button.setDisabled(!canBegin);
+                        }
+                    });
+            }
+        });
     }
 }
 
@@ -399,24 +434,24 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     [
         { icon: 'lock', text: t('ui.communityShareSection.highlightPrivate') },
         { icon: 'eye', text: t('ui.communityShareSection.highlightPreview') },
-        { icon: 'file-check', text: t('ui.communityShareSection.highlightAggregate') }
+        { icon: 'download', text: t('ui.communityShareSection.highlightReturn') }
     ].forEach(item => {
         const li = featuresList.createEl('li', { cls: `${ERT_CLASSES.INLINE} ert-feature-item` });
         setIcon(li.createSpan({ cls: 'ert-feature-icon' }), item.icon);
         li.createSpan({ text: item.text });
     });
 
-    const pricingPromise = hero.createEl('p', { cls: ERT_CLASSES.FIELD_NOTE });
-    pricingPromise.setText(t('ui.communityShareSection.pricingPromise'));
+    hero.createEl('p', { cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.pricingPromise') });
 
     const activationSection = section.createDiv({ cls: ERT_CLASSES.STACK });
-    // Once connected, the paste-a-code instructions have done their job: the heading names the connection instead.
-    const connectionHeading = new Setting(activationSection)
-        .setName(t(isConnected ? 'ui.communityShareSection.connectedHeading' : 'ui.communityShareSection.connectHeading'))
-        .setHeading();
-    if (!isConnected) connectionHeading.setDesc(t('ui.communityShareSection.connectDesc'));
-    addHeadingIcon(connectionHeading, 'satellite-dish');
-    applyErtHeaderLayout(connectionHeading);
+    if (!isConnected) {
+        const connectionHeading = new Setting(activationSection)
+            .setName(t('ui.communityShareSection.connectHeading'))
+            .setHeading()
+            .setDesc(t('ui.communityShareSection.connectDesc'));
+        addHeadingIcon(connectionHeading, 'satellite-dish');
+        applyErtHeaderLayout(connectionHeading);
+    }
 
     const renderConnectionCodeSetting = (targetEl: HTMLElement): Setting => {
         let tokenValue = '';
@@ -470,10 +505,13 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
 
     if (isConnected) {
         const connectedAt = settings.connection.connectedAt ? formatCommunityDate(settings.connection.connectedAt) : '';
+        // Connection: the link, Replace connection and Disconnect together.
         const statusRow = new Setting(activationSection)
+            .setName(t('ui.communityShareSection.connectedHeading'))
             .setDesc(connectedAt
                 ? t('ui.communityShareSection.linkedSince', { date: connectedAt })
                 : t('ui.communityShareSection.linked'));
+        statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.websiteContentNote') });
         const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
         statusRow.addButton(button => {
             let connectionHealthy = false;
@@ -507,6 +545,32 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 renderState(!willShow);
             });
         });
+        statusRow.addButton(button => button
+            .setButtonText(t('ui.communityShareSection.disconnectButton'))
+            .onClick(async () => {
+                const confirmed = await confirmWithErtModal(plugin.app, {
+                    title: t('ui.communityShareSection.disconnectTitle'),
+                    message: t('ui.communityShareSection.disconnectMessage'),
+                    confirmText: t('ui.communityShareSection.disconnectButton'),
+                });
+                if (!confirmed) return;
+                button.setDisabled(true);
+                button.setButtonText(t('ui.communityShareSection.disconnectingButton'));
+                try {
+                    await disconnectCommunityShare(plugin);
+                    new Notice(t('ui.communityShareSection.disconnectedNotice'));
+                    containerEl.empty();
+                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                } catch (error) {
+                    const message = error instanceof CommunityShareError ? error.message : t('ui.communityShareSection.disconnectFailed');
+                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                    plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
+                    void plugin.saveSettings();
+                    new Notice(message);
+                    button.setButtonText(t('ui.communityShareSection.disconnectButton'));
+                    button.setDisabled(false);
+                }
+            }));
         renderConnectionCodeSetting(replacementContainer);
         if (settings.lastError && settings.lastError !== t('ui.communityShareClient.secretMissing')) {
             statusRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: settings.lastError });
@@ -518,21 +582,34 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     }
 
-    const sharingSection = section.createDiv({ cls: ERT_CLASSES.STACK });
-    const sharingHeading = new Setting(sharingSection)
-        .setName(t('ui.communityShareSection.whatYouShareHeading'))
-        .setHeading()
-        .setDesc(t('ui.communityShareSection.whatYouShareDesc'));
-    addHeadingIcon(sharingHeading, 'share-2');
-    const profileLink = withAccessibleLabel(sharingHeading.nameEl.createEl('a', {
-        href: COMMUNITY_MY_SHARE_URL,
-        cls: 'ert-wiki-link',
-        attr: { 'target': '_blank', 'rel': 'noopener' }
-    }), t('ui.communityShareSection.openProfileAriaLabel'));
-    setIcon(profileLink, 'external-link');
-    applyErtHeaderLayout(sharingHeading);
+    const cachedWebsiteContext = getCachedWebsiteContext(settings);
+    const websiteContext = cachedWebsiteContext?.context;
+    const websiteProject = getConnectedWebsiteProject(settings, websiteContext);
+
+    // What is on Community now. Each count appears only once it is known: the
+    // books from the website's answer, the timelines from this vault's
+    // records, the released scenes from the Private scenes block's last answer.
+    const counts: CommunitySharedCounts = {};
+    if (isConnected && mode !== 'private') {
+        if (websiteContext) counts.books = websiteContext.projects.filter(project => project.visibility === 'public').length;
+        counts.timelines = plugin.settings.books.filter(book => timelineShareFor(settings, book.id)?.enabled).length;
+        const sceneText = knownSceneTextCounts(settings, activeBook);
+        counts.releasedScenes = sceneText.released;
+        counts.askedScenes = sceneText.asked;
+    }
+    // Vault → Community opens by itself while sharing is not started or paused.
+    const sharingSection = renderCommunityDirection(section, {
+        view: containerEl,
+        direction: 'send',
+        name: t('ui.communityShareSection.sendTitle'),
+        summary: describeVaultToCommunity(settings, counts),
+        muted: false,
+        // and when a scene asked for on Community waits for Send or Decline.
+        needsAuthor: describeCommunitySharingState(settings).action !== 'pause' || Boolean(counts.askedScenes),
+    });
 
     new Setting(sharingSection)
+        .setName(t('ui.communityShareSection.sharingLevelName'))
         .setDesc(getModeNotes()[mode])
         .addDropdown(dropdown => {
             dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
@@ -540,10 +617,17 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             dropdown.addOption('private', modeLabels.private);
             dropdown.addOption('profile_books', modeLabels.profile_books);
             dropdown.addOption('progress', modeLabels.progress);
+            dropdown.addOption('scene_text', modeLabels.scene_text);
             dropdown.setValue(mode);
             dropdown.onChange(async value => {
                 const nextMode = value as CommunityShareMode;
                 const update = buildCommunityShareModeUpdate(nextMode);
+                // Level 4: the scene-sharing terms, once, before the level is saved. Choosing it sends nothing.
+                if (nextMode === 'scene_text' && !await agreeToSceneTextTerms(plugin)) {
+                    dropdown.setValue(mode);
+                    fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 460, extraPx: 18 });
+                    return;
+                }
                 if (nextMode === 'private' && hasLiveReport) {
                     const confirmed = await confirmWithErtModal(plugin.app, {
                         title: t('ui.communityShareSection.makePrivateTitle'),
@@ -552,7 +636,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                     });
                     if (!confirmed) {
                         dropdown.setValue(mode);
-                        fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
+                        fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 460, extraPx: 18 });
                         return;
                     }
                     dropdown.setDisabled(true);
@@ -567,8 +651,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                     }
                 }
                 // Scope changes re-arm the explicit consent step: sharing pauses
-                // until the author begins sharing again at the new level.
-                if (settings.scheduledPublishEnabled && nextMode !== mode) {
+                // until the author begins sharing again at the new level. Level 4
+                // sends the report of the level it includes, so moving between
+                // the two changes nothing the report sends.
+                const reportChanges = update.tier !== settings.tier
+                    || JSON.stringify(update.fieldPolicy) !== JSON.stringify(settings.fieldPolicy);
+                if (settings.scheduledPublishEnabled && nextMode !== mode && reportChanges) {
                     update.scheduledPublishEnabled = false;
                     new Notice(nextMode === 'private'
                         ? t('ui.communityShareSection.privateOfflineNotice')
@@ -576,10 +664,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 }
                 await save(update);
             });
-            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
+            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 460, extraPx: 18 });
         });
-
-    renderSharingStateRow(plugin, containerEl, sharingSection, settings);
 
     const details = sharingSection.createEl('details', { cls: 'ert-communityPreviewDetails' });
     details.open = sharingDetailsOpen;
@@ -596,10 +682,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             chip.setText(label);
         }
     };
-
-    const cachedWebsiteContext = getCachedWebsiteContext(settings);
-    const websiteContext = cachedWebsiteContext?.context;
-    const websiteProject = getConnectedWebsiteProject(settings, websiteContext);
 
     const previewTitleBase = websiteProject?.title || activeBook?.publicLabel || activeBook?.title;
     previewFrame.createDiv({
@@ -706,7 +788,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         if (activityFieldLabels.length) {
             const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
             activityFieldLabels.forEach(label => addChip(fieldPills, label));
-            // At the progress level (public, tier 4) the daily sync also sends
+            // At a level that shares writing activity (Level 3, and Level 4 when it
+            // includes Level 3; public, tier 4) the daily sync also sends
             // the per-start-hour/mode rollup (hour_mode_mix) for the community
             // activity dial. It travels on the daily-sync endpoint, not in the
             // signed preview payload/hash — so it must be disclosed here in
@@ -714,7 +797,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             // note: folding it into the preview payload+hash was considered and
             // rejected — it would break the payload/preview-hash separation from
             // the report publish and the daily-sync tests; disclosure only.
-            if (mode === 'progress' && settings.tier === 4) {
+            if (sendsDailyActivity(settings)) {
                 addChip(fieldPills, t('ui.communityShareSection.chipPerDayTotals'));
                 // Per-day words ride the same words field policy as "Words
                 // written": both go, or neither. The daily rows carry words
@@ -868,46 +951,18 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     })();
 
+    // Begin, Pause or Resume sharing sits under the level and its details.
+    renderSharingStateRow(plugin, containerEl, sharingSection, settings);
+
+    // The active book's block belongs to Vault → Community: its timeline, and at
+    // Level 4 its scenes asked for and released. Before the vault connects, or
+    // at Private, the state row says the next step and the block waits.
+    if (isConnected && (settings.sharingPaused || canShareTimelineToCommunity(settings))) {
+        renderCommunityTimelineBlock({ plugin, containerEl: sharingSection, book: activeBook, rerender });
+        // A scene is released onto the book's shared timeline; without a source folder the Timeline block says what to do.
+        if (activeBook?.sourceFolder?.trim()) {
+            renderCommunitySceneTextBlock({ plugin, containerEl: sharingSection, book: activeBook, rerender });
+        }
+    }
     renderCommunityBookFromCommunityBlock({ plugin, viewEl: containerEl, containerEl: section, rerender });
-    renderCommunityTimelineBlock({ plugin, containerEl: section, book: activeBook, rerender });
-    renderCommunitySceneBodyBlock({ plugin, containerEl: section, book: activeBook, rerender });
-
-    const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
-    const actionHeading = new Setting(actionCard)
-        .setName(t('ui.communityShareSection.safetyHeading'))
-        .setHeading()
-        .setDesc(t('ui.communityShareSection.safetyDesc'));
-    addHeadingIcon(actionHeading, 'shield-check');
-    applyErtHeaderLayout(actionHeading);
-
-    new Setting(actionCard)
-        .setName(t('ui.communityShareSection.disconnectName'))
-        .setDesc(t('ui.communityShareSection.disconnectDesc'))
-        .addButton(button => button
-            .setButtonText(t('ui.communityShareSection.disconnectButton'))
-            .setDisabled(!isConnected)
-            .onClick(async () => {
-                const confirmed = await confirmWithErtModal(plugin.app, {
-                    title: t('ui.communityShareSection.disconnectTitle'),
-                    message: t('ui.communityShareSection.disconnectMessage'),
-                    confirmText: t('ui.communityShareSection.disconnectButton'),
-                });
-                if (!confirmed) return;
-                button.setDisabled(true);
-                button.setButtonText(t('ui.communityShareSection.disconnectingButton'));
-                try {
-                    await disconnectCommunityShare(plugin);
-                    new Notice(t('ui.communityShareSection.disconnectedNotice'));
-                    containerEl.empty();
-                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : t('ui.communityShareSection.disconnectFailed');
-                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                    plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
-                    void plugin.saveSettings();
-                    new Notice(message);
-                    button.setButtonText(t('ui.communityShareSection.disconnectButton'));
-                    button.setDisabled(!isConnected);
-                }
-            }));
 }

@@ -2,7 +2,6 @@ import type {
     CommunityBookTransferRecord,
     CommunityDailyBackfillRecord,
     CommunityDeskLampsRecord,
-    CommunitySceneBodyShareRecord,
     CommunityShareAudience,
     CommunityShareConnectionSettings,
     CommunityShareFieldKey,
@@ -62,12 +61,31 @@ export function buildDefaultCommunityShareFieldPolicy(): CommunityShareFieldPoli
 
 // Author-facing sharing modes (bundle-level opt-in per the amended product
 // contract). Tiers and field manifests stay the wire-level machinery.
-export type CommunityShareMode = 'private' | 'profile_books' | 'progress';
+export type CommunityShareMode = 'private' | 'profile_books' | 'progress' | 'scene_text';
+
+/**
+ * What Level 4 shares besides the scene text the author releases: the level
+ * below it whose report it also sends. Eric called Level 4 "the final level"
+ * (2026-11-22), so it includes Level 3's writing activity; whether it should is
+ * his open question, and this is the one line to change.
+ */
+export const SCENE_TEXT_LEVEL_INCLUDES: 'profile_books' | 'progress' = 'progress';
+
+/**
+ * Whether a level shares writing activity: Level 3, and Level 4 when it
+ * includes Level 3 (SCENE_TEXT_LEVEL_INCLUDES). The one answer to that
+ * question: the tier, the field policy, the sharing details and the session
+ * feed all ask it here.
+ */
+export function modeIncludesActivity(mode: CommunityShareMode): boolean {
+    return mode === 'progress' || (mode === 'scene_text' && SCENE_TEXT_LEVEL_INCLUDES === 'progress');
+}
 
 export const COMMUNITY_SHARE_MODE_TIERS: Record<CommunityShareMode, CommunityShareTier> = {
     private: 0,
     profile_books: 2,
-    progress: 4
+    progress: 4,
+    scene_text: modeIncludesActivity('scene_text') ? 4 : 2
 };
 
 const PROJECT_BUNDLE: CommunityShareFieldKey[] = [
@@ -97,7 +115,7 @@ export function buildCommunityShareFieldPolicyForMode(mode: CommunityShareMode):
     const policy = buildDefaultCommunityShareFieldPolicy();
     if (mode === 'private') return policy;
     for (const key of PROJECT_BUNDLE) policy[key] = true;
-    if (mode === 'progress') {
+    if (modeIncludesActivity(mode)) {
         for (const key of ACTIVITY_BUNDLE) policy[key] = true;
     }
     return policy;
@@ -105,7 +123,25 @@ export function buildCommunityShareFieldPolicyForMode(mode: CommunityShareMode):
 
 export function deriveCommunityShareMode(settings: CommunityShareSettings): CommunityShareMode {
     if (!settings.enabled || settings.tier === 0) return 'private';
+    if (settings.sceneTextLevel === true) return 'scene_text';
     return settings.tier >= 3 ? 'progress' : 'profile_books';
+}
+
+/**
+ * Whether the daily sync sends per-day totals and the writing-time pattern:
+ * a level that shares writing activity, at tier 4 (the gate the daily sync
+ * checks). Review sharing details lists them whenever this is true.
+ */
+export function sendsDailyActivity(settings: CommunityShareSettings): boolean {
+    return modeIncludesActivity(deriveCommunityShareMode(settings)) && settings.tier === 4;
+}
+
+/**
+ * Level 4: the plugin may list the scenes asked for on Community and send one
+ * on the author's press. Below it, nothing about scene text is read or sent.
+ */
+export function canShareSceneText(settings: CommunityShareSettings): boolean {
+    return canShareTimelineToCommunity(settings) && deriveCommunityShareMode(settings) === 'scene_text';
 }
 
 /** Settings whose vault holds a live Community connection with a stored secret. */
@@ -181,7 +217,8 @@ export function buildCommunityShareModeUpdate(mode: CommunityShareMode): Partial
         enabled: mode !== 'private',
         tier: COMMUNITY_SHARE_MODE_TIERS[mode],
         audience: mode === 'private' ? 'private_draft' : 'public',
-        fieldPolicy: buildCommunityShareFieldPolicyForMode(mode)
+        fieldPolicy: buildCommunityShareFieldPolicyForMode(mode),
+        sceneTextLevel: mode === 'scene_text'
     };
 }
 
@@ -194,6 +231,7 @@ export function buildDefaultCommunityShareSettings(): CommunityShareSettings {
         manualPublishEnabled: true,
         scheduledPublishEnabled: false,
         sharingPaused: false,
+        sceneTextLevel: false,
         workingNowEnabled: false,
         fieldPolicy: buildDefaultCommunityShareFieldPolicy(),
         redactionPolicy: {},
@@ -292,27 +330,6 @@ function normalizeTimelineShares(value: unknown): Record<string, CommunityTimeli
     return Object.keys(records).length > 0 ? records : undefined;
 }
 
-/**
- * Share scene body records, field by field: the account, on or off, and the
- * book's website project. Anything else on a stored record is dropped, so the
- * record can never come to hold scene text.
- */
-function normalizeSceneBodyShares(value: unknown): Record<string, CommunitySceneBodyShareRecord> | undefined {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
-    const records: Record<string, CommunitySceneBodyShareRecord> = {};
-    for (const [bookId, raw] of Object.entries(value as Record<string, unknown>)) {
-        const record = raw as Partial<CommunitySceneBodyShareRecord> | null;
-        if (!bookId || !record || typeof record.profileId !== 'string' || !record.profileId) continue;
-        records[bookId] = {
-            profileId: record.profileId,
-            enabled: record.enabled === true,
-            // The id becomes part of a link: only a UUID is kept.
-            ...(typeof record.projectId === 'string' && COMMUNITY_UUID_RE.test(record.projectId) ? { projectId: record.projectId } : {}),
-        };
-    }
-    return Object.keys(records).length > 0 ? records : undefined;
-}
-
 export const COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION = 1;
 
 const BOOK_TRANSFER_PHASES: ReadonlySet<unknown> = new Set(['writing', 'written', 'cancelled']);
@@ -371,16 +388,6 @@ export function bookTransferFor(settings: CommunityShareSettings, transferId: st
 }
 
 /**
- * This book's Share scene body record for the connected profile. A record made
- * for another account is ignored, as timelineShareFor ignores one.
- */
-export function sceneBodyShareFor(settings: CommunityShareSettings, bookId: string): CommunitySceneBodyShareRecord | undefined {
-    const record = settings.sceneBodyShares?.[bookId];
-    if (!record || !settings.connection.profileId || record.profileId !== settings.connection.profileId) return undefined;
-    return record;
-}
-
-/**
  * This book's timeline record for the connected profile. A record made for
  * another account is ignored, the way deskLampChoices ignores one: consent was
  * given to send to that account, not this one.
@@ -414,8 +421,12 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
     // never received the backfill as complete.
     let input: Partial<CommunityShareSettings> | undefined;
     if (raw) {
-        const copy: Partial<CommunityShareSettings> & { dailyBackfillVersion?: unknown } = { ...raw };
+        const copy: Partial<CommunityShareSettings> & { dailyBackfillVersion?: unknown; sceneBodyShares?: unknown } = { ...raw };
         delete copy.dailyBackfillVersion;
+        // The per-book Share scene body switch is gone (2026-11-22). An author
+        // who had it on chooses Level 4: carrying it over would share more than
+        // was agreed to.
+        delete copy.sceneBodyShares;
         input = copy;
     }
     const defaults = buildDefaultCommunityShareSettings();
@@ -445,6 +456,8 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         // Hard-freeze flag: absent in pre-existing data normalizes to false,
         // so an untouched connection keeps its current behavior.
         sharingPaused: input?.sharingPaused === true,
+        sceneTextLevel: input?.sceneTextLevel === true,
+        sceneTextTermsVersion: typeof input?.sceneTextTermsVersion === 'string' && input.sceneTextTermsVersion ? input.sceneTextTermsVersion : undefined,
         workingNowEnabled: false,
         fieldPolicy,
         redactionPolicy: input?.redactionPolicy && typeof input.redactionPolicy === 'object' ? input.redactionPolicy : {},
@@ -475,7 +488,6 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill),
         deskLamps: normalizeDeskLamps(input?.deskLamps),
         timelineShares: normalizeTimelineShares(input?.timelineShares),
-        sceneBodyShares: normalizeSceneBodyShares(input?.sceneBodyShares),
         bookTransfers: normalizeBookTransfers(input?.bookTransfers)
     };
 }

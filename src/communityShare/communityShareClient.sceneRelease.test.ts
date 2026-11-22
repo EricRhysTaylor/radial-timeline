@@ -1,10 +1,12 @@
 /**
- * Private scenes: the only path by which scene text leaves the vault.
+ * Scene text: the only path by which scene text leaves the vault.
  *
- * The storage doctrine, pinned (Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md):
- * every scene-release request carries exactly the documented keys; only
- * `release` and `update` carry text; a paused share sends nothing; and no
- * background sync ever reaches the scene-release function.
+ * The storage doctrine, pinned (Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md,
+ * changed by the 2026-11-22 contract "Scene text asked on Community, sent from
+ * the vault"): every scene-release request carries exactly the documented
+ * keys; only `release` and `update` carry text, and each names the request it
+ * answers; below Level 4 or while paused nothing is sent; and no background
+ * sync ever reaches the scene-release function.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -19,23 +21,21 @@ vi.mock('obsidian', () => ({
 }));
 
 import * as obsidian from 'obsidian';
-import { buildDefaultCommunityShareSettings, sceneBodyShareFor } from './communityShareSettings';
+import { buildDefaultCommunityShareSettings, normalizeCommunityShareSettings } from './communityShareSettings';
 import {
     CommunityShareError,
     acceptSceneReleaseTerms,
     fetchSceneReleaseStatus,
     pauseCommunitySharing,
-    releaseSceneBody,
     resumeCommunitySharing,
     scheduleCommunityProjectSync,
-    setSceneBodySharing,
     startTimelineSharing,
     syncCommunityDailyIfEligible,
     syncCommunityProjectsIfConnected,
     syncCommunityShareIfDue,
     syncCommunityTimelinesIfDue,
-    takeDownSceneRelease
 } from './communityShareClient';
+import { declineSceneTextRequest, fetchSceneTextRequests, sendRequestedScene } from './sceneTextRequests';
 import { parsePastedScene, type SceneBlock } from './sceneReleaseText';
 import { SCENE_AUTHOR_AGREEMENT_VERSION } from './sceneAgreement';
 
@@ -45,6 +45,13 @@ const SECRET_KEY = 'rt-community-share-connection-secret';
 const SCENE_TEXT = 'SCENE_TEXT_TRACER_DO_NOT_LEAK';
 const BLOCKS: SceneBlock[] = parsePastedScene(`Mira opened the door. ${SCENE_TEXT}\n\n***\n\nIt was *cold*.`);
 const BASE_KEYS = ['action', 'connection_id', 'current_secret', 'plugin_book_key'];
+const REQUEST_ID = '55555555-5555-4555-8555-555555555555';
+const RELEASE_REQUEST = { id: REQUEST_ID, scene_id: 'scn_a1b2c3d4', kind: 'release' as const, release_version: null };
+const UPDATE_REQUEST = { id: REQUEST_ID, scene_id: 'scn_a1b2c3d4', kind: 'update' as const, release_version: 2 };
+const requestRow = (extra: Record<string, unknown> = {}) => ({
+    id: REQUEST_ID, scene_id: 'scn_a1b2c3d4', scene_title: '1 Scene', kind: 'release', rating: 'mature', audience: 'named',
+    asked_at: '2026-11-22T10:00:00Z', expires_at: '2026-12-06T10:00:00Z', release_id: null, release_version: null, ...extra
+});
 
 const releaseRow = (extra: Record<string, unknown> = {}) => ({
     id: RELEASE_ID,
@@ -95,9 +102,11 @@ function harness() {
         subplot: 'Main Plot', synopsis: 'A synopsis.', itemType: 'Scene', Character: ['Mira'],
     }];
     const settings = buildDefaultCommunityShareSettings();
+    // Level 4: the gate for scene text.
     settings.enabled = true;
-    settings.tier = 2;
+    settings.tier = 4;
     settings.audience = 'public';
+    settings.sceneTextLevel = true;
     settings.connection = {
         status: 'connected',
         connectionId: 'conn-1',
@@ -106,7 +115,7 @@ function harness() {
         secretId: 'rt.community-share.connection-secret'
     };
     // The scene's note. No client call reads it: text arrives only as the blocks
-    // the preview dialog hands to releaseSceneBody.
+    // the Send dialog hands to sendRequestedScene.
     const readNote = vi.fn(async () => `---\nClass: Scene\n---\n${SCENE_TEXT}`);
     const plugin = {
         manifest: { version: '7.4.0' },
@@ -202,24 +211,33 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
         expect(body.terms_version).toBe(SCENE_AUTHOR_AGREEMENT_VERSION);
     });
 
-    it('take_down: the release id, and no text', async () => {
+    it('requests: the action and the book, and no text', async () => {
         const h = harness();
-        const request = respond({ body: { ok: true } });
-        await takeDownSceneRelease(h.plugin as never, h.book, RELEASE_ID);
+        const request = respond({ body: { ok: true, requests: [requestRow()] } });
+        const requests = await fetchSceneTextRequests(h.plugin as never, h.book);
+        expect(requests).toEqual([requestRow()]);
         const [body] = sceneCalls(request);
-        expect(keysOf(body)).toEqual([...BASE_KEYS, 'release_id'].sort());
-        expect(body).toMatchObject({ action: 'take_down', release_id: RELEASE_ID });
-        expect(JSON.stringify(body)).not.toContain('blocks');
+        expect(keysOf(body)).toEqual(BASE_KEYS);
+        expect(body.action).toBe('requests');
     });
 
-    it('release: the scene id, the rating and the blocks it was handed', async () => {
+    it('decline: the request id, and no text', async () => {
+        const h = harness();
+        const request = respond({ body: { ok: true } });
+        await declineSceneTextRequest(h.plugin as never, h.book, REQUEST_ID);
+        const [body] = sceneCalls(request);
+        expect(keysOf(body)).toEqual([...BASE_KEYS, 'request_id'].sort());
+        expect(body).toMatchObject({ action: 'decline', request_id: REQUEST_ID });
+    });
+
+    it('release: the request id, the scene id and the blocks it was handed; the rating is the request\'s, so none is sent', async () => {
         const h = harness();
         const request = respond({ body: releaseAnswer() });
-        const result = await releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS });
+        const result = await sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: BLOCKS });
         expect(result.release.version).toBe(1);
         const [body] = sceneCalls(request);
-        expect(keysOf(body)).toEqual([...BASE_KEYS, 'blocks', 'rating', 'scene_id'].sort());
-        expect(body).toMatchObject({ action: 'release', scene_id: 'scn_a1b2c3d4', rating: 'general', plugin_book_key: 'book-1' });
+        expect(keysOf(body)).toEqual([...BASE_KEYS, 'blocks', 'request_id', 'scene_id'].sort());
+        expect(body).toMatchObject({ action: 'release', request_id: REQUEST_ID, scene_id: 'scn_a1b2c3d4', plugin_book_key: 'book-1' });
         expect(body.blocks).toEqual(BLOCKS);
         // The blocks arrive as an argument. The client reads no note of its own.
         expect(h.readNote).not.toHaveBeenCalled();
@@ -228,10 +246,10 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
     it('update: the same, plus the version the status reported', async () => {
         const h = harness();
         const request = respond({ body: releaseAnswer() });
-        await releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'mature', blocks: BLOCKS, expectedVersion: 2 });
+        await sendRequestedScene(h.plugin as never, h.book, { request: UPDATE_REQUEST, blocks: BLOCKS });
         const [body] = sceneCalls(request);
-        expect(keysOf(body)).toEqual([...BASE_KEYS, 'blocks', 'expected_version', 'rating', 'scene_id'].sort());
-        expect(body).toMatchObject({ action: 'update', expected_version: 2, rating: 'mature' });
+        expect(keysOf(body)).toEqual([...BASE_KEYS, 'blocks', 'expected_version', 'request_id', 'scene_id'].sort());
+        expect(body).toMatchObject({ action: 'update', request_id: REQUEST_ID, expected_version: 2 });
     });
 
     it('only release and update carry blocks', async () => {
@@ -240,8 +258,10 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
         await fetchSceneReleaseStatus(h.plugin as never, h.book);
         respond({ body: { ok: true, version: SCENE_AUTHOR_AGREEMENT_VERSION } });
         await acceptSceneReleaseTerms(h.plugin as never, h.book);
+        respond({ body: { ok: true, requests: [] } });
+        await fetchSceneTextRequests(h.plugin as never, h.book);
         respond({ body: { ok: true } });
-        await takeDownSceneRelease(h.plugin as never, h.book, RELEASE_ID);
+        await declineSceneTextRequest(h.plugin as never, h.book, REQUEST_ID);
         for (const options of sent(request)) {
             expect(options.body).not.toContain('blocks');
             expect(options.body).not.toContain(SCENE_TEXT);
@@ -249,13 +269,21 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
     });
 });
 
-describe('releaseSceneBody refuses before anything is sent', () => {
+describe('sendRequestedScene refuses before anything is sent', () => {
     beforeEach(() => vi.clearAllMocks());
 
     it('a scene id the author typed', async () => {
         const h = harness();
         const request = respond({ body: releaseAnswer() });
-        await expect(releaseSceneBody(h.plugin as never, h.book, { sceneId: 'The Storm', rating: 'general', blocks: BLOCKS }))
+        await expect(sendRequestedScene(h.plugin as never, h.book, { request: { ...RELEASE_REQUEST, scene_id: 'The Storm' }, blocks: BLOCKS }))
+            .rejects.toMatchObject({ code: 'invalid_request' });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('an update without the released version', async () => {
+        const h = harness();
+        const request = respond({ body: releaseAnswer() });
+        await expect(sendRequestedScene(h.plugin as never, h.book, { request: { ...UPDATE_REQUEST, release_version: null }, blocks: BLOCKS }))
             .rejects.toMatchObject({ code: 'invalid_request' });
         expect(request).not.toHaveBeenCalled();
     });
@@ -263,37 +291,52 @@ describe('releaseSceneBody refuses before anything is sent', () => {
     it('text with no words, and text past the word limit', async () => {
         const h = harness();
         const request = respond({ body: releaseAnswer() });
-        await expect(releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: [] }))
+        await expect(sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: [] }))
             .rejects.toMatchObject({ code: 'empty_text' });
         const long = Array.from({ length: 101 }, () => ({ kind: 'p' as const, runs: [Array.from({ length: 100 }, () => 'word').join(' ')] }));
-        await expect(releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: long }))
+        await expect(sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: long }))
             .rejects.toMatchObject({ code: 'too_long', message: expect.stringContaining('10,000 words') });
         expect(request).not.toHaveBeenCalled();
     });
 });
 
-describe('Pause is a full outbound freeze for private scenes', () => {
+describe('Pause, and any level below 4, send nothing about scene text', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('sends nothing: no status, consent, release, update or take-down', async () => {
+    const everyCall = (plugin: never, book: { id: string }) => [
+        () => fetchSceneReleaseStatus(plugin, book),
+        () => acceptSceneReleaseTerms(plugin, book),
+        () => fetchSceneTextRequests(plugin, book),
+        () => declineSceneTextRequest(plugin, book, REQUEST_ID),
+        () => sendRequestedScene(plugin, book, { request: RELEASE_REQUEST, blocks: BLOCKS }),
+        () => sendRequestedScene(plugin, book, { request: UPDATE_REQUEST, blocks: BLOCKS }),
+    ];
+
+    it('paused: no status, consent, requests, decline, release or update', async () => {
         const h = harness();
         await pauseCommunitySharing(h.plugin as never);
         const request = respond({ body: statusAnswer() });
-        const plugin = h.plugin as never;
-        const calls = [
-            () => fetchSceneReleaseStatus(plugin, h.book),
-            () => acceptSceneReleaseTerms(plugin, h.book),
-            () => releaseSceneBody(plugin, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS }),
-            () => releaseSceneBody(plugin, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS, expectedVersion: 1 }),
-            () => takeDownSceneRelease(plugin, h.book, RELEASE_ID)
-        ];
-        for (const call of calls) {
+        for (const call of everyCall(h.plugin as never, h.book)) {
             await expect(call()).rejects.toMatchObject({ code: 'sharing_paused' });
         }
         expect(request).not.toHaveBeenCalled();
     });
 
-    it('stops a release when Pause lands while the connection secret is read', async () => {
+    it.each([
+        ['Level 3', { sceneTextLevel: false, tier: 4 }],
+        ['Level 2', { sceneTextLevel: false, tier: 2 }],
+        ['Private', { enabled: false, tier: 0, sceneTextLevel: false }],
+    ])('at %s: nothing is listed or sent', async (_label, level) => {
+        const h = harness();
+        Object.assign(h.plugin.settings.communityShare, level);
+        const request = respond({ body: statusAnswer() });
+        for (const call of everyCall(h.plugin as never, h.book)) {
+            await expect(call()).rejects.toMatchObject({ code: 'sharing_level_required' });
+        }
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('stops a Send when Pause lands while the connection secret is read', async () => {
         const h = harness();
         const request = respond({ body: releaseAnswer() });
         const storage = h.plugin.app.secretStorage;
@@ -302,18 +345,14 @@ describe('Pause is a full outbound freeze for private scenes', () => {
             h.plugin.settings.communityShare.sharingPaused = true;
             return read(id);
         };
-        await expect(releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS }))
+        await expect(sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: BLOCKS }))
             .rejects.toMatchObject({ code: 'sharing_paused' });
         expect(request).not.toHaveBeenCalled();
     });
 
-    it('sends nothing at the Private level or from a disconnected vault', async () => {
+    it('sends nothing from a disconnected vault', async () => {
         const h = harness();
-        const request = respond({ body: releaseAnswer() });
-        h.plugin.settings.communityShare.enabled = false;
-        h.plugin.settings.communityShare.tier = 0;
-        await expect(releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS }))
-            .rejects.toMatchObject({ code: 'sharing_level_required' });
+        const request = respond({ body: statusAnswer() });
         h.plugin.settings.communityShare.connection.status = 'disconnected';
         await expect(fetchSceneReleaseStatus(h.plugin as never, h.book))
             .rejects.toMatchObject({ code: 'connection_required' });
@@ -328,11 +367,12 @@ describe('the website\'s answers', () => {
         'unauthorized', 'invalid_request', 'project_mapping_required', 'not_found', 'account_flagged',
         'account_deletion_pending', 'consent_required', 'explicit_not_open', 'unknown_scene', 'already_released',
         'scene_limit_reached', 'scene_under_review', 'revision_conflict', 'too_long', 'empty_text', 'invalid_text',
-        'server_error'
+        'server_error', 'ask_on_community', 'request_not_found', 'request_canceled', 'request_expired', 'request_declined',
+        'request_sent', 'request_mismatch', 'scene_position_shared', 'public_consent_required', 'timeline_not_public'
     ])('surfaces %s as a CommunityShareError with the website\'s message', async code => {
         const h = harness();
         respond({ status: 409, body: { error: { code, message: `The website says ${code}.` }, limit: 3 } });
-        const failure = await releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS })
+        const failure = await sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: BLOCKS })
             .catch((error: unknown) => error);
         expect(failure).toBeInstanceOf(CommunityShareError);
         expect(failure).toMatchObject({ code, message: `The website says ${code}.` });
@@ -365,60 +405,54 @@ describe('the website\'s answers', () => {
         expect(status.standing).toBe('account_flagged');
         expect(status.releases[0].scene_id).toBeNull();
     });
+
+    it.each([
+        ['a request id that is not a UUID', { id: 'r1' }],
+        ['a scene id that is not a scene id', { scene_id: 'The Storm' }],
+        ['an unknown kind', { kind: 'paste' }],
+        ['an unknown rating', { rating: 'explicit' }],
+        ['an unknown audience', { audience: 'anyone' }],
+        ['an update that names no release', { kind: 'update' }],
+    ])('refuses a malformed request list: %s', async (_label, extra) => {
+        const h = harness();
+        respond({ body: { ok: true, requests: [requestRow(extra)] } });
+        await expect(fetchSceneTextRequests(h.plugin as never, h.book))
+            .rejects.toMatchObject({ code: 'invalid_response' });
+    });
 });
 
-describe('Share scene body, the per-book switch', () => {
-    beforeEach(() => vi.clearAllMocks());
-
-    it('is off by default', () => {
-        const h = harness();
-        expect(sceneBodyShareFor(h.plugin.settings.communityShare, 'book-1')).toBeUndefined();
+describe('the old Share scene body switch', () => {
+    it('is not carried over: an author who had it on chooses Level 4', () => {
+        const settings = normalizeCommunityShareSettings({
+            ...buildDefaultCommunityShareSettings(),
+            sceneBodyShares: { 'book-1': { profileId: 'profile-1', enabled: true } },
+        } as never);
+        expect(JSON.stringify(settings)).not.toContain('sceneBodyShares');
+        expect(settings.sceneTextLevel).toBe(false);
     });
 
-    it('turns on and off without sending anything, and keeps only the switch and the project', async () => {
+    it('a Send stores no text and no hash in settings', async () => {
         const h = harness();
-        const request = respond({ body: statusAnswer() });
-        await setSceneBodySharing(h.plugin as never, 'book-1', true, PROJECT_ID);
-        expect(sceneBodyShareFor(h.plugin.settings.communityShare, 'book-1'))
-            .toEqual({ profileId: 'profile-1', enabled: true, projectId: PROJECT_ID });
-        await setSceneBodySharing(h.plugin as never, 'book-1', false);
-        expect(sceneBodyShareFor(h.plugin.settings.communityShare, 'book-1'))
-            .toEqual({ profileId: 'profile-1', enabled: false, projectId: PROJECT_ID });
-        expect(request).not.toHaveBeenCalled();
-    });
-
-    it('a release stores no text and no hash in settings', async () => {
-        const h = harness();
-        await setSceneBodySharing(h.plugin as never, 'book-1', true, PROJECT_ID);
         respond({ body: statusAnswer() });
         await fetchSceneReleaseStatus(h.plugin as never, h.book);
         respond({ body: releaseAnswer() });
-        await releaseSceneBody(h.plugin as never, h.book, { sceneId: 'scn_a1b2c3d4', rating: 'general', blocks: BLOCKS });
+        await sendRequestedScene(h.plugin as never, h.book, { request: RELEASE_REQUEST, blocks: BLOCKS });
         const stored = JSON.stringify(h.plugin.settings);
         expect(stored).not.toContain(SCENE_TEXT);
         expect(stored).not.toContain('a'.repeat(64));
         expect(stored).not.toContain('blocks');
-    });
-
-    it('is ignored for an account the author did not turn it on for', async () => {
-        const h = harness();
-        await setSceneBodySharing(h.plugin as never, 'book-1', true, PROJECT_ID);
-        h.plugin.settings.communityShare.connection.profileId = 'profile-2';
-        expect(sceneBodyShareFor(h.plugin.settings.communityShare, 'book-1')).toBeUndefined();
     });
 });
 
 describe('background sync never sends scene text', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('every scheduled entry point runs with Share scene body on, and none reaches scene-release-sync', async () => {
+    it('every scheduled entry point runs at Level 4, and none reaches scene-release-sync', async () => {
         const h = harness();
         const plugin = h.plugin as never;
         respond({ body: statusAnswer() });
         await startTimelineSharing(plugin, h.book as never);
-        await setSceneBodySharing(plugin, 'book-1', true, PROJECT_ID);
-        // The standing share at the progress level, with a timeline change waiting.
-        h.plugin.settings.communityShare.tier = 4;
+        // The standing share at Level 4, with a timeline change waiting.
         h.plugin.settings.communityShare.scheduledPublishEnabled = true;
         h.scenes[0].synopsis = 'Changed.';
 
@@ -447,7 +481,7 @@ describe('background sync never sends scene text', () => {
     });
 });
 
-describe('the release call has two callers, each behind its own button', () => {
+describe('the call that sends text has one caller, behind its one button', () => {
     const SRC = resolve(process.cwd(), 'src');
     const sources = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
         const full = join(dir, entry.name);
@@ -462,64 +496,45 @@ describe('the release call has two callers, each behind its own button', () => {
         expect(naming("'scene-release-sync'")).toEqual(['communityShare/communityShareClient.ts']);
     });
 
-    it('releaseSceneBody is defined in the client and called only by the preview and the batch release', () => {
-        expect(naming('releaseSceneBody')).toEqual([
-            'communityShare/communityShareClient.ts',
-            'modals/SceneReleaseBatchModal.ts',
-            'modals/SceneReleasePreviewModal.ts'
+    it('sendRequestedScene is defined with the request shapes and called only by the Send dialog', () => {
+        expect(naming('sendRequestedScene')).toEqual([
+            'communityShare/sceneTextRequests.ts',
+            'modals/SceneTextSendModal.ts',
         ]);
-        const client = files.find(file => file.path === 'communityShare/communityShareClient.ts')!.text;
-        // Its definition, and no call from inside the client (no sync can reach it).
-        expect(count(client, 'releaseSceneBody(')).toBe(1);
-        expect(client).toContain('export async function releaseSceneBody(');
+        const requests = files.find(file => file.path === 'communityShare/sceneTextRequests.ts')!.text;
+        expect(count(requests, 'sendRequestedScene(')).toBe(1);
+        expect(requests).toContain('export async function sendRequestedScene(');
     });
 
-    it('the preview dialog calls it once, from the handler of its one primary button', () => {
-        const modal = files.find(file => file.path === 'modals/SceneReleasePreviewModal.ts')!.text;
-        expect(count(modal, 'releaseSceneBody(')).toBe(1);
+    it('the Send dialog calls it once, from the handler of its Send button', () => {
+        const modal = files.find(file => file.path === 'modals/SceneTextSendModal.ts')!.text;
+        expect(count(modal, 'sendRequestedScene(')).toBe(1);
         const send = modal.slice(modal.indexOf('private async send('));
-        expect(send).toContain('await releaseSceneBody(');
+        expect(send).toContain('await sendRequestedScene(');
         // send() runs only from that button's click.
         expect(count(modal, 'this.send(')).toBe(1);
-        expect(modal).toContain('.onClick(() => this.send(draft));');
+        expect(modal).toContain('.onClick(() => this.send(draft))');
         // The note is read again, and compared, before the text goes.
         expect(send.indexOf('readSceneReleaseDraft(')).toBeGreaterThan(-1);
-        expect(send.indexOf('now.hash !== previewed.hash')).toBeLessThan(send.indexOf('await releaseSceneBody('));
+        expect(send.indexOf('now.hash !== previewed.hash')).toBeLessThan(send.indexOf('await sendRequestedScene('));
         expect(send.indexOf('readSceneReleaseDraft(')).toBeLessThan(send.indexOf('now.hash !== previewed.hash'));
     });
 
-    it('the batch release calls it once, per scene, only after the author presses its one primary button', () => {
-        const modal = files.find(file => file.path === 'modals/SceneReleaseBatchModal.ts')!.text;
-        expect(count(modal, 'releaseSceneBody(')).toBe(1);
-        const releaseOne = modal.slice(modal.indexOf('private async releaseOne('));
-        expect(releaseOne).toContain('await releaseSceneBody(');
-        // releaseOne runs only from send(), and send() only from that button's click.
-        expect(count(modal, 'this.releaseOne(')).toBe(1);
-        const send = modal.slice(modal.indexOf('private async send('), modal.indexOf('private async releaseOne('));
-        expect(send).toContain('this.releaseOne(');
-        expect(count(modal, 'this.send(')).toBe(1);
-        expect(modal).toContain('.onClick(() => this.send());');
-        // Each note is read again, and compared with the text confirmed, before its text goes.
-        expect(releaseOne.indexOf('readSceneReleaseDraft(')).toBeGreaterThan(-1);
-        expect(releaseOne.indexOf('readSceneReleaseDraft(')).toBeLessThan(releaseOne.indexOf('now.hash !== confirmed.hash'));
-        expect(releaseOne.indexOf('now.hash !== confirmed.hash')).toBeLessThan(releaseOne.indexOf('await releaseSceneBody('));
-    });
-
-    it('nothing main.ts schedules knows about scene releases', () => {
+    it('nothing main.ts schedules knows about scene text', () => {
         const main = files.find(file => file.path === 'main.ts')!.text;
-        // One exception: registering the Release scenes link, which runs only when the author opens it.
+        // One exception: registering the Send scene link, which runs only when the author opens it.
         const linkLines = main.split('\n').filter(line => line.includes('SceneReleaseLink'));
         expect(linkLines.map(line => line.trim())).toEqual([
             "import { registerSceneReleaseLink } from './services/SceneReleaseLinkService';",
             'registerSceneReleaseLink(this);',
         ]);
         const rest = main.split('\n').filter(line => !line.includes('SceneReleaseLink')).join('\n');
-        expect(rest).not.toMatch(/sceneRelease|SceneRelease|releaseSceneBody|sceneBody/);
+        expect(rest).not.toMatch(/sceneRelease|SceneRelease|sendRequestedScene|sceneText|SceneText/);
     });
 
-    it('the Release scenes link registers one protocol handler and sends no text', () => {
+    it('the Send scene link registers one protocol handler and sends no text', () => {
         const service = files.find(file => file.path === 'services/SceneReleaseLinkService.ts')!.text;
         expect(count(service, 'registerObsidianProtocolHandler(')).toBe(1);
-        expect(service).not.toMatch(/releaseSceneBody|setSceneBodySharing|registerInterval|setInterval/);
+        expect(service).not.toMatch(/sendRequestedScene|registerInterval|setInterval/);
     });
 });

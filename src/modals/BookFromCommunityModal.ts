@@ -160,10 +160,12 @@ export class BookFromCommunityModal extends ErtModal {
         contentEl.empty();
         this.progressEl = null;
         const record = this.record();
+        // The book's name rides in the pill, as other modals name their subject there.
+        const title = this.plan?.title ?? record?.title;
         this.mountHeader({
-            badge: { text: t('ui.bookFromCommunity.modalBadge') },
+            badge: { text: title ? t('ui.bookFromCommunity.modalBadgeTitled', { title }) : t('ui.bookFromCommunity.modalBadge') },
             title: t('ui.bookFromCommunity.modalTitle'),
-            subtitle: this.plan?.title ?? record?.title,
+            subtitle: t('ui.bookFromCommunity.modalSubtitle'),
         });
 
         if (this.loading) {

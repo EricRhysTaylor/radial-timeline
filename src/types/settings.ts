@@ -1110,12 +1110,19 @@ export interface CommunityShareSettings {
      */
     timelineShares?: Record<string, CommunityTimelineShareRecord>;
     /**
-     * Share scene body per Book Manager book, keyed by book id. Scoped like
-     * timelineShares: a record made for another profile is ignored. Which scenes
-     * are released, their text and their readers belong to the website: this
-     * record never holds scene text or a hash of it.
+     * Level 4, "Everything above, plus scene text you release": the gate for
+     * scene text (contract 2026-11-22, "Scene text asked on Community, sent
+     * from the vault"). Below it the plugin lists no request and sends no
+     * text. Choosing it sends nothing: a scene leaves only when the author
+     * presses Send on a request made on Community.
      */
-    sceneBodyShares?: Record<string, CommunitySceneBodyShareRecord>;
+    sceneTextLevel?: boolean;
+    /**
+     * The scene-sharing terms version the author agreed to in this vault when
+     * choosing Level 4. Recorded on the website with the first Send when the
+     * website has no agreement on record.
+     */
+    sceneTextTermsVersion?: string;
     /**
      * Books from Community being made into vault books, keyed by the website's
      * transfer id (communityShare/bookTransferWriter.ts). A record is written
@@ -1152,16 +1159,6 @@ export interface CommunityBookTransferRecord {
      */
     phase: 'writing' | 'written' | 'cancelled';
     startedAt: string;
-}
-
-/** One book's Share scene body state (plugin data, never frontmatter). */
-export interface CommunitySceneBodyShareRecord {
-    /** Website profile the author turned this on for. */
-    profileId: string;
-    /** Share scene body: the author may release scenes of this book. Turning it on or off sends no text. */
-    enabled: boolean;
-    /** The book's website project, from the last status answer: the "Choose readers" link. */
-    projectId?: string;
 }
 
 /** One book's timeline sharing state (plugin data, never frontmatter). */

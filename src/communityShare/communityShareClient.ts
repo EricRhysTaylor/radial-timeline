@@ -4,9 +4,9 @@ import { apiVersion, normalizePath, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, sceneBodyShareFor, timelineShareFor } from './communityShareSettings';
+import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareSceneText, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, modeIncludesActivity, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
-import { sceneTextProblem, type SceneBlock, type SceneTextProblem } from './sceneReleaseText';
+import type { SceneTextProblem } from './sceneReleaseText';
 import {
     readBookTransferDone,
     readBookTransferList,
@@ -17,7 +17,6 @@ import {
     type BookTransferRead,
     type BookTransferState,
 } from './bookTransferDocument';
-import { isOpaqueSceneId } from '../utils/sceneIds';
 import { isPathInFolderScope } from '../utils/pathScope';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
@@ -29,7 +28,7 @@ import {
     buildCommunitySharePreview,
     communityDailyIncludesWords
 } from './communitySharePreview';
-import type { BookProfile, CommunitySceneBodyShareRecord, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
+import type { BookProfile, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -1733,17 +1732,18 @@ export async function keepTimelineUpdated(plugin: RadialTimelinePlugin, bookId: 
     await saveTimelineRecord(plugin, bookId, profileId, () => ({ profileId, enabled: true }));
 }
 
-// -- Private scenes (Settings → Community) ------------------------------------
+// -- Scene text (Settings → Community → Vault → Community) --------------------
 //
-// The only path by which scene text leaves the vault. Text is sent by
-// releaseSceneBody alone, and that is called only from the preview dialog's
-// Release / Update button (SceneReleasePreviewModal), after the author has
-// seen the very blocks that go, or from the batch release's Release button
-// (SceneReleaseBatchModal), after the author has confirmed the checked
-// scenes by title and word count. No sync, timer or startup hook calls it:
-// status, consent and take-down carry no text, and nothing here runs on its
-// own. Contract: Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md;
-// doctrine: docs/engineering/standards/writing-session-privacy.md.
+// The only path by which scene text leaves the vault. A scene is asked for on
+// Community (contract 2026-11-22, "Scene text asked on Community, sent from
+// the vault"); the vault answers: one call in sceneTextRequests.ts sends text,
+// and it is called only from the Send button of the "Send scene to Community" dialog
+// (SceneReleasePreviewModal), after the author has seen the very blocks that
+// go. A release or an update always names the request it answers. No sync,
+// timer or startup hook calls it: status, requests, consent and decline carry
+// no text, and nothing here runs on its own. Below Level 4 nothing here leaves.
+// Request shapes: sceneTextRequests.ts. Doctrine:
+// docs/engineering/standards/writing-session-privacy.md.
 
 export type SceneReleaseRating = 'general' | 'mature';
 
@@ -1859,10 +1859,9 @@ export function sceneTextProblemMessage(problem: SceneTextProblem): string {
 }
 
 /**
- * Whether a scene-release call may leave: a connected vault, sharing not
- * paused (Pause is a full outbound freeze, so even the status read stops), and
- * the level a timeline needs, because a scene is released onto the shared
- * timeline.
+ * Whether a scene-text call may leave: a connected vault, sharing not paused
+ * (Pause is a full outbound freeze, so even the status read stops), and Level
+ * 4, the gate for scene text.
  */
 function assertSceneReleaseAllowed(settings: CommunityShareSettings): void {
     if (!hasCommunityConnection(settings)) {
@@ -1871,7 +1870,7 @@ function assertSceneReleaseAllowed(settings: CommunityShareSettings): void {
     if (settings.sharingPaused) {
         throw new CommunityShareError('sharing_paused', t('ui.communityShareClient.sceneReleasePaused'));
     }
-    if (!canShareTimelineToCommunity(settings)) {
+    if (!canShareSceneText(settings)) {
         throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.sceneReleaseLevelRequired'));
     }
 }
@@ -1882,7 +1881,7 @@ function assertSceneReleaseAllowed(settings: CommunityShareSettings): void {
  * key. Gated before the secret is read and again immediately before the
  * request leaves, like every sender here.
  */
-async function postSceneRelease<T>(
+export async function postSceneRelease<T>(
     plugin: RadialTimelinePlugin,
     book: Pick<BookProfile, 'id'>,
     action: Record<string, unknown>,
@@ -1907,89 +1906,18 @@ async function postSceneRelease<T>(
     );
 }
 
-async function saveSceneBodyRecord(
-    plugin: RadialTimelinePlugin,
-    bookId: string,
-    profileId: string,
-    update: (record: CommunitySceneBodyShareRecord) => CommunitySceneBodyShareRecord
-): Promise<void> {
-    commitCommunityShare(plugin, live => {
-        // The author may have reconnected as someone else while this was out.
-        if (live.connection.profileId !== profileId) return live;
-        const base = sceneBodyShareFor(live, bookId) ?? { profileId, enabled: false };
-        return { ...live, sceneBodyShares: { ...live.sceneBodyShares, [bookId]: update(base) } };
-    });
-    await plugin.saveSettings();
-}
-
-/**
- * Share scene body, turned on or off for one book. A local setting: nothing is
- * sent, released or taken down. `projectId` is the book's website project from
- * the status answer, kept for the "Choose readers" link.
- */
-export async function setSceneBodySharing(
-    plugin: RadialTimelinePlugin,
-    bookId: string,
-    enabled: boolean,
-    projectId?: string
-): Promise<void> {
-    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
-    if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
-    await saveSceneBodyRecord(plugin, bookId, profileId, record => {
-        const project = projectId ?? record.projectId;
-        return { profileId, enabled, ...(project ? { projectId: project } : {}) };
-    });
-}
-
 /**
  * What the website holds for this book: its releases with their hashes, the
  * account's consent and standing, and the limit. The request names the book
  * and carries no text; the answer never carries any.
  */
-export async function fetchSceneReleaseStatus(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<SceneReleaseStatus> {
-    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
-    const status = await postSceneRelease(plugin, book, { action: 'status' }, isSceneReleaseStatus);
-    const record = sceneBodyShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), book.id);
-    if (profileId && record?.enabled && record.projectId !== status.project_id) {
-        await saveSceneBodyRecord(plugin, book.id, profileId, live => ({ ...live, projectId: status.project_id }));
-    }
-    return status;
+export function fetchSceneReleaseStatus(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<SceneReleaseStatus> {
+    return postSceneRelease(plugin, book, { action: 'status' }, isSceneReleaseStatus);
 }
 
 /** Record the author's agreement to the release terms, once per account. Carries no text. */
 export async function acceptSceneReleaseTerms(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<void> {
     await postSceneRelease(plugin, book, { action: 'consent', terms_version: SCENE_AUTHOR_AGREEMENT_VERSION }, isSceneReleaseConsentAnswer);
-}
-
-/**
- * Release one scene's text, or replace a released scene's text when
- * `expectedVersion` is given (the version the status answer reported).
- *
- * The one call that sends scene text. Call it only from the preview dialog's
- * Release / Update button, with the blocks that dialog rendered, or from the
- * batch release's Release button, with the blocks read when it opened.
- */
-export async function releaseSceneBody(
-    plugin: RadialTimelinePlugin,
-    book: Pick<BookProfile, 'id'>,
-    release: { sceneId: string; rating: SceneReleaseRating; blocks: readonly SceneBlock[]; expectedVersion?: number }
-): Promise<SceneReleaseResult> {
-    if (!isOpaqueSceneId(release.sceneId)) {
-        throw new CommunityShareError('invalid_request', t('ui.communityShareClient.sceneReleaseNoSceneId'));
-    }
-    const problem = sceneTextProblem(release.blocks);
-    if (problem) {
-        throw new CommunityShareError(problem === 'empty' ? 'empty_text' : 'too_long', sceneTextProblemMessage(problem));
-    }
-    const action = release.expectedVersion === undefined
-        ? { action: 'release', scene_id: release.sceneId, rating: release.rating, blocks: release.blocks }
-        : { action: 'update', scene_id: release.sceneId, expected_version: release.expectedVersion, rating: release.rating, blocks: release.blocks };
-    return postSceneRelease(plugin, book, action, isSceneReleaseResult);
-}
-
-/** Take a released scene down: the website deletes its text and readers lose it at once. Carries no text. */
-export async function takeDownSceneRelease(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>, releaseId: string): Promise<void> {
-    await postSceneRelease(plugin, book, { action: 'take_down', release_id: releaseId }, isOkResponse);
 }
 
 async function callReportAction(
@@ -2120,7 +2048,8 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
 /**
  * True when the author's standing sharing state allows posting a session
  * summary to the community feed: connected, sharing on, public audience, and
- * Level 3 (writing activity). UI gates the toggle on this;
+ * a level that shares writing activity (Level 3, and Level 4 when it includes
+ * it: modeIncludesActivity). UI gates the toggle on this;
  * the edge function re-verifies every gate server-side.
  */
 export function canPostSessionsToFeed(plugin: RadialTimelinePlugin): boolean {
@@ -2130,7 +2059,7 @@ export function canPostSessionsToFeed(plugin: RadialTimelinePlugin): boolean {
         && Boolean(current.connection.connectionId)
         && Boolean(current.connection.secretId)
         && current.audience === 'public'
-        && deriveCommunityShareMode(current) === 'progress';
+        && modeIncludesActivity(deriveCommunityShareMode(current));
 }
 
 /**

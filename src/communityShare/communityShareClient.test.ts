@@ -1345,6 +1345,19 @@ describe('standing-share exits: begin, pause, resume, session post', () => {
         expect(request).toHaveBeenCalled();
     });
 
+    it('Level 4 keeps the session feed: it includes Level 3\'s writing activity', async () => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness, 4);
+        const { plugin } = harness;
+        expect(canPostSessionsToFeed(plugin as never)).toBe(true);
+        plugin.settings.communityShare.sceneTextLevel = true;
+        expect(canPostSessionsToFeed(plugin as never)).toBe(true);
+        // Level 2 does not share writing activity, so no feed.
+        plugin.settings.communityShare.sceneTextLevel = false;
+        plugin.settings.communityShare.tier = 2;
+        expect(canPostSessionsToFeed(plugin as never)).toBe(false);
+    });
+
     it('postSessionToCommunityFeed needs Level 3 and sends only the post body and stats', async () => {
         const harness = createPluginHarness();
         await armReadyToPublish(harness, 2);

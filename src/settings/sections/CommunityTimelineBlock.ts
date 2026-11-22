@@ -5,7 +5,7 @@
  */
 
 /**
- * Settings → Community → Timeline: share a book's timeline without exporting a
+ * Settings → Community → Vault → Community, the active book: share its timeline without exporting a
  * file. The website holds the truth about the share: whether it is live and
  * which details show. This block reads that and writes the author's choices
  * back. Going live stays a click on the website.
@@ -103,24 +103,23 @@ function addNote(setting: Setting, text: string, kind: 'note' | 'sent' | 'warnin
 export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerender }: CommunityTimelineBlockProps): void {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const block = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
+    // No book yet: the next step, with no heading over it.
+    if (!book) {
+        new Setting(block).setDesc(t('ui.communityShareSection.timelineAddBook'));
+        return;
+    }
+    // One block per active book: its timeline here, its scene text under it at Level 4.
     const heading = new Setting(block)
-        .setName(t('ui.communityShareSection.timelineHeading'))
+        .setName(book.publicLabel || book.title) // SAFE: the public label is optional; the book's own title is always set
         .setHeading()
         .setDesc(t('ui.communityShareSection.timelineDesc'));
-    addHeadingIcon(heading, 'orbit');
+    addHeadingIcon(heading, 'book-open-text');
     applyErtHeaderLayout(heading);
 
-    if (settings.connection.status !== 'connected') {
-        new Setting(block).setDesc(t('ui.communityShareSection.connectToLoadNote'));
-        return;
-    }
-    // Private level does not send a book identifier to the website.
+    // The section renders this block only while connected at a level that
+    // shares timelines, or paused; the Vault → Community row says which.
     const canShare = canShareTimelineToCommunity(settings);
-    if (!settings.sharingPaused && !canShare) {
-        new Setting(block).setDesc(t('ui.communityShareSection.timelineLevelNote'));
-        return;
-    }
-    if (!book || !book.sourceFolder?.trim()) {
+    if (!book.sourceFolder?.trim()) {
         new Setting(block).setDesc(t('ui.communityShareSection.timelineNoBook'));
         return;
     }
@@ -200,8 +199,6 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
             });
         });
 
-    if (paused) addNote(shareRow, t('ui.communityShareSection.timelinePausedNote'));
-    else if (!canShare) addNote(shareRow, t('ui.communityShareSection.timelineLevelNote'));
     if (record?.enabled) addNote(shareRow, t('ui.communityShareSection.timelineStopNote'));
     if (record?.lastSentAt) {
         addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: formatCommunityDate(record.lastSentAt) }), 'sent');
@@ -230,7 +227,6 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         : answer.reader_access === 'unavailable' ? t('ui.communityShareSection.timelineReaderUnavailable')
         : t('ui.communityShareSection.timelineReaderUnknown');
     text.createDiv({ text: access });
-    text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineThumbnailNote') });
     text.createDiv({ text: t('ui.communityShareSection.timelineRevealCount', { revealed: share.revealed_count, total: share.scene_count }) });
     if (cached) text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineCheckedAt', { date: formatCommunityDate(cached.fetchedAt) }) });
     if (!answer.preview_document || !renderTimelinePreview(visual, answer.preview_document)) {

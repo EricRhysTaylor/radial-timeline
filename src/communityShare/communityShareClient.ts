@@ -7,6 +7,8 @@ import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '..
 import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareSceneText, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, modeIncludesActivity, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import type { SceneTextProblem } from './sceneReleaseText';
+import { readBookSharingState, readServerDisconnect, readVaultSharingState, type BookSharingState, type VaultSharingState } from './sharingState';
+import { refusalMessage } from './sharingWords';
 import {
     readBookTransferDone,
     readBookTransferList,
@@ -28,7 +30,7 @@ import {
     buildCommunitySharePreview,
     communityDailyIncludesWords
 } from './communitySharePreview';
-import type { BookProfile, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
+import type { BookProfile, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunitySharingNoticeOwed, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -78,12 +80,22 @@ interface ReportActionSuccess {
 
 export class CommunityShareError extends Error {
     code: string;
+    /** The refusal body's fields beside `error` (a refusal's time and side), when it sent any. */
+    details?: Record<string, unknown>;
 
-    constructor(code: string, message: string) {
+    constructor(code: string, message: string, details?: Record<string, unknown>) {
         super(message);
         this.name = 'CommunityShareError';
         this.code = code;
+        if (details) this.details = details;
     }
+}
+
+/** A refusal body's fields beside `error`, or undefined when it has none. */
+function refusalDetails(parsed: unknown): Record<string, unknown> | undefined {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+    const rest = Object.fromEntries(Object.entries(parsed as Record<string, unknown>).filter(([key]) => key !== 'error'));
+    return Object.keys(rest).length > 0 ? rest : undefined;
 }
 
 function randomBase64Url(bytes: number): string {
@@ -173,9 +185,18 @@ async function postCommunityFunction<T>(
     const parsed = parseResponseJson(response.text);
     if (response.status < 200 || response.status >= 300) {
         const error = (parsed as CommunityErrorBody).error;
+        const code = error?.code || failure.code; // SAFE: non-2xx response carrying no structured code; the caller names the call that failed
+        const details = refusalDetails(parsed);
+        // Community says who disconnected this vault and when: the vault stops
+        // calling itself connected (one place for every plugin call).
+        if (code === 'connection_disconnected' && typeof body.connection_id === 'string') {
+            await recordServerDisconnect(plugin, body.connection_id, details);
+        }
         throw new CommunityShareError(
-            error?.code || failure.code, // SAFE: non-2xx response carrying no structured code; the caller names the call that failed
-            error?.message || failure.message // SAFE: user-facing text used only when the error body carries no message
+            code,
+            refusalMessage(code, details)
+                ?? (error?.message || failure.message), // SAFE: user-facing text used only when the error body carries no message
+            details
         );
     }
     if (!isSuccess(parsed)) {
@@ -255,6 +276,58 @@ export function commitCommunityShare(
     const next = normalizeCommunityShareSettings(update(live));
     plugin.settings.communityShare = next;
     return next;
+}
+
+/**
+ * Community answered that this connection was disconnected (on Community, in
+ * another copy of this vault, or when another vault took the book). The vault
+ * is disconnected here too, as a local Disconnect leaves it, and keeps who and
+ * when for the badge. An answer for a connection this vault has since replaced
+ * changes nothing.
+ */
+async function recordServerDisconnect(plugin: RadialTimelinePlugin, connectionId: string, details: Record<string, unknown> | undefined): Promise<void> {
+    const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (before.connection.connectionId !== connectionId || before.connection.status !== 'connected') return;
+    const disconnect = readServerDisconnect(details);
+    const at = disconnect.at ?? new Date().toISOString();
+    const secretId = before.connection.secretId;
+    let recorded = false;
+    commitCommunityShare(plugin, live => {
+        if (live.connection.connectionId !== connectionId || live.connection.status !== 'connected') return live;
+        recorded = true;
+        return {
+            ...live,
+            scheduledPublishEnabled: false,
+            sharingPaused: false,
+            sharingPausedAt: undefined,
+            sharingNoticeOwed: undefined,
+            connection: {
+                ...live.connection,
+                status: 'disconnected',
+                disconnectedAt: at,
+                serverDisconnect: disconnect,
+                lastSyncedPayloadHash: undefined,
+                secretId: undefined,
+                bookListSyncedAt: undefined,
+                bookListSyncError: undefined,
+                bookListSyncFailedAt: undefined
+            },
+            publishHistory: appendHistory(live, {
+                id: `disconnect-${at}`,
+                action: 'disconnect',
+                status: 'success',
+                at,
+                message: 'Disconnected, as Community reported.'
+            }),
+            lastError: undefined
+        };
+    });
+    if (!recorded) return;
+    // The key no longer opens anything on Community.
+    if (secretId && !await deleteSecret(plugin.app, secretId)) {
+        console.warn('Community Share: the disconnected connection secret could not be deleted.');
+    }
+    await plugin.saveSettings();
 }
 
 async function getOrCreateInstallationId(plugin: RadialTimelinePlugin): Promise<string> {
@@ -349,6 +422,8 @@ export async function confirmCommunityShareActivation(
         ...current,
         enabled: true,
         sharingPaused: false,
+        // A notice owed to the old connection is not this one's to tell.
+        sharingNoticeOwed: undefined,
         timelineShares,
         connection: {
             ...current.connection,
@@ -1045,6 +1120,77 @@ export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promi
     return result;
 }
 
+// -- Sharing notices: who paused, and when (Eric's decision, 2026-11-22) ------
+//
+// Pause and Resume each tell Community one content-free fact: that it happened,
+// and for a resume, the time of a pause whose own notice never arrived. The
+// vault acts first and tells Community after: a failed notice never blocks the
+// author's choice. A pause Community did not hear is told with the next resume
+// (`paused_at`); a resume it did not hear goes again before the next sync.
+
+function isVaultSharingAnswer(value: unknown): value is { ok: true; sharing: VaultSharingState } {
+    const body = value as { ok?: unknown; sharing?: unknown };
+    return body?.ok === true && readVaultSharingState(body.sharing) !== null;
+}
+
+/** One sharing notice, or the history read, on `community-share-context`. Works at every level and while paused. */
+async function postSharingNotice(plugin: RadialTimelinePlugin, action: 'pause' | 'resume' | 'history', pausedAt?: string): Promise<VaultSharingState> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin, true);
+    assertStillSendable(plugin, connection, true, true);
+    const answer = await postCommunityFunction(
+        plugin,
+        'community-share-context',
+        { action, connection_id: connectionId, current_secret: currentSecret, ...(pausedAt ? { paused_at: pausedAt } : {}) },
+        isVaultSharingAnswer,
+        { code: 'sharing_notice_failed', message: t('ui.communityShareClient.sharingNoticeFailed') },
+        t('ui.communityShareClient.sharingNoticeUnexpected')
+    );
+    return readVaultSharingState(answer.sharing)!; // SAFE: isVaultSharingAnswer read it
+}
+
+/**
+ * Tell Community the notice it is owed, and clear it once told. A notice made
+ * stale by a newer Pause or Resume is left to that one. Never throws.
+ */
+async function tellOwedSharingNotice(plugin: RadialTimelinePlugin): Promise<void> {
+    const owed = normalizeCommunityShareSettings(plugin.settings.communityShare).sharingNoticeOwed;
+    if (!owed) return;
+    let told = false;
+    try {
+        await postSharingNotice(plugin, owed.action, owed.action === 'resume' ? owed.pausedAt : undefined);
+        told = true;
+    } catch (error) {
+        const code = error instanceof CommunityShareError ? error.code : 'sharing_notice_failed';
+        // A time Community refuses (this computer's clock) is told no better by
+        // waiting; the resume itself goes again without it.
+        if (code === 'invalid_time' && owed.action === 'resume' && owed.pausedAt) {
+            commitCommunityShare(plugin, live => (sameNotice(live.sharingNoticeOwed, owed) ? { ...live, sharingNoticeOwed: { action: 'resume' } } : live));
+            await plugin.saveSettings();
+            return tellOwedSharingNotice(plugin);
+        }
+        console.warn('Community sharing notice not sent yet:', error instanceof Error ? error.message : error);
+    }
+    if (!told) return;
+    commitCommunityShare(plugin, live => (sameNotice(live.sharingNoticeOwed, owed) ? { ...live, sharingNoticeOwed: undefined } : live));
+    await plugin.saveSettings();
+}
+
+function sameNotice(a: CommunitySharingNoticeOwed | undefined, b: CommunitySharingNoticeOwed): boolean {
+    return !!a && a.action === b.action && a.pausedAt === b.pausedAt;
+}
+
+/** Before an outbound sync: a resume Community did not hear goes first. */
+async function tellOwedResume(plugin: RadialTimelinePlugin): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (current.sharingPaused || current.sharingNoticeOwed?.action !== 'resume' || !hasCommunityConnection(current)) return;
+    await tellOwedSharingNotice(plugin);
+}
+
+/** The vault's sharing state on Community: its pause, the account's standing, and recent events. Sends nothing about the books. */
+export function fetchVaultSharingState(plugin: RadialTimelinePlugin): Promise<VaultSharingState> {
+    return postSharingNotice(plugin, 'history');
+}
+
 export async function pauseCommunitySharing(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const at = new Date().toISOString();
@@ -1053,25 +1199,31 @@ export async function pauseCommunitySharing(plugin: RadialTimelinePlugin): Promi
         scheduledPublishEnabled: false,
         // Hard freeze: block report sync, daily aggregates, project shell sync,
         // APR uploads, session feed posts and timeline updates until the author
-        // resumes.
+        // resumes. The one exception is the notice below: that it paused, and when.
         sharingPaused: true,
+        sharingPausedAt: at,
+        sharingNoticeOwed: hasCommunityConnection(current) ? { action: 'pause', pausedAt: at } : undefined,
         publishHistory: appendHistory(current, {
             id: `pause-${at}`,
             action: 'pause',
             status: 'success',
             at,
-            message: 'Sharing paused. Nothing leaves this vault until resumed; already shared data stays visible.'
+            message: 'Sharing paused. Only the notice that it paused leaves this vault until resumed; already shared data stays visible.'
         })
     });
     await plugin.saveSettings();
+    await tellOwedSharingNotice(plugin);
 }
 
 export async function resumeCommunitySharing(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const at = new Date().toISOString();
+    const untoldPause = current.sharingNoticeOwed?.action === 'pause' ? current.sharingNoticeOwed.pausedAt : undefined;
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
         sharingPaused: false,
+        sharingPausedAt: undefined,
+        sharingNoticeOwed: hasCommunityConnection(current) ? { action: 'resume', ...(untoldPause ? { pausedAt: untoldPause } : {}) } : undefined,
         scheduledPublishEnabled: true,
         publishHistory: appendHistory(current, {
             id: `resume-${at}`,
@@ -1082,6 +1234,7 @@ export async function resumeCommunitySharing(plugin: RadialTimelinePlugin): Prom
         })
     });
     await plugin.saveSettings();
+    await tellOwedSharingNotice(plugin);
     // Push anything that changed while paused so the website catches up, then
     // refresh the daily aggregate companion. Both handle their own failures.
     await syncCommunityShareIfDue(plugin);
@@ -1277,6 +1430,7 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
     if (current.sharingPaused) return 'skipped';
     if (current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) return 'skipped';
     if (current.audience !== 'public' || current.tier < 1 || current.tier > 4) return 'skipped';
+    await tellOwedResume(plugin);
 
     try {
         const preview = await buildCommunitySharePreview(plugin);
@@ -1316,6 +1470,8 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
         const message = error instanceof Error ? error.message : t('ui.communityShareClient.shareSyncFailed');
         const stopped = SYNC_STOP_CODES.has(code);
         const at = new Date().toISOString();
+        // A disconnect Community reported is already recorded, with its own note.
+        const reported = code === 'connection_disconnected';
         commitCommunityShare(plugin, live => ({
             ...live,
             scheduledPublishEnabled: stopped ? false : live.scheduledPublishEnabled,
@@ -1326,7 +1482,7 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
                 at,
                 message: stopped ? `${message} Sharing stopped.` : message
             }),
-            lastError: message
+            lastError: reported ? live.lastError : message
         }));
         await plugin.saveSettings();
         return 'failed';
@@ -1354,6 +1510,8 @@ export interface TimelineShareAnswer {
     summary?: { scenes_without_stable_id: number; reveals_dropped: number[] };
     preview_document?: TimelinePreviewDocument;
     reader_access?: "available" | "unavailable" | "unknown";
+    /** Who paused or stopped what for this book, and when (`status` only); read by readBookSharingState. */
+    sharing?: BookSharingState | null;
 }
 
 export function isTimelineShareAnswer(value: unknown): value is TimelineShareAnswer {
@@ -1372,7 +1530,7 @@ export function isTimelineShareAnswer(value: unknown): value is TimelineShareAns
 }
 
 async function postTimelineShare(plugin: RadialTimelinePlugin, body: Record<string, unknown>): Promise<TimelineShareAnswer> {
-    return postCommunityFunction(
+    const answer = await postCommunityFunction(
         plugin,
         'timeline-share-sync',
         body,
@@ -1380,6 +1538,69 @@ async function postTimelineShare(plugin: RadialTimelinePlugin, body: Record<stri
         { code: 'timeline_share_failed', message: t('ui.communityShareClient.timelineShareFailed') },
         t('ui.communityShareClient.timelineShareUnexpected')
     );
+    return { ...answer, sharing: readBookSharingState((answer as { sharing?: unknown }).sharing) };
+}
+
+function isUpdatesNoticeAnswer(value: unknown): value is { ok: true; sharing: unknown } {
+    const body = value as { ok?: unknown; sharing?: unknown };
+    return body?.ok === true && readBookSharingState(body.sharing) !== null;
+}
+
+/**
+ * Keep timeline updated turned off or on in this vault: one content-free
+ * notice on `timeline-share-sync`, the book's key and, for a resume, the time
+ * of a stop whose own notice never arrived. Cleared once told, or when the book
+ * has no timeline on Community to tell about. Never throws.
+ */
+async function tellOwedUpdatesNotice(plugin: RadialTimelinePlugin, bookId: string): Promise<void> {
+    const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const record = timelineShareFor(before, bookId);
+    const owed = record?.updatesNoticeOwed;
+    const profileId = before.connection.profileId;
+    if (!owed || !profileId) return;
+    let settled = false;
+    try {
+        const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin, true);
+        assertStillSendable(plugin, connection, true, true);
+        await postCommunityFunction(
+            plugin,
+            'timeline-share-sync',
+            {
+                action: owed.action === 'stop' ? 'stop_updates' : 'resume_updates',
+                connection_id: connectionId,
+                current_secret: currentSecret,
+                plugin_book_key: bookId,
+                ...(owed.action === 'resume' && owed.stoppedAt ? { stopped_at: owed.stoppedAt } : {}),
+            },
+            isUpdatesNoticeAnswer,
+            { code: 'sharing_notice_failed', message: t('ui.communityShareClient.sharingNoticeFailed') },
+            t('ui.communityShareClient.sharingNoticeUnexpected')
+        );
+        settled = true;
+    } catch (error) {
+        const code = error instanceof CommunityShareError ? error.code : 'sharing_notice_failed';
+        // No timeline on Community, or none this vault sends to: nothing to tell.
+        settled = code === 'timeline_not_shared' || code === 'book_disconnected' || code === 'book_deleted';
+        if (!settled) console.warn('Community timeline notice not sent yet:', error instanceof Error ? error.message : error);
+    }
+    if (!settled) return;
+    await saveTimelineRecord(plugin, bookId, profileId, current => (
+        current.updatesNoticeOwed?.action === owed.action && current.updatesNoticeOwed.stoppedAt === owed.stoppedAt
+            ? { ...current, updatesNoticeOwed: undefined }
+            : current
+    ));
+}
+
+/**
+ * Keep timeline updated turned on again after this vault turned it off: the
+ * record owes Community a resume, sent before the next push. A stop Community
+ * never heard rides along as `stopped_at`.
+ */
+function resumeAfterStop(record: CommunityTimelineShareRecord | undefined): Pick<CommunityTimelineShareRecord, 'updatesNoticeOwed'> {
+    if (!record?.updatesStoppedAt && !record?.updatesNoticeOwed) return {};
+    if (record.updatesNoticeOwed?.action === 'resume') return { updatesNoticeOwed: record.updatesNoticeOwed };
+    const untoldStop = record.updatesNoticeOwed?.action === 'stop' ? record.updatesNoticeOwed.stoppedAt : undefined;
+    return { updatesNoticeOwed: { action: 'resume', ...(untoldStop ? { stoppedAt: untoldStop } : {}) } };
 }
 
 async function saveTimelineRecord(
@@ -1433,6 +1654,13 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     const profileId = connection.profileId;
     if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
 
+    // Keep timeline updated turned back on: Community hears that first, since a
+    // push does not end a stop. Turning it on (create) is the moment it is owed.
+    const stopped = timelineShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), book.id);
+    if (create && stopped && !stopped.enabled && resumeAfterStop(stopped).updatesNoticeOwed) {
+        await saveTimelineRecord(plugin, book.id, profileId, record => ({ ...record, ...resumeAfterStop(record), updatesStoppedAt: undefined }));
+    }
+
     const hold = timelineScanHold(plugin, book);
     if (hold) {
         throw new CommunityShareError(TIMELINE_SCAN_HELD, t(hold === 'folder'
@@ -1462,6 +1690,7 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     if (payload.items.length === 0) {
         throw new CommunityShareError('empty_timeline', t('ui.communityShareClient.timelineNoScenes'));
     }
+    if (previous?.updatesNoticeOwed?.action === 'resume') await tellOwedUpdatesNotice(plugin, book.id);
 
     const hash = await sha256Hex(timelinePayloadFingerprint(payload));
     if (!create && previous?.lastSentHash === hash) {
@@ -1495,6 +1724,8 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
         droppedReveals: answer.summary?.reveals_dropped ?? [], // SAFE: the share summary is optional in the response; absent = nothing dropped
         scenesWithoutStableId: answer.summary?.scenes_without_stable_id ?? 0, // SAFE: the share summary is optional in the response; absent = none
         sceneIdPaths: holders,
+        // A resume Community has not heard yet goes again before the next push.
+        ...(record.updatesNoticeOwed ? { updatesNoticeOwed: record.updatesNoticeOwed } : {}),
     }));
     return answer;
 }
@@ -1516,13 +1747,24 @@ export async function startTimelineSharing(plugin: RadialTimelinePlugin, book: B
 }
 
 /**
- * Share timeline, turned off. Stops updates and sends nothing: taking the
- * timeline offline or deleting it stays on the website.
+ * Keep timeline updated, turned off. Stops updates, then tells Community only
+ * that it stopped, and when: taking the timeline offline or deleting it stays
+ * on the website.
  */
 export async function stopTimelineSharing(plugin: RadialTimelinePlugin, bookId: string): Promise<void> {
-    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const profileId = current.connection.profileId;
     if (!profileId) return;
-    await saveTimelineRecord(plugin, bookId, profileId, () => ({ profileId, enabled: false }));
+    const wasOn = timelineShareFor(current, bookId)?.enabled === true;
+    const at = new Date().toISOString();
+    await saveTimelineRecord(plugin, bookId, profileId, record => ({
+        profileId,
+        enabled: false,
+        ...(wasOn ? { updatesStoppedAt: at, updatesNoticeOwed: { action: 'stop' as const, stoppedAt: at } } : {}),
+        ...(!wasOn && record.updatesStoppedAt ? { updatesStoppedAt: record.updatesStoppedAt } : {}),
+        ...(!wasOn && record.updatesNoticeOwed ? { updatesNoticeOwed: record.updatesNoticeOwed } : {}),
+    }));
+    if (wasOn) await tellOwedUpdatesNotice(plugin, bookId);
 }
 
 /**
@@ -1544,14 +1786,25 @@ export async function fetchTimelineShareStatus(plugin: RadialTimelinePlugin, boo
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
     assertStillSendable(plugin, connection, true);
     const requestedAt = Date.now();
-    const answer = await postTimelineShare(plugin, {
-        connection_id: connectionId,
-        current_secret: currentSecret,
-        action: 'status',
-        include_preview: true,
-        plugin_book_key: bookId,
-    });
     const profileId = connection.profileId;
+    let answer: TimelineShareAnswer;
+    try {
+        answer = await postTimelineShare(plugin, {
+            connection_id: connectionId,
+            current_secret: currentSecret,
+            action: 'status',
+            include_preview: true,
+            plugin_book_key: bookId,
+        });
+    } catch (error) {
+        // Disconnected from this vault on Community: Keep timeline updated turns off here, with when.
+        if (error instanceof CommunityShareError && error.code === 'book_disconnected' && profileId) {
+            await saveTimelineRecord(plugin, bookId, profileId, record => (
+                record.enabled && !sentSince(record, requestedAt) ? { ...record, enabled: false, lastError: error.message } : record
+            ));
+        }
+        throw error;
+    }
     const record = timelineShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), bookId);
     if (!answer.shared && record?.enabled && profileId && !sentSince(record, requestedAt)) {
         await saveTimelineRecord(plugin, bookId, profileId, () => ({
@@ -1609,6 +1862,7 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
     if (!canShareTimelineToCommunity(current) || !hasCommunityConnection(current)) return;
     const profileId = current.connection.profileId;
     if (!profileId) return;
+    await tellOwedResume(plugin);
 
     for (const book of plugin.settings.books ?? []) { // SAFE: no books configured means nothing to send
         if (!timelineShareFor(current, book.id)?.enabled || !book.sourceFolder?.trim()) continue;
@@ -1617,20 +1871,23 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             await pushTimeline(plugin, book, false);
         } catch (error) {
             const code = error instanceof CommunityShareError ? error.code : 'timeline_share_failed';
-            // Pause or Disconnect landing mid-run is a clean stop, not a failure.
-            if (code === 'sharing_paused' || code === 'connection_changed') return;
+            // Pause or Disconnect landing mid-run is a clean stop, not a failure;
+            // a disconnect Community reported is recorded with its own note.
+            if (code === 'sharing_paused' || code === 'connection_changed' || code === 'connection_disconnected') return;
             // A book that cannot be read whole yet is held here, with nothing
             // sent and nothing recorded, and tried again on the next cycle.
             if (code === TIMELINE_SCAN_HELD) continue;
             const message = error instanceof Error ? error.message : t('ui.communityShareClient.timelineShareFailed');
             const removed = code === 'timeline_not_shared';
+            // Disconnected from this vault on Community: updates stop here, with when.
+            const ended = removed || code === 'book_disconnected';
             try {
                 await saveTimelineRecord(plugin, book.id, profileId, record => {
                     // Share timeline was turned on again while this update was out.
-                    if (removed && sentSince(record, requestedAt)) return record;
+                    if (ended && sentSince(record, requestedAt)) return record;
                     return {
                         ...record,
-                        enabled: removed ? false : record.enabled,
+                        enabled: ended ? false : record.enabled,
                         lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
                     };
                 });
@@ -1729,7 +1986,7 @@ export function fetchBookTransferState(plugin: RadialTimelinePlugin, transferId:
 export async function keepTimelineUpdated(plugin: RadialTimelinePlugin, bookId: string): Promise<void> {
     const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
     if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
-    await saveTimelineRecord(plugin, bookId, profileId, () => ({ profileId, enabled: true }));
+    await saveTimelineRecord(plugin, bookId, profileId, record => ({ profileId, enabled: true, ...resumeAfterStop(record) }));
 }
 
 // -- Scene text (Settings → Community → Vault → Community) --------------------
@@ -2009,10 +2266,12 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
         enabled: false,
         scheduledPublishEnabled: false,
         sharingPaused: false,
+        sharingNoticeOwed: undefined,
         connection: {
             ...live.connection,
             status: 'disconnected',
             disconnectedAt: at,
+            serverDisconnect: undefined,
             lastSyncedPayloadHash: undefined,
             secretId: undefined,
             bookListSyncedAt: undefined,

@@ -34,6 +34,8 @@ import type { BookProfile, CommunityTimelineShareRecord } from '../../types/sett
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
 import { renderTimelinePreview } from '../../communityShare/timelinePreview';
+import type { BookSharingState } from '../../communityShare/sharingState';
+import { formatCommunityDate, sharingHistoryRows, updateHeldNote, vaultUpdatesPausedNote } from '../../communityShare/sharingWords';
 
 export interface CommunityTimelineBlockProps {
     plugin: RadialTimelinePlugin;
@@ -57,6 +59,8 @@ let statusInflight = false;
 let statusEpoch = 0;
 const detailSaves = new Set<string>();
 const STATUS_TTL_MS = 60 * 1000;
+// Sharing history starts folded; an opened list stays open across rerenders.
+let historyOpen = false;
 
 const getDetailLabels = (): Array<{ field: TimelineSceneDetail; label: string }> => [
     { field: 'title', label: t('ui.communityShareSection.timelineDetailTitle') },
@@ -71,13 +75,33 @@ function errorText(error: unknown, fallback: string): string {
 }
 
 /**
- * The one date format of the Community settings, "November 18, 2026 at 4:01 PM",
- * with non-breaking spaces so a line never ends in the middle of a date.
+ * What stands on Community for this book, with who and when: vault updates
+ * paused there (by the author or a restore), an update held, the timeline
+ * taken offline. Read from `status.sharing`, so it shows before any send is
+ * refused.
  */
-export function formatCommunityDate(value: string | number): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return String(value);
-    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }).replace(/\s/g, ' ');
+export function standingBookNotes(sharing: BookSharingState | null | undefined): string[] {
+    if (!sharing) return [];
+    const notes: string[] = [];
+    if (sharing.vaultUpdatesPaused) notes.push(vaultUpdatesPausedNote(sharing.vaultUpdatesPaused));
+    if (sharing.updateHeld) notes.push(updateHeldNote(sharing.updateHeld.at));
+    const timeline = sharing.timeline;
+    if (timeline?.status === 'private' && timeline.changedAt && timeline.side === 'community') {
+        notes.push(t('ui.communitySharing.takenOffline', { date: formatCommunityDate(timeline.changedAt) }));
+    }
+    return notes;
+}
+
+/** Sharing history, folded under one line: the newest change and when. */
+function renderSharingHistory(block: HTMLElement, sharing: BookSharingState | null | undefined): void {
+    const rows = sharingHistoryRows(sharing?.history ?? []); // SAFE: an answer from before 2026-11-22 carries no history
+    if (!rows.length) return;
+    const details = block.createEl('details', { cls: 'ert-communityPreviewDetails' });
+    details.open = historyOpen;
+    details.addEventListener('toggle', () => { historyOpen = details.open; });
+    details.createEl('summary', { text: t('ui.communitySharing.historySummary', { what: rows[0].text, date: formatCommunityDate(rows[0].at) }) });
+    const list = details.createEl('ul', { cls: 'ert-community-history' });
+    for (const row of rows) list.createEl('li', { text: t('ui.communitySharing.historyRow', { date: formatCommunityDate(row.at), what: row.text }) });
 }
 
 export function shareDescription(
@@ -203,7 +227,10 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     if (record?.lastSentAt) {
         addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: formatCommunityDate(record.lastSentAt) }), 'sent');
     }
-    if (record?.lastError) addNote(shareRow, record.lastError, 'warning');
+    // A refused send says what the standing note says, so each shows once.
+    const standing = standingBookNotes(answer?.sharing);
+    for (const note of standing) addNote(shareRow, note, 'warning');
+    if (record?.lastError && !standing.includes(record.lastError)) addNote(shareRow, record.lastError, 'warning');
     if (record?.enabled && cached?.error && cached.error !== record.lastError) addNote(shareRow, cached.error, 'warning');
     if (record?.droppedReveals?.length) {
         addNote(shareRow, t('ui.communityShareSection.timelineRevealsDropped', { scenes: record.droppedReveals.join(', ') }), 'warning');
@@ -211,6 +238,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     if (record?.scenesWithoutStableId) {
         addNote(shareRow, t('ui.communityShareSection.timelineNoStableIds', { count: record.scenesWithoutStableId }), 'warning');
     }
+    renderSharingHistory(block, answer?.sharing);
 
     if (!answer?.shared || !share) return;
 

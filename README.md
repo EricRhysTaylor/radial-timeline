@@ -31,6 +31,7 @@
 - **[Story Vaults](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, *The Odyssey*, and *Sherlock Holmes*: finished books fully mapped in the timeline with saved AI analysis included. Add one from **Settings → Resources**.
 - **[Newsletter](https://community.radialtimeline.com/go/readme-newsletter)** — release news and notes from the workshop.
 - **[Community](https://community.radialtimeline.com/go/readme-community)** — writers sharing books in progress and answering each other's questions.
+- **[December beta](https://community.radialtimeline.com/go/readme-beta)** — release scenes from your timeline to readers you choose; they read in the browser and answer your questions. Open to every author and reader, December 1 to 28.
 
 ## What It Does
 

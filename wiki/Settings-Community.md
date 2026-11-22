@@ -98,6 +98,18 @@ Radial Timeline sends scene order, acts, subplots, status and publish stage. Tit
 
 A live timeline updates with your book sync. Pausing Community sharing stops every update. Sharing a timeline needs a sharing level above Private, and the book needs a source folder in Book Manager.
 
+## A Book From Community
+
+A book whose timeline you made on the Community website can become a book in your vault. On the book's Share page, choose **Add to my vault**. Tick **Include released text** to have your released scenes' text in their notes. A **Book from Community** card then appears at the top of the Community settings with the book's title and scene count: choose **Review**. On the website, **Open in Obsidian** opens the same preview (`obsidian://radial-timeline-transfer?id=<id>`).
+
+**New book from Community** shows the folder Radial Timeline creates: beside the active book's folder, or at the vault root, named for the book. Change the name if you like; it must be a new folder, clear of your other books. The preview also shows how many scene notes it writes and how many carry released text. Press **Create book**.
+
+Radial Timeline writes one scene note per scene, named with its scene number and title. Each note's properties hold the scene's act, story date, synopsis, subplots, cast, narration, publish stage, status and scene ID, under your own property names; the rest of your scene template is added empty. Released text becomes the note's body. Radial Timeline then reads the notes back, tells Community, and adds the folder to Book Manager with **Keep timeline updated** on. From then on you edit the timeline in Obsidian, and Community follows it. Readers, released scenes, questions and answers stay attached, because each note keeps its scene ID.
+
+If Obsidian closes partway, the card shows **Continue**, and Radial Timeline picks up where it stopped without writing any note twice. If Community cancels the book first (you cancelled it on the Share page, or it waited more than 24 hours), the notes stay in their folder and the folder is not added as a book; the card says where they are.
+
+What is downloaded: the book's timeline and, by your choice, its released text, only while the website holds the book for your vault. What is sent back: the new book's ID and its scene IDs. Nothing is written until you press **Create book**. See [Privacy and Security](https://github.com/EricRhysTaylor/radial-timeline/blob/main/docs/privacy-and-security.md).
+
 ## Private Scenes
 
 Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book. It is off by default. A released scene starts with the readers you name, signed in on the website. To share it publicly, choose **Open to everyone** on its scene card on the website: every signed-in Community member can read it once the Community's check passes. **Make private again** returns it to your named readers. The first time you turn on **Share scene body**, Radial Timeline shows the release terms and asks you to agree.

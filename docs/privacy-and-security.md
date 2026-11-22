@@ -126,6 +126,27 @@ External requests occur in these areas:
   only when the author opens it: it reads the connection's book list
   (`community-share-context`) and that book's release status, carries no text,
   and never turns **Share scene body** on.
+- **Book from Community** — on a connected vault at a sharing level above
+  Private, while sharing is not paused: the `timeline-transfer-sync` call.
+  While Settings → Community is open, it asks at most once a minute whether
+  the author chose **Add to my vault** for a book on the website, sending the
+  connection id and secret and nothing else. Only when the author opens that
+  book (its **Book from Community** card, or the website's
+  `obsidian://radial-timeline-transfer?id=<transfer id>` link) does the plugin
+  download it: the author's own timeline for that book (scene titles,
+  positions, acts and act count, subplots, status, stage, synopsis, cast,
+  narration, story dates and scene ids) and, only if the author ticked
+  **Include released text** on the website, the text of that book's released
+  scenes. This is the one read of the author's Community data the plugin
+  makes, and the website answers it only while the request is open (24
+  hours). Nothing is written to the vault until **Create book**. Then the
+  plugin writes one scene note per scene into a new folder, reads the notes
+  back, and sends `done` with the new book's Book Manager id and the list of
+  scene ids, and no text; if that answer is lost it asks the same call where
+  the request stands. Until the book is finished, plugin data keeps a small
+  record of it (the folder, the new book's id and which notes are written),
+  never the timeline or any text. After that the book's timeline is sent like
+  any book with **Keep timeline updated** on.
 - **Community mailbox** — on a connected vault only, while a timeline view
   is open: a `community-mailbox` check about once an hour and when Obsidian
   regains focus. It sends the connection id and secret (plus the plugin,

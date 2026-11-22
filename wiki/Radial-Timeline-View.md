@@ -42,7 +42,7 @@ See [Narrative Mode](Narrative-Mode#book-and-saga-scope) for Saga behavior and l
 
 ### In a narrow pane
 
-The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Canvas create subplot map**, commands, manuscript export, bug report, **Help**, and **Settings**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
+The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Canvas**, commands, manuscript export, bug report, **Help**, and **Settings**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
 
 ## Getting Help
 

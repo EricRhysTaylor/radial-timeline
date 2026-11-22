@@ -15,9 +15,9 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 
 Under Obsidian’s Bases toolbar, the Timetable has a row of its own:
 
-- **Quick Workspace** opens a reference document next to the table. Choose **Timetable and reference side by side**, **Timetable above reference**, **Timeline with timetable and reference**, or **Timetable above Canvas**. The reference is the first [outline document](#outline), or the first scene when the book has none. **Timetable above Canvas** opens the book’s [subplot map](#canvas-story-maps), or offers to create one. Quick Workspace clears the main area for the Timetable and the views it opens. Pinned tabs stay open behind the Timetable, and your sidebars stay as they are.
+- **Quick Workspace** opens a reference document next to the table. Choose **Timetable and reference side by side**, **Timetable above reference**, **Timeline with timetable and reference**, or **Timetable above Canvas**. The reference is the first [outline document](#outline), or the first scene when the book has none. **Timetable above Canvas** opens the book’s [subplot branches](#canvas-subplot-branches), or offers to create them. Quick Workspace clears the main area for the Timetable and the views it opens. Pinned tabs stay open behind the Timetable, and your sidebars stay as they are.
 - **Radial Timetable** switches the layout: **Table** for rows, **[Panels](#panels)** for cards with images, and **[Outline](#outline)** for the book in reading order beside your planning documents.
-- **Canvas map** builds a subplot map of the book. See [Canvas story maps](#canvas-story-maps).
+- **Canvas map** builds the book’s subplot branches on a Canvas. See [Canvas subplot branches](#canvas-subplot-branches).
 - The book button names the book the table shows (**Book: …**) and switches it. A table that spans several books shows **Choose book**.
 - **Mode** names the timeline mode the table follows. See [Follow the timeline’s mode](#follow-the-timelines-mode).
 
@@ -164,29 +164,29 @@ Each scene in Table and Panels has a grip. Drag it onto another scene to place i
 
 Sketches have a grip too, in Narrative. Drop a sketch on a scene to place it after that scene, on another sketch to sit beside it, or on an act heading to move it to the end of that act. An empty act shows **Drop a scene or sketch here**. When you move a scene to another act and sketches are placed after it, **Move attached sketches?** asks whether they **Follow scene** or **Keep in current act**. A sketch whose scene went missing, or moved to another act, shows a warning with the same choices.
 
-## Canvas story maps
+## Canvas subplot branches
 
-**Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial timeline: Canvas create subplot map** opens **Create a subplot map**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
+On a Canvas, each subplot becomes a branch. **Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial timeline: Canvas subplot branches** opens **Create subplot branches**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
 
 Each scene appears in every subplot lane it belongs to, as a card linked to its note, and lines connect the scenes of a lane in narrative order. Moving cards does not reorder your manuscript.
 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
 
-<p align="center"><img src="images/homepage-timeline-canvas.webp" alt="The timeline beside a Canvas subplot map of Pride and Prejudice" width="800"></p>
+<p align="center"><img src="images/homepage-timeline-canvas.webp" alt="The timeline beside Canvas subplot branches of Pride and Prejudice" width="800"></p>
 
-- **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out. **Switch to vertical lanes** turns the map so its lanes run down the page, and **Switch to horizontal lanes** turns it back. **Review map details** opens the [map review](#review-a-story-map).
+- **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out. **Switch to vertical lanes** turns the map so its lanes run down the page, and **Switch to horizontal lanes** turns it back. **Review map details** opens the [map review](#review-subplot-branches).
 - **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. Notes in your books open in **Preview** on any Canvas, and a choice here lasts until you close that Canvas. Other notes keep Obsidian's usual look, and a Canvas with no book notes has no **Canvas card view** button. Double-click a card to edit its note. The same menu has the Panels image choices (**Image combinations**, **Background treatment**, **Character selection**, **Image sizing** and **Portrait shape**, shared with Panels), **Show overdue scenes**, which marks late scenes, and **Follow Shift-hover from timeline in Canvas**: hold Shift while you hover a scene on the wheel, and the map travels to it and holds it in view. Cards carry their subplot colors.
 - **The map and the wheel point at each other.** Hold Shift as you hover a scene on the timeline and its cards light up on the map; click a card and its scene lights on the timeline and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
 
-### Review a story map
+### Review subplot branches
 
-A story map remembers the book, scope and layout it was made from. When the manuscript moves on, the navigation bar shows **Map out of date — review updates**. The review lists new scenes, scenes no longer in the map's scope, changed acts and subplots, a changed scene order, and the cards and connections you added, edited or removed on the Canvas. **Create updated copy** builds the current scene layout in a new Canvas and places your added and edited cards, with their connections, to its right. The original map stays as it is.
+Canvas subplot branches remember the book, scope and layout they were made from. When the manuscript moves on, the navigation bar shows **Map out of date — review updates**. The review lists new scenes, scenes no longer in the map's scope, changed acts and subplots, a changed scene order, and the cards and connections you added, edited or removed on the Canvas. **Create updated copy** builds the current scene layout in a new Canvas and places your added and edited cards, with their connections, to its right. The original map stays as it is.
 
 A map made before Radial Timeline 8.0.2 has no record of its original settings, so the review offers **Create a clean map** from the settings you choose. To bring your own cards along, close the review, select those cards on the old Canvas, and open the review again: **Create map with selected cards** places them together beside the new map. The old Canvas stays as it is.
 
-### Drop text onto a story map
+### Drop text onto subplot branches
 
-New in Radial Timeline 8.0.3. Drag selected text from any note onto a subplot lane of a story map to make it a scene there. While you drag, the map shows where it will go (*Add to Main Plot after 5 Lucas Visit*). Let go, give it a **Title** and check the **Scene text**, then select **Create scene**. The scene takes a number between its neighbors, the lane's subplot and the act at that spot, and a **Source** link back to the note the text came from. Its card joins the lane, later generated cards move to make room, and your own cards and connections stay where they are. The map stays current, so it keeps taking drops.
+New in Radial Timeline 8.0.3. Drag selected text from any note onto a subplot lane of Canvas subplot branches to make it a scene there. While you drag, the map shows where it will go (*Add to Main Plot after 5 Lucas Visit*). Let go, give it a **Title** and check the **Scene text**, then select **Create scene**. The scene takes a number between its neighbors, the lane's subplot and the act at that spot, and a **Source** link back to the note the text came from. Its card joins the lane, later generated cards move to make room, and your own cards and connections stay where they are. The map stays current, so it keeps taking drops.
 
 Drop the text outside the lanes to make a sketch instead. Scenes drop onto maps made with Radial Timeline 8.0.2 or later; for an older map, use **Review map details** to create a tracked copy first. When the map is out of date, review it before adding a scene.
 
@@ -222,7 +222,7 @@ Click a sketch row or its drawer control to open it. The drawer starts with a **
 
 Write directly in the drawer and edit its Act and When there. The text is saved in the note body. If the note changes elsewhere while you type, the drawer asks which text to keep before overwriting anything. **Open every sketch** expands the sketch drawers together.
 
-Drag selected text from any note onto the timeline or the Timetable. At **Drop text to create a sketch**, let go, then set the **Book**, **Act**, **Sketch title** and **Sketch text** in **Create sketch**. The text stays in its note, the sketch links back to it in **Source**, and it joins the end of the act. In [Outline](#outline), drop the text on a row or an act to place the sketch right there. On a story map, the text becomes a scene on the lane you drop it on; see [Drop text onto a story map](#drop-text-onto-a-story-map).
+Drag selected text from any note onto the timeline or the Timetable. At **Drop text to create a sketch**, let go, then set the **Book**, **Act**, **Sketch title** and **Sketch text** in **Create sketch**. The text stays in its note, the sketch links back to it in **Source**, and it joins the end of the act. In [Outline](#outline), drop the text on a row or an act to place the sketch right there. On Canvas subplot branches, the text becomes a scene on the lane you drop it on; see [Drop text onto subplot branches](#drop-text-onto-subplot-branches).
 
 ## Add a note to the book
 

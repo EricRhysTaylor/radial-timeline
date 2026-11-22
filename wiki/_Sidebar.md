@@ -34,7 +34,7 @@
 *   [Timetable](Timetable)
     *   [Panels](Timetable#panels)
     *   [Outline](Timetable#outline)
-    *   [Canvas story maps](Timetable#canvas-story-maps)
+    *   [Canvas subplot branches](Timetable#canvas-subplot-branches)
 *   [Scene Time](Scene-Time)
 *   [Inquiry View](Inquiry)
     *   [Running an Inquiry](Inquiry#running-an-inquiry)

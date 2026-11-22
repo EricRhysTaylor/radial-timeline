@@ -101,12 +101,18 @@ export function suggestTransferFolder(title: string, activeBookFolder: string | 
         const dot = base.indexOf('.');
         return `${base.slice(0, dot).trimEnd()} ${attempt}${base.slice(dot)}`;
     };
-    for (let attempt = 1; ; attempt += 1) {
+    // Bounded: when every candidate is taken (the parent itself overlaps another
+    // registered book, so each one inside it does too), offer the plain name and
+    // let checkTransferFolder say why, rather than looping forever.
+    for (let attempt = 1; attempt <= MAX_FOLDER_ATTEMPTS; attempt += 1) {
         const name = attempt === 1 ? base : numbered(attempt);
         const folder = parent ? `${parent}/${name}` : name;
         if (!nameProblem(name) && !isTaken(folder)) return folder;
     }
+    return parent ? `${parent}/${base}` : base;
 }
+
+const MAX_FOLDER_ATTEMPTS = 1000;
 
 export type TransferFolderProblem =
     | { kind: 'empty' }

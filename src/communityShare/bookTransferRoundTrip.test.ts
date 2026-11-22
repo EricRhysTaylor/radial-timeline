@@ -483,6 +483,8 @@ describe('the folder', () => {
 
     it('is offered under a name Windows keeps as written', () => {
         expect(suggestTransferFolder('Wait...', 'Books/Mira', () => false)).toBe('Books/Wait');
+        // Every candidate taken (the parent overlaps another book): the plain name, not an endless loop.
+        expect(suggestTransferFolder('The Lighthouse', 'Series/Book 1', () => true)).toBe('Series/The Lighthouse');
         expect(suggestTransferFolder('Wait...', 'Books/Mira', folder => folder === 'Books/Wait')).toBe('Books/Wait 2');
         expect(suggestTransferFolder('...', undefined, () => false)).toBe('Book');
         expect(suggestTransferFolder('CON', 'Books/Mira', () => false)).toBe('Books/CON 2');

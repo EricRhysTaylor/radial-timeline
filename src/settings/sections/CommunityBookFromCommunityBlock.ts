@@ -95,7 +95,13 @@ export function renderCommunityBookFromCommunityBlock({ plugin, viewEl, containe
                 .addButton(button => button
                     .setButtonText(t('ui.bookFromCommunity.cardCancelledButton'))
                     .onClick(async () => {
-                        await obsidianBookTransferDeps(plugin).store.remove(transferId);
+                        try {
+                            await obsidianBookTransferDeps(plugin).store.remove(transferId);
+                        } catch (error) {
+                            // Plugin data could not be saved; the record stays on the card.
+                            console.error('Book from Community could not save its record:', error);
+                            return;
+                        }
                         changed();
                     }));
             continue;

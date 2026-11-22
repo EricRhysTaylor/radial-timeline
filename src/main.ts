@@ -42,6 +42,7 @@ import releaseNotesBundle from './data/releaseNotesBundle.json';
 import { CommandRegistrar } from './services/CommandRegistrar';
 import { AiJobsService } from './services/AiJobsService';
 import { registerSceneReleaseLink } from './services/SceneReleaseLinkService';
+import { registerBookFromCommunityLink } from './services/BookFromCommunityLinkService';
 import { HoverHighlighter } from './services/HoverHighlighter';
 import { SceneHighlighter } from './services/SceneHighlighter';
 import { GossamerScoreService } from './services/GossamerScoreService';
@@ -823,6 +824,8 @@ export default class RadialTimelinePlugin extends Plugin {
         }
         // The Community website's Release scenes link.
         registerSceneReleaseLink(this);
+        // The Community website's Open in Obsidian link for a book being added to the vault.
+        registerBookFromCommunityLink(this);
 
         // Add settings tab (only once)
         if (!this._settingsTabAdded) {

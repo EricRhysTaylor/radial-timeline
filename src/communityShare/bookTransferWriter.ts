@@ -304,7 +304,7 @@ async function tellCommunity(
  * Anything in the vault at this path, compared without case: on a file system
  * that ignores case, "the lighthouse" and "The Lighthouse" are one folder.
  */
-function takenInVault(app: App, path: string): boolean {
+export function takenInVault(app: App, path: string): boolean {
     const wanted = normalizePath(path).toLowerCase();
     return app.vault.getAllLoadedFiles().some(file => file.path.toLowerCase() === wanted);
 }

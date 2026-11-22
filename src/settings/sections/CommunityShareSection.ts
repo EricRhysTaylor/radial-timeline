@@ -31,6 +31,7 @@ import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
 import { formatCommunityDate, renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { renderCommunitySceneBodyBlock } from './CommunitySceneBodyBlock';
+import { renderCommunityBookFromCommunityBlock } from './CommunityBookFromCommunityBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
 import { docsUrl } from '../../utils/docsUrl';
@@ -867,6 +868,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     })();
 
+    renderCommunityBookFromCommunityBlock({ plugin, containerEl: section, rerender });
     renderCommunityTimelineBlock({ plugin, containerEl: section, book: activeBook, rerender });
     renderCommunitySceneBodyBlock({ plugin, containerEl: section, book: activeBook, rerender });
 

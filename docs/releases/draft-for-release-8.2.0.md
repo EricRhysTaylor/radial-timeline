@@ -1,6 +1,6 @@
 ## Radial Timeline 8.2.0
 
-A book you made on the Community website can now become a book in your vault, story maps keep their review details on every device, and fixes.
+A book you made on the Community website can now become a book in your vault, Canvas subplot branches keep their review details on every device, and fixes.
 
 ### Book from Community
 
@@ -19,7 +19,8 @@ See [A book from Community](https://github.com/EricRhysTaylor/radial-timeline/wi
 
 ### Improvements
 
-- **Story maps on every device:** a story map you create now keeps its review details in a small file beside its Canvas, so **Map out of date — review updates** and text drops work on every device that syncs the vault. The details follow the map when you rename it or its folder.
+- **Canvas subplot branches on every device:** Canvas subplot branches you create now keep their review details in a small file beside the Canvas, so **Map out of date — review updates** and text drops work on every device that syncs the vault. The details follow the Canvas when you rename it or its folder.
+- **Command name:** the command that builds a book's subplots on a Canvas is now called **Canvas subplot branches**.
 - **Story Vaults keep their narration setting:** each book in a Story Vault opens with the narration setting it was made with, whether you add the story to your vault or download it as its own vault.
 - **Keep timeline updated waits for your notes:** while Obsidian is still opening the vault, or a note in the book has not been read yet, the update waits and goes out with the next one, so the Community always gets your whole timeline.
 

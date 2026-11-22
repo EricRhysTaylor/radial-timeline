@@ -7482,7 +7482,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "onboardDesc": "Importe una exportación de Scrivener o un documento de Word. Las escenas, el orden, los resúmenes y los metadatos se importan junto con él.",
             "workflowLead": "¿Iniciar una nueva bóveda?",
             "workflowStepBookManager": "Configure su carpeta de novelas dentro de la bóveda con [Administrador de libros].",
-            "workflowStepCreateNote": "Abra la paleta de comandos `⌘ + P` y ejecute `Note create`, o andamic rápidamente con `Book Designer`.",
             "workflowStepPopulate": "Complete escenas y luego expanda con subtramas, sistemas de beats y más.",
             "workflowStepDecide": "Decide temprano: ¿cuántos actos? ¿Cuál es el lapso de tiempo? Considere marcadores de contexto útiles con notas de fondo o microfondos.",
             "workflowStepTrack": "Una vez que estés en el ritmo, no olvides rastrear el tiempo de tu sesión de escritura y el recuento de palabras y establecer fechas de vencimiento para escenas o publicar etapas.",

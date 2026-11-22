@@ -7482,7 +7482,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "onboardDesc": "Nhập bản xuất từ Scrivener hoặc tài liệu Word. Các cảnh, thứ tự, tóm tắt và siêu dữ liệu sẽ được giữ nguyên.",
             "workflowLead": "Bắt đầu một kho mới?",
             "workflowStepBookManager": "Đặt thư mục tiểu thuyết của bạn bên trong kho với [Book Manager].",
-            "workflowStepCreateNote": "Mở bảng lệnh `⌘ + P` và chạy `Note create`, hoặc giàn giáo nhanh chóng với `Book Designer`.",
             "workflowStepPopulate": "Thêm các cảnh rồi mở rộng với cốt truyện phụ, hệ thống nhịp và nhiều hơn nữa.",
             "workflowStepDecide": "Quyết định sớm: Có bao nhiêu hồi? Khoảng thời gian là gì? Xem xét các điểm đánh dấu ngữ cảnh hữu ích với các ghi chú phông nền hoặc phông nền vi mô.",
             "workflowStepTrack": "Khi bạn bắt đầu nhịp điệu, đừng quên theo dõi thời gian viết và đếm từ của bạn và đặt ngày đến hạn cho các cảnh hoặc các giai đoạn xuất bản.",

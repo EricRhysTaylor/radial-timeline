@@ -7476,7 +7476,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             onboardDesc: 'Scrivener のエクスポートや Word 文書を取り込みます。シーン、順序、シノプシス、メタデータも一緒に取り込まれます。',
             workflowLead: '新しい保管庫を始めますか？',
             workflowStepBookManager: '[ブックマネージャー] で保管庫内の小説フォルダを設定します。',
-            workflowStepCreateNote: 'コマンドパレット `⌘ + P` を開いて `Note create` を実行するか、`Book Designer` ですばやくスキャフォールドします。',
             workflowStepPopulate: 'シーンを追加し、サブプロットやビートシステムなどで広げていきます。',
             workflowStepDecide: '早めに決めておきましょう：幕はいくつにするか？物語の時間の幅は？バックドロップノートやマイクロバックドロップで役立つ文脈マーカーを置くことも検討してください。',
             workflowStepTrack: 'リズムに乗ってきたら、執筆セッションの時間と語数を記録し、シーンや公開ステージに期日を設定することも忘れずに。',

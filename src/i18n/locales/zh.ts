@@ -7477,7 +7477,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             onboardDesc: '导入 Scrivener 导出文件或 Word 文档。场景、顺序、梗概和元数据会一并导入。',
             workflowLead: '正在创建新的仓库？',
             workflowStepBookManager: '使用 [Book Manager] 在仓库中设置您的小说文件夹。',
-            workflowStepCreateNote: '打开命令面板 `⌘ + P` 并运行 `Note create`，或使用 `Book Designer` 快速搭建。',
             workflowStepPopulate: '填充场景，然后扩展副情节、节拍系统等内容。',
             workflowStepDecide: '尽早决定：分几幕？时间跨度多长？可考虑用背景笔记或微背景添加有用的上下文标记。',
             workflowStepTrack: '进入节奏后，别忘了记录写作会话的时长和字数，并为场景或发布阶段设置截止日期。',

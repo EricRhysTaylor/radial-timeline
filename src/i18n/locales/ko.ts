@@ -7475,7 +7475,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             onboardDesc: 'Scrivener 내보내기 파일이나 Word 문서를 가져오세요. 장면, 순서, 시놉시스, 메타데이터가 함께 들어옵니다.',
             workflowLead: '새 보관함을 시작하시나요?',
             workflowStepBookManager: '[Book Manager]로 보관함 안에 소설 폴더를 설정하세요.',
-            workflowStepCreateNote: '명령 팔레트 `⌘ + P`를 열고 `Note create`를 실행하거나, `Book Designer`로 빠르게 골격을 만드세요.',
             workflowStepPopulate: '장면을 채운 다음 서브플롯, 비트 시스템 등으로 확장하세요.',
             workflowStepDecide: '일찍 정해 두세요: 막은 몇 개인가요? 시간 범위는 어느 정도인가요? 백드롭 노트나 마이크로 백드롭으로 도움이 되는 맥락 마커를 고려하세요.',
             workflowStepTrack: '리듬이 잡히면 집필 세션 시간과 단어 수를 추적하고, 장면이나 게시 단계의 기한을 설정하는 것을 잊지 마세요.',

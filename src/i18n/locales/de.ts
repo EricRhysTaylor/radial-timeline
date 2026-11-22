@@ -7475,7 +7475,6 @@ export const de: DeepPartial<TranslationKeys> = {
             onboardDesc: 'Übernehmen Sie einen Scrivener-Export oder ein Word-Dokument. Szenen, Reihenfolge, Synopsen und Metadaten werden mit übernommen.',
             workflowLead: 'Beginnen Sie einen neuen Vault?',
             workflowStepBookManager: 'Legen Sie mit dem [Book Manager] Ihren Romanordner im Vault fest.',
-            workflowStepCreateNote: 'Öffnen Sie die Befehlspalette `⌘ + P` und führen Sie `Notiz erstellen` aus, oder legen Sie schnell ein Gerüst mit `Book Designer` an.',
             workflowStepPopulate: 'Füllen Sie die Szenen und erweitern Sie dann mit Nebenhandlungen, Beat-Systemen und mehr.',
             workflowStepDecide: 'Entscheiden Sie früh: Wie viele Akte? Welchen Zeitraum umfasst die Geschichte? Erwägen Sie hilfreiche Kontextmarker mit Backdrop-Notizen oder Micro-Backdrops.',
             workflowStepTrack: 'Sobald Sie im Rhythmus sind, vergessen Sie nicht, Zeit und Wortzahl Ihrer Schreibsitzungen zu erfassen und Fälligkeitsdaten für Szenen oder Veröffentlichungsphasen festzulegen.',

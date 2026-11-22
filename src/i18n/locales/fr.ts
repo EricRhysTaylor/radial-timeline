@@ -7482,7 +7482,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "onboardDesc": "Importez une exportation Scrivener ou un document Word. Les scènes, l'ordre, les synopses et les métadonnées sont inclus.",
             "workflowLead": "Démarrer un nouveau coffre ?",
             "workflowStepBookManager": "Définissez votre nouveau dossier dans le coffre avec [Gestionnaire de livres].",
-            "workflowStepCreateNote": "Ouvrez la palette de commandes `⌘ + P` et exécutez `Note create`, ou échafaudez rapidement avec `Book Designer`.",
             "workflowStepPopulate": "Remplissez des scènes, puis développez-les avec des sous-intrigues, des systèmes de beat et plus encore.",
             "workflowStepDecide": "Décidez tôt : combien d'actes ? Quelle est la durée ? Considérez des marqueurs de contexte utiles avec des notes de fond ou des micro-dossiers.",
             "workflowStepTrack": "Une fois dans le rythme, n'oubliez pas de suivre l'heure et le nombre de mots de votre session d'écriture et de définir des dates d'échéance pour les scènes ou de publier des étapes.",

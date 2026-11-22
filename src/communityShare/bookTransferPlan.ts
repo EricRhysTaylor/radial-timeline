@@ -179,6 +179,11 @@ export function transferActCounts(document: TransferDocument, settings: Pick<Rad
     return { book: document.book.actCount, vault, blocked: used > vault };
 }
 
+/** The book's subplots: the distinct subplot names across its scenes, Main Plot one of them. */
+export function transferSubplotCount(document: TransferDocument): number {
+    return new Set(document.scenes.flatMap(scene => scene.subplots)).size;
+}
+
 // ── Frontmatter values ───────────────────────────────────────────────────────
 
 const STATUS_TEXT: Record<TransferSceneStatus, string> = { todo: 'Todo', working: 'Working', complete: 'Complete', due: 'Due' };

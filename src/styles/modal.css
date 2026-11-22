@@ -2712,3 +2712,57 @@
     flex-wrap: wrap;
     gap: var(--size-4-1) var(--size-4-4);
 }
+
+/* New book from Community: the key figures in one row (the Gossamer stat cells, label over number),
+   the Folder label over its field, one plain sentence, and anything to act on called out. */
+.ert-ui.ert-scope--modal .ert-modal-container.ert-bookFromCommunity { gap: var(--size-4-5); }
+
+.ert-ui.ert-scope--modal .ert-bookFromCommunity .ert-modal-header { margin-bottom: 0; }
+
+.ert-ui.ert-scope--modal .ert-bookFromCommunity .ert-modal-actions {
+    padding-top: var(--size-4-4);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-gossamer-proc-stats.ert-bookFromCommunity__figures {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+}
+
+.ert-bookFromCommunity__folder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+}
+
+.ert-bookFromCommunity__label {
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+}
+
+.ert-bookFromCommunity__folder input.ert-input {
+    width: 100%;
+}
+
+.ert-bookFromCommunity__path {
+    font-family: var(--font-monospace);
+    overflow-wrap: anywhere;
+}
+
+.ert-ui .ert-field-note.ert-bookFromCommunity__folderNote.is-problem { color: var(--text-error); }
+
+.ert-bookFromCommunity__summary {
+    color: var(--text-normal);
+    line-height: 1.5;
+}
+
+.ert-bookFromCommunity__attention {
+    padding: var(--size-4-2) var(--size-4-3);
+    border-left: 3px solid var(--text-warning);
+    border-radius: var(--radius-s);
+    background: var(--background-secondary);
+    line-height: 1.5;
+}
+
+.ert-bookFromCommunity__progress:empty { display: none; }

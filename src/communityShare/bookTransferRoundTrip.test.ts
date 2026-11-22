@@ -29,6 +29,7 @@ import {
     suggestTransferFolder,
     transferActCounts,
     transferNoteName,
+    transferSubplotCount,
     transferNotePath,
 } from './bookTransferPlan';
 import type { TransferDocument, TransferReleasedText, TransferScene } from './bookTransferDocument';
@@ -522,5 +523,16 @@ describe('acts', () => {
         expect(transferActCounts(document, { actCount: 3 })).toEqual({ book: 4, vault: 3, blocked: true });
         expect(transferActCounts(document, { actCount: 4 })).toEqual({ book: 4, vault: 4, blocked: false });
         expect(transferActCounts(book([scene({ id: 'scn_0a1b2c3d', order: 1, act: 1 })], 3), { actCount: 5 })).toEqual({ book: 3, vault: 5, blocked: false });
+    });
+});
+
+describe('subplots', () => {
+    it('counts each subplot name once across the scenes, Main Plot included', () => {
+        expect(transferSubplotCount(book([
+            scene({ id: 'scn_0a1b2c3d', order: 1, subplots: ['Main Plot', 'Letters'] }),
+            scene({ id: 'scn_0a1b2c3e', order: 2, subplots: ['Letters', 'The Keeper'] }),
+            scene({ id: 'scn_0a1b2c3f', order: 3, subplots: ['Main Plot'] }),
+        ]))).toBe(3);
+        expect(transferSubplotCount(book([scene({ id: 'scn_0a1b2c3d', order: 1 })]))).toBe(1);
     });
 });

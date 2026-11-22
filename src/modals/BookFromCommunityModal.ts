@@ -16,7 +16,7 @@
  * (bookTransferWriter.ts) with Continue.
  */
 
-import { App, ButtonComponent, Notice, Setting } from 'obsidian';
+import { App, ButtonComponent, Notice, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
     BOOK_TRANSFER_FAILED,
@@ -30,6 +30,7 @@ import {
     planBookTransfer,
     suggestTransferFolder,
     transferActCounts,
+    transferSubplotCount,
     type BookTransferPlan,
     type TransferFolderProblem,
 } from '../communityShare/bookTransferPlan';
@@ -41,7 +42,6 @@ import {
     type BookTransferProgress,
 } from '../communityShare/bookTransferWriter';
 import { t, tCount } from '../i18n';
-import { formatCommunityDate } from '../settings/sections/CommunityTimelineBlock';
 import { ERT_CLASSES } from '../ui/classes';
 import { ErtModal } from '../ui/ErtModal';
 import { getOverlappingBook } from '../utils/books';
@@ -50,6 +50,9 @@ export interface BookFromCommunityOptions {
     /** The card or the link: called when the book was made, or its record changed. */
     onChanged?: () => void;
 }
+
+/** The Folder field, named by its label. */
+const FOLDER_FIELD_ID = 'ert-bookFromCommunity-folder';
 
 function errorText(error: unknown, fallback: string): string {
     if (error instanceof CommunityShareError && error.code !== BOOK_TRANSFER_FAILED) return error.message;
@@ -94,7 +97,7 @@ export class BookFromCommunityModal extends ErtModal {
     }
 
     onOpen(): void {
-        this.applyShell({ width: 'min(620px, 92vw)' });
+        this.applyShell({ width: 'min(620px, 92vw)', containerClasses: ['ert-bookFromCommunity'] });
         this.render();
         void this.load();
     }
@@ -195,11 +198,34 @@ export class BookFromCommunityModal extends ErtModal {
         else this.renderPreview();
     }
 
+    /** The key figures, label over number, in one row. */
+    private mountFigures(figures: Array<[label: string, value: number]>): void {
+        const row = this.contentEl.createDiv({ cls: 'ert-gossamer-proc-stats ert-bookFromCommunity__figures' });
+        for (const [label, value] of figures) {
+            const cell = row.createDiv({ cls: 'ert-gossamer-proc-stat-item' });
+            cell.createDiv({ cls: 'ert-gossamer-proc-stat-label', text: label });
+            cell.createDiv({ cls: 'ert-gossamer-proc-stat-value', text: value.toLocaleString() });
+        }
+    }
+
+    /** The Folder block: its label, then the field or the folder's path, then one line under it. */
+    private mountFolder<T>(fill: (block: HTMLElement) => T): { value: T; note: HTMLElement } {
+        const block = this.contentEl.createDiv({ cls: 'ert-bookFromCommunity__folder' });
+        block.createEl('label', { cls: 'ert-bookFromCommunity__label', text: t('ui.bookFromCommunity.folderName'), attr: { for: FOLDER_FIELD_ID } });
+        const value = fill(block);
+        return { value, note: block.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-bookFromCommunity__folderNote` }) };
+    }
+
+    /** A sentence the author must act on, or should know before Create book. */
+    private mountAttention(text: string): void {
+        this.contentEl.createDiv({ cls: 'ert-bookFromCommunity__attention', text });
+    }
+
     private renderContinue(folder: string, written: number): void {
         const { contentEl } = this;
         const total = this.plan?.notes.length;
-        const row = new Setting(contentEl).setName(t('ui.bookFromCommunity.folderName')).setDesc(t('ui.bookFromCommunity.folderContinues'));
-        row.controlEl.createSpan({ text: folder });
+        const { note } = this.mountFolder(block => block.createDiv({ cls: 'ert-bookFromCommunity__path', text: folder }));
+        note.setText(t('ui.bookFromCommunity.folderContinues'));
         if (total !== undefined) {
             contentEl.createDiv({ text: t('ui.bookFromCommunity.notesWritten', { written, notes: tCount('sceneNote', total) }) });
         }
@@ -220,37 +246,38 @@ export class BookFromCommunityModal extends ErtModal {
         const { contentEl } = this;
         const acts = transferActCounts(read.document, this.plugin.settings);
 
-        const folderRow = new Setting(contentEl)
-            .setName(t('ui.bookFromCommunity.folderName'))
-            .setDesc(t('ui.bookFromCommunity.folderDesc'));
-        const folderNote = folderRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE });
+        // Acts: the count the book takes in this vault; a book this vault cannot hold shows its own.
+        const figures: Array<[string, number]> = [
+            [t('ui.bookFromCommunity.figureScenes'), plan.notes.length],
+            [t('ui.bookFromCommunity.figureActs'), acts.blocked ? acts.book : acts.vault],
+            [t('ui.bookFromCommunity.figureSubplots'), transferSubplotCount(read.document)],
+        ];
+        if (plan.releasedTextCount > 0) figures.push([t('ui.bookFromCommunity.figureReleased'), plan.releasedTextCount]);
+        this.mountFigures(figures);
+
+        const { value: field, note: folderNote } = this.mountFolder(block => {
+            const text = new TextComponent(block);
+            text.inputEl.addClass('ert-input');
+            text.inputEl.id = FOLDER_FIELD_ID;
+            return text;
+        });
         let create: ButtonComponent | null = null;
         const syncFolder = (): void => {
             const { folder, problem } = this.checkFolder();
-            folderNote.setText(problem ? folderProblemText(folder, problem) : '');
+            folderNote.setText(problem ? folderProblemText(folder, problem) : t('ui.bookFromCommunity.folderHelp'));
+            folderNote.toggleClass('is-problem', problem !== null);
             create?.setDisabled(this.running || acts.blocked || problem !== null);
         };
-        folderRow.addText(text => {
-            text.inputEl.addClass('ert-input');
-            text.setValue(this.folder).onChange(value => {
-                this.folder = value;
-                this.stopped = null;
-                syncFolder();
-            });
+        field.setValue(this.folder).onChange(value => {
+            this.folder = value;
+            this.stopped = null;
+            syncFolder();
         });
 
-        contentEl.createDiv({
-            text: plan.releasedTextCount > 0
-                ? t('ui.bookFromCommunity.notesCountWithText', { notes: tCount('sceneNote', plan.notes.length), released: plan.releasedTextCount })
-                : t('ui.bookFromCommunity.notesCount', { notes: tCount('sceneNote', plan.notes.length) }),
-        });
-        const note = (text: string): void => { contentEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text }); };
-        if (acts.blocked) note(t('ui.bookFromCommunity.actsBlocked', { book: acts.book, vault: acts.vault }));
-        else if (acts.book !== acts.vault) note(t('ui.bookFromCommunity.actsFollowVault', { vault: acts.vault }));
-        if (plan.textDiffersCount > 0) note(t('ui.bookFromCommunity.textDiffers', { notes: tCount('sceneNote', plan.textDiffersCount) }));
-        if (plan.detailsKeptCount > 0) note(t('ui.bookFromCommunity.detailsKept', { notes: tCount('sceneNote', plan.detailsKeptCount) }));
-        note(t('ui.bookFromCommunity.afterNote'));
-        note(t('ui.bookFromCommunity.expiresNote', { date: formatCommunityDate(read.expiresAt) }));
+        contentEl.createDiv({ cls: 'ert-bookFromCommunity__summary', text: t('ui.bookFromCommunity.summary') });
+        if (acts.blocked) this.mountAttention(t('ui.bookFromCommunity.actsBlocked', { book: acts.book, vault: acts.vault }));
+        if (plan.textDiffersCount > 0) this.mountAttention(t('ui.bookFromCommunity.textDiffers', { notes: tCount('sceneNote', plan.textDiffersCount) }));
+        if (plan.detailsKeptCount > 0) this.mountAttention(t('ui.bookFromCommunity.detailsKept', { notes: tCount('sceneNote', plan.detailsKeptCount) }));
 
         this.mountProgressAndStop();
         const actions = this.mountActions();
@@ -263,7 +290,7 @@ export class BookFromCommunityModal extends ErtModal {
     }
 
     private mountProgressAndStop(): void {
-        this.progressEl = this.contentEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE });
+        this.progressEl = this.contentEl.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-bookFromCommunity__progress` });
         if (this.stopped) this.progressEl.setText(this.stopped);
     }
 

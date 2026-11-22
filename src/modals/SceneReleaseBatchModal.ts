@@ -21,7 +21,7 @@
 import { App, ButtonComponent, Notice, Setting } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
-    CommunityShareError,
+    communityShareErrorText,
     releaseSceneBody,
     sceneTextProblemMessage,
     takeDownSceneRelease,
@@ -43,10 +43,6 @@ export interface SceneBatchOutcome {
 }
 
 type BatchPhase = 'confirm' | 'running' | 'done';
-
-function errorText(error: unknown, fallback: string): string {
-    return error instanceof CommunityShareError ? error.message : fallback;
-}
 
 /** "Released 2 of 3." and one line for each scene that did not go. */
 export function batchResultLines(resultKey: string, outcomes: readonly SceneBatchOutcome[]): string[] {
@@ -135,7 +131,7 @@ export class SceneReleaseBatchModal extends ErtModal {
                 const problem = draft.problem ? sceneTextProblemMessage(draft.problem) : null;
                 entries.push({ scene, draft, problem, note: problem ? null : noteLikeText(draft.blocks), approved: false });
             } catch (error) {
-                entries.push({ scene, draft: null, problem: errorText(error, t('ui.communityShareClient.sceneNoteMissing')), note: null, approved: false });
+                entries.push({ scene, draft: null, problem: communityShareErrorText(error, t('ui.communityShareClient.sceneNoteMissing')), note: null, approved: false });
             }
         }
         this.entries = entries;
@@ -325,7 +321,7 @@ export class SceneReleaseBatchModal extends ErtModal {
             });
             return null;
         } catch (error) {
-            return errorText(error, t('ui.sceneReleaseModal.sendFailed'));
+            return communityShareErrorText(error, t('ui.sceneReleaseModal.sendFailed'));
         }
     }
 }
@@ -433,7 +429,7 @@ export class SceneTakeDownBatchModal extends ErtModal {
                 await takeDownSceneRelease(plugin, book, scene.release.id);
                 outcomes.push({ title: scene.title, reason: null });
             } catch (error) {
-                outcomes.push({ title: scene.title, reason: errorText(error, t('ui.sceneReleaseModal.takeDownFailed')) });
+                outcomes.push({ title: scene.title, reason: communityShareErrorText(error, t('ui.sceneReleaseModal.takeDownFailed')) });
             }
         }
         this.outcomes = outcomes;

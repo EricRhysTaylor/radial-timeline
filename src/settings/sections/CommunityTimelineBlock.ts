@@ -14,7 +14,7 @@
 import { Notice, Setting, setIcon, type ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
-    CommunityShareError,
+    communityShareErrorText,
     fetchTimelineShareStatus,
     setTimelineShareDetails,
     startTimelineSharing,
@@ -65,10 +65,6 @@ const getDetailLabels = (): Array<{ field: TimelineSceneDetail; label: string }>
     { field: 'povMode', label: t('ui.communityShareSection.timelineDetailPov') },
     { field: 'when', label: t('ui.communityShareSection.timelineDetailWhen') },
 ];
-
-function errorText(error: unknown, fallback: string): string {
-    return error instanceof CommunityShareError ? error.message : fallback;
-}
 
 /**
  * The one date format of the Community settings, "November 18, 2026 at 4:01 PM",
@@ -149,7 +145,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
                 statusCache = {
                     key,
                     fetchedAt: Date.now(),
-                    error: errorText(error, t('ui.communityShareSection.timelineStatusFailed')),
+                    error: communityShareErrorText(error, t('ui.communityShareSection.timelineStatusFailed')),
                 };
             })
             .finally(() => {
@@ -194,7 +190,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
                         ? t('ui.communityShareSection.timelineUpdatedNotice')
                         : t('ui.communityShareSection.timelineSentNotice'));
                 } catch (error) {
-                    new Notice(errorText(error, t('ui.communityShareSection.timelineSendFailed')));
+                    new Notice(communityShareErrorText(error, t('ui.communityShareSection.timelineSendFailed')));
                 }
                 rerender();
             });
@@ -264,7 +260,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
             // Re-read its state before another privacy choice can be made.
             if (statusCache?.key === key) statusCache = null;
             statusEpoch++;
-            new Notice(errorText(error, t('ui.communityShareSection.timelineDetailsFailed')));
+            new Notice(communityShareErrorText(error, t('ui.communityShareSection.timelineDetailsFailed')));
         } finally {
             detailSaves.delete(key);
             rerender();

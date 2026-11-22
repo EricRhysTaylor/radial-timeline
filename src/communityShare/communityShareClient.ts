@@ -87,6 +87,11 @@ export class CommunityShareError extends Error {
     }
 }
 
+/** The server's message for a Community Share failure, or `fallback` for anything else. */
+export function communityShareErrorText(error: unknown, fallback: string): string {
+    return error instanceof CommunityShareError ? error.message : fallback;
+}
+
 function randomBase64Url(bytes: number): string {
     const buf = new Uint8Array(bytes);
     crypto.getRandomValues(buf);

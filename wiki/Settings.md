@@ -8,7 +8,7 @@ Obsidian's settings search finds Radial Timeline settings too. Search for a sect
 
 *   [Core](Settings-Core) — Books, progress and status, runtime estimation, story beats, scene properties, chronology, narration, planetary time, and ring colors.
 *   [Social](Author-Progress-Report) — Author Progress Report (APR), progress tracking, styling, publishing automation, teaser reveal, and campaigns.
-*   [Community](Settings-Community) — Website connection, a single three-level "What you share" selector, a live preview, and pause/take-offline/delete/disconnect controls.
+*   [Community](Settings-Community) — The website connection, then two rows: **Vault → Community** (sharing levels 1 to 4, sharing details, your book's timeline and the scenes asked for on Community) and **Community → Vault** (books from Community to create in this vault).
 *   [Inquiry](Settings-Inquiry) — Briefings, action notes, session history, sources, prompts, and corpus thresholds.
 *   [Publish](Publishing) — Pandoc, PDF styles, bundled layouts, chapter markers, Parts, and manuscript export workflow.
 *   [AI](Settings-AI) — Provider setup, model selection, local/OpenAI-compatible settings, and analysis behavior.

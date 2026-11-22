@@ -1,127 +1,114 @@
-The Community tab connects Radial Timeline to the public Community area on the Radial Timeline website for author-to-author progress sharing: public profiles, project shells, optional Author Progress Report graphics, and optional writing activity, with a clear view of what you chose to share.
+The Community tab connects Radial Timeline to the Community area of the Radial Timeline website. It works in two directions: **Vault → Community** shares your profile, books, timelines and the scenes you send, and **Community → Vault** brings a book you started on Community into this vault.
 
-Community Share is opt-in. Nothing publishes from your vault until you connect the website, choose a sharing level, and press **Begin sharing**.
+Community Share is opt-in. Your profile and book list go up when you connect, choose a sharing level and press **Begin sharing**. A book's timeline goes up when you turn on **Keep timeline updated**, and a scene's text when you press **Send** for it.
 
-## What Community Share Is For
+<p align="center"><img src="images/settings-community-two-directions.webp" alt="Settings → Community: the Community card, the Connection row with Replace connection and Disconnect, the Vault → Community row closed on Level 4 · 1 timeline kept updated · 1 scene released · 1 scene asked for, and the Community → Vault row closed on No books waiting" width="700"></p>
 
-Share project details, progress graphics, and selected writing activity with other writers.
+## The Tab At A Glance
 
-Sharing tools:
+*   **Connection.** When this vault is linked, one row shows since when, with **Replace connection** and **Disconnect** side by side. Before it is linked, paste the connection code from the website here.
+*   **Vault → Community.** Closed, its line sums up what is on Community: your level, timelines kept updated, scenes released, scenes asked for, and whether your profile has been sent. Open, it holds the sharing level, **Review sharing details**, **Begin sharing** (or **Pause** / **Resume**), and the block for the active book.
+*   **Community → Vault.** Closed, it says how many books are waiting. Open, it lists each book with **Review**.
 
-*   Public author profile and project shell.
-*   Optional Author Progress Report (APR) graphics.
-*   Optional writing-activity summaries at the highest sharing level.
-*   A book's timeline, shared from the **Timeline** section. You choose which scenes to reveal.
-*   Private scenes: the text of a scene, released to readers you name.
-*   A live preview of exactly what will be shared.
-*   Pause, take offline, delete shared data, and disconnect controls.
-
-## What Never Leaves The Plugin
-
-The plugin does **not** publish:
-
-*   Scene paths.
-*   Note paths.
-*   File names or folder paths.
-*   Vault paths.
-*   Raw writing-session rows.
-*   Exact public session timestamps.
-*   API keys, license keys, or plugin secrets.
-
-Only the categories included in your selected sharing level are published.
-
-Manuscript text is never public and is never part of a sharing level. Community Share sends it in one case: a scene you release to readers you name, sent when you press **Release** or **Update for every reader** for that scene. See [Private Scenes](#private-scenes).
-
-**[Desk Lamps](Desk-Lamps)** is separate from the sharing level and works at every level, Private included. For a session you choose to share, it sends the friends you tick only that your lamp is on, the kind of writing, and how long, in five-minute steps. Nothing is kept after the session ends.
-
-At Level 3, the hourly rollup behind the Community's **Working Clock** (the activity dial on the website) is coarse and undated by design: it reports minutes per local hour-of-day (0–23) and mode, folded across a trailing 28-day window — never a per-session row, never a calendar date, never tied to a specific scene or book.
+A row opens by itself when it needs you: Vault → Community while sharing has not started or is paused, or when a scene is asked for; Community → Vault when a book is waiting. Otherwise both start closed.
 
 ## Basic Setup
 
-1. Open the website Community page and sign in.
-2. Create or update your public author profile and public project shell.
-3. Generate a one-time connection code on the website.
-4. In Obsidian, open **Settings -> Community Plugins -> Radial Timeline -> Community**.
-5. Paste the connection code and click **Connect**.
-6. Choose your sharing level under **What you share**.
-7. Review the preview, which updates automatically to reflect your selection.
-8. Click **Begin sharing**.
+1. On the website, sign in, then open **My Share** and generate a one-time connection code.
+2. In Obsidian, open **Settings → Community Plugins → Radial Timeline → Community**.
+3. Paste the code into **Connection code** and choose **Connect**.
+4. Open **Vault → Community** and choose a **Sharing level**.
+5. Open **Review sharing details** to see what goes up.
+6. Choose **Begin sharing**.
 
-Connecting alone does not publish anything. It links this vault to your Community profile and sends each of your Book Manager books to your **private** My Share list as a project shell: the book's public label (or its working title if you have not set one), logline, stage target dates, and order. Shells stay private until you switch a project on from My Share; the plugin never changes that. Choosing **Private** under **What you share** stops this sync.
+Connecting lists each of your Book Manager books on your **private** My Share page as a project shell: the book's public label (or its working title), logline, stage target dates and order. Shells stay private until you switch a project on from My Share. Choosing **Level 1 — Private** stops this sync.
 
-Every Book Manager book syncs. A writing session you post goes under the book you were writing in, when that book is public on the Community. Other progress posts go to one book you choose on the website with **Post to another book…**, and the next book sync picks it up. The Community Share preview and the connected book in settings both show that book.
+A writing session you post goes under the book you were writing in, when that book is public on Community. Other progress posts go to one book you choose on the website with **Post to another book…**.
 
-## What You Share
+## Sharing Levels
 
-Sharing is controlled by a single **What you share** level:
+*   **Level 1 — Private** — your profile and activity stay in this vault, and your book list stops syncing to My Share. The [Mailbox](Radial-Timeline-View#community-mailbox) and [Desk Lamps](Desk-Lamps) still work.
+*   **Level 2 — Profile, books + APR** — your public profile and project shells, plus a campaign's visual progress report for one selected book if you send one.
+*   **Level 3 — Profile, books + writing activity** — Level 2 plus two activity feeds: a daily feed (writing days, rounded minutes and word totals, and a coarse mode mix) and the **Working Clock** rollup, your writing minutes over the last 28 days by the hour you started each session and by mode.
+*   **Level 4 — Everything above, plus scene text you send** — Level 3 plus the text of each scene you send when Community asks for it. See [Scenes Asked For On Community](#scenes-asked-for-on-community). The first time you choose Level 4, Radial Timeline shows the release terms once.
 
-*   **Level 1 — Private** — nothing is published, and your book list stops syncing to My Share. The [Mailbox](Radial-Timeline-View#community-mailbox) and [Desk Lamps](Desk-Lamps) still work.
-*   **Level 2 — Profile, books + APR** — your public profile and project shells, plus the option to send a campaign's visual progress report for one selected book. This level does not include writing days, streaks, minutes, inactivity, or session statistics.
-*   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds two activity feeds: a daily aggregate feed (writing days, rounded minutes and word totals, and coarse mode mix) and the **Working Clock** rollup — a trailing 28-day summary of your writing minutes bucketed by the local hour of day you started each session and by mode (drafting/revising/planning). This is what your time-of-day writing pattern looks like on the website.
+The profile and book list go up when you press **Begin sharing**, and then stay current. The Vault → Community row says "Profile and book list: not sent yet" until you do. Changing between Level 3 and Level 4 changes nothing your profile sends.
 
-Sensitive fields, such as real scene titles or exact session timestamps, are never included.
+## Review Sharing Details
 
-## Preview
+**Review sharing details**, under the sharing level, shows what goes up at your level: the profile and book details from the website, the activity from this vault, and what stays here. It refreshes when you change the level.
 
-Choose **Review sharing details** under your sharing selection to expand the preview. It reflects the current level ("Preview ready" with a timestamp) and shows the public report categories that will be sent to the website. Changing the level refreshes the preview.
+What stays in this vault: scene text, until you send a scene Community asked for; scene, note and vault paths; file and folder names; raw writing sessions; exact session timestamps; and API keys, license keys and plugin secrets.
 
-## Sharing And Safety Controls
+**[Desk Lamps](Desk-Lamps)** is separate from the sharing level and works at every level, Private included. For a session you choose to share, it sends the friends you select only that your lamp is on, the kind of writing, and how long, in five-minute steps. Nothing is kept after the session ends.
 
-*   **Begin sharing / Pause sharing** puts your selected level on the community site and keeps it current automatically. Pausing stops updates; what you already shared stays visible until you revoke it.
-*   **Take offline** (the button that revokes your report) removes the current public report from public viewing while keeping your connection.
-*   **Delete shared data** removes the shared report payload from the website. Minimal audit metadata may remain.
-*   **Disconnect plugin** takes this vault's report offline, stops sharing, and removes its saved connection key. Your account and other Community content stay in place. Reconnecting this vault later requires generating and entering a **new one-time linking key** — the old one cannot be reused.
+## Your Book's Timeline
+
+Inside Vault → Community, the active book has its own block, headed with its name. Turn on **Keep timeline updated** to send its timeline to your Community account. A new timeline arrives private: **Open preview** opens it on the website, where you reveal scenes and choose when it goes live.
+
+Radial Timeline sends scene order, acts, subplots, status and publish stage. Titles, synopses, cast, narration and story dates are stored privately until you reveal a scene. Under **Details readers can see on a revealed scene**, choose which of those a reader sees. **Generic ring names** shows Subplot 1, Subplot 2 instead of your subplot names.
+
+A timeline needs a sharing level above Private and a source folder for the book in Book Manager. With no book yet, the block says: "Add a book in Book Manager to share its timeline."
+
+## Scenes Asked For On Community
+
+At **Level 4**, the text of a scene goes up in two steps, and only from Radial Timeline:
+
+1. **On Community**, open the scene on its book's Share page, choose its rating and readers, and choose **Ask Radial Timeline for this scene** (or **Ask for an update** on a released scene).
+2. **In Radial Timeline**, the Vault → Community row shows "1 scene asked for" and opens by itself. Under **Scenes asked for on Community**, choose **Review** beside the scene.
+
+<p align="center"><img src="images/community-scenes-asked.webp" alt="Scenes asked for on Community: 02 A Reply in Bark, first release, with Review; Released scenes: 1 of 3 released, 01 Folded Leaves, with Choose readers on the website" width="600"></p>
+
+<p align="center"><img src="images/send-scene-to-community.webp" alt="The Send scene to Community dialog for 02 A Reply in Bark: Words 153, Rating General, Readers Named readers, Book The Paper Orchard, the scene's text as readers will see it, and Decline and Send buttons" width="600"></p>
+
+**Send scene to Community** shows the scene's word count, the rating and readers chosen on Community, the book, and the text as readers will see it: the scene's prose, with its properties, comments, callouts, link syntax and block IDs removed. Choose **Send** to release it, or **Decline** to answer the request without sending. If the note changes while the dialog is open, the dialog shows the new text for another look before anything goes up.
+
+An update replaces the released text for every reader; feedback on the earlier version stays, marked with its version.
+
+**Released scenes**, under the requests, lists each released scene with its readers and when it was sent. When your vault's text differs from what was released, it says **Changed since release**: ask for an update on Community, then send it here. Radial Timeline works this out in your vault, with nothing sent. **Choose readers on the website** opens the page where you name readers. Take a scene down on the website.
+
+On Community, **Open in Obsidian** beside a waiting scene opens its **Send scene to Community** dialog in the vault connected to that book. The link format is `obsidian://radial-timeline-release?book=<Community book id>&scene=<scene ID>&request=<request id>`.
+
+A scene needs a scene ID and must be on the book's shared timeline, so turn on **Keep timeline updated** first. A scene can be up to 10,000 words. Pausing Community sharing pauses scene text too.
+
+On the Community website, your scene text goes to an AI provider only when you ask for a feedback summary. Nothing is filtered before it goes up. A reader can report a scene for someone's private information, or for material that isn't yours to share; a person reviews each report, and the scene stays up while it waits. These are the release terms (version 2026-11-22) Radial Timeline shows the first time you choose Level 4.
+
+## A Book From Community
+
+A book you started on the Community website can become a book in this vault, and from then on you edit it in Obsidian.
+
+1. **On Community**, on the book's Share page, choose **Add to my vault**. Select **Include released text** to bring your released scenes' text into their notes.
+2. **In Radial Timeline**, the Community → Vault row says "1 book waiting" and opens by itself. Choose **Review**. On the website, **Open in Obsidian** opens the same preview.
+3. **New book from Community** shows the book's scenes, acts and subplots, and the folder Radial Timeline creates. Rename the folder if you like; it must be a new folder, clear of your other books. Choose **Create book**.
+
+<p align="center"><img src="images/book-from-community-preview.webp" alt="The New book from Community dialog with the pill COMMUNITY • THE PAPER ORCHARD: Scenes 3, Acts 3, Subplots 1, the folder The Paper Orchard, and Cancel and Create book buttons" width="600"></p>
+
+Radial Timeline writes one scene note per scene, named with its scene number and title. Each note's properties hold the scene's act, story date, synopsis, subplots, cast, narration, publish stage, status and scene ID, under your own property names; the rest of your scene template is added empty. Released text becomes the note's body. The folder joins Book Manager with **Keep timeline updated** on, and Community follows the timeline as you edit it. Readers, released scenes, questions and answers stay with their scenes, because each note keeps its scene ID.
+
+**Cancel** in the preview closes it, and the book keeps waiting. To withdraw the book, choose **Cancel** on its Share page on Community; the row then says "No books waiting". Community holds a waiting book for 24 hours.
+
+If Obsidian closes partway, the book's row shows **Continue**, and Radial Timeline picks up where it stopped without writing any note twice. If the book is canceled on Community first, the notes stay in their folder and the row says where they are.
+
+**Recovery.** Community keeps a copy of the book's timeline from before it came to your vault. To go back to editing it on Community, disconnect the book from the vault on its Share page and restore **Before adding to your vault** under **Recovery**.
+
+What comes down: the book's timeline and, by your choice, its released text. What goes back: the new book's ID and its scene IDs. Nothing is written until you choose **Create book**. See [Privacy and Security](https://github.com/EricRhysTaylor/radial-timeline/blob/main/docs/privacy-and-security.md).
+
+## Pause, Take Offline, Disconnect
+
+*   **Begin sharing / Pause sharing / Resume sharing**, in Vault → Community, puts your level on Community and keeps it current. While paused, nothing goes up; what you already shared stays visible.
+*   **Level 1 — Private** takes your current activity share offline. Your profile, books and posts on the website stay as they are; manage them on My Share.
+*   **Disconnect**, in the Connection row, stops updates and removes this vault's connection key. Your Community account stays as it is. Reconnecting needs a new one-time code.
+*   View, download or delete your Community content on the website.
 
 ## New Mac, Reinstall, Or Synced Vault
 
-The connection key is stored in Obsidian's private, per-device secure storage. It **never travels with the vault**: Obsidian Sync, iCloud, git, a vault copy, or a fresh OS install all bring your settings across but not the key. The plugin then still shows itself as connected while the key behind that connection is gone, and pressing **Begin sharing** shows:
+The connection key is stored in Obsidian's private, per-device secure storage and stays on the device: Obsidian Sync, iCloud, git, a vault copy or a fresh install bring your settings across without it. The Connection row then shows **Reconnect**. To reconnect:
 
-> The private connection secret is missing. Reconnect Community Share.
+1. On the website, open **My Share** (signed in with the email on your author profile) and generate a new one-time code.
+2. In the Connection row, choose **Reconnect**, paste the code into **Connection code**, and choose **Connect**.
 
-This is expected, not a fault. Fix it in this order:
-
-1. In the Community tab, select **Reconnect** next to the connection status.
-2. On the website, open **My Share** (sign in with the email on your author profile, not a different address) and generate a new one-time linking key.
-3. Paste the key into **Connection code** and click **Connect**. Review the sharing controls and resume sharing if needed.
-
-Rotating the connection secret from My Share does not repair this case. Rotation replaces the key on the website side for a plugin that still has one; a vault with no key needs a new linking key. Every device you write from needs its own connection, made the same way.
+Every device you write from needs its own connection, made the same way.
 
 ## Sharing An APR
 
 From Level 2 upward, an [Author Progress Report](Author-Progress-Report) campaign can send its graphic to Community, where it arrives privately on My Share. See [Send a campaign to Community](Author-Progress-Report#send-a-campaign-to-community).
-
-## Share Your Timeline
-
-Turn on **Keep timeline updated** to send a book's timeline to your Community account. It arrives private: nobody can see it until you review it and go live. **Open preview** opens the Complete Preview on the website, where you reveal scenes. Going live is always your click.
-
-Radial Timeline sends scene order, acts, subplots, status and publish stage. Titles, synopses, cast, narration and story dates are stored privately until you reveal a scene. Under **Details readers can see on a revealed scene**, choose which of those a reader sees. **Generic ring names** shows Subplot 1, Subplot 2 instead of your subplot names.
-
-A live timeline updates with your book sync. Pausing Community sharing stops every update. Sharing a timeline needs a sharing level above Private, and the book needs a source folder in Book Manager.
-
-## A Book From Community
-
-A book whose timeline you made on the Community website can become a book in your vault. On the book's Share page, choose **Add to my vault**. Tick **Include released text** to have your released scenes' text in their notes. A **Book from Community** card then appears at the top of the Community settings with the book's title and scene count: choose **Review**. On the website, **Open in Obsidian** opens the same preview (`obsidian://radial-timeline-transfer?id=<id>`).
-
-**New book from Community** shows the folder Radial Timeline creates: beside the active book's folder, or at the vault root, named for the book. Change the name if you like; it must be a new folder, clear of your other books. The preview also shows how many scene notes it writes and how many carry released text. Press **Create book**.
-
-Radial Timeline writes one scene note per scene, named with its scene number and title. Each note's properties hold the scene's act, story date, synopsis, subplots, cast, narration, publish stage, status and scene ID, under your own property names; the rest of your scene template is added empty. Released text becomes the note's body. Radial Timeline then reads the notes back, tells Community, and adds the folder to Book Manager with **Keep timeline updated** on. From then on you edit the timeline in Obsidian, and Community follows it. Readers, released scenes, questions and answers stay attached, because each note keeps its scene ID.
-
-If Obsidian closes partway, the card shows **Continue**, and Radial Timeline picks up where it stopped without writing any note twice. If Community cancels the book first (you cancelled it on the Share page, or it waited more than 24 hours), the notes stay in their folder and the folder is not added as a book; the card says where they are.
-
-What is downloaded: the book's timeline and, by your choice, its released text, only while the website holds the book for your vault. What is sent back: the new book's ID and its scene IDs. Nothing is written until you press **Create book**. See [Privacy and Security](https://github.com/EricRhysTaylor/radial-timeline/blob/main/docs/privacy-and-security.md).
-
-## Private Scenes
-
-Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book. It is off by default. A released scene starts with the readers you name, signed in on the website. To share it publicly, choose **Open to everyone** on its scene card on the website: every signed-in Community member can read it once the Community's check passes. **Make private again** returns it to your named readers. The first time you turn on **Share scene body**, Radial Timeline shows the release terms and asks you to agree.
-
-**Release scenes…** lists the book's scenes in manuscript order, each marked **Not released**, **Released**, **Changed since release**, or **Hidden after a reader's report**. Radial Timeline works out whether a scene changed since its release inside your vault.
-
-**Preview and release** shows exactly what readers will see: the scene's prose, with its properties, comments, callouts, link syntax and block IDs removed. Choose a rating, **General** or **Mature**, then press **Release**. Scenes with sex in them can't be shared yet. The text is sent on that press. For a released scene, **Preview and update** shows the current text, and **Update for every reader** replaces it; feedback on the earlier version is kept, marked with its version.
-
-A release shares the text with nobody until you choose its readers: **Choose readers on the website** opens that page. **Take down** deletes the text on the website and readers lose it at once. You keep the feedback you received.
-
-**Release from the website.** The Community website's release buttons open Radial Timeline with a link. A book's button opens **Release scenes** for that book, and a scene's button opens the preview for that scene. A scene that is already released opens the list, with that scene highlighted, where you can update or take it down. The link names only the book and the scene, never your vault or any text, and nothing is sent until you press **Release** or **Update**. Open it from the vault connected to that book. When **Share scene body** is off for the book, the link opens this section so you can turn it on. For links you build yourself, the format is `obsidian://radial-timeline-release?book=<Community book id>`, with `&scene=<scene ID>` added for one scene.
-
-The Community's terms of use apply to private scenes too. A reader can report a scene that violates them. A reported scene is hidden from every reader and its text is sent to the Community's AI provider to be checked. The scene is restored if the check finds no violation. If it stays hidden, the website's Private scenes page says why, and updating the scene there sends it through the check again. If you take a scene down while it is hidden this way, the scenes you release or update afterwards are checked the same way before your readers see them. If the check found that the scene you took down breaks a content rule, and it finds that of a scene you release afterwards, your account is flagged: your author page, timelines and scenes are hidden, and posting and sharing stop, until the flag is reviewed. A hold over a scene's rating doesn't count. To fix a held scene, update its text on the website's Private scenes page.
-
-A scene can be released once the book's timeline is shared, and it needs a scene ID. A scene can be up to 10,000 words. The block shows how many scenes you have released and how many your account allows for the book. Pausing Community sharing stops releases, updates and take-downs. Turning **Share scene body** off leaves released scenes as they are.

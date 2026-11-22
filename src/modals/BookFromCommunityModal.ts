@@ -173,7 +173,13 @@ export class BookFromCommunityModal extends ErtModal {
                 .setButtonText(t('ui.bookFromCommunity.cardCancelledButton'))
                 .setCta()
                 .onClick(async () => {
-                    await obsidianBookTransferDeps(this.plugin).store.remove(this.transferId);
+                    try {
+                        await obsidianBookTransferDeps(this.plugin).store.remove(this.transferId);
+                    } catch (error) {
+                        // Plugin data could not be saved; the record stays and the modal stays open.
+                        console.error('Book from Community could not save its record:', error);
+                        return;
+                    }
                     this.options.onChanged?.();
                     this.close();
                 });

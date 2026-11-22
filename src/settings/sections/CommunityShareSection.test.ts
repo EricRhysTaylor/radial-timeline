@@ -9,7 +9,7 @@ import { buildCommunityShareModeUpdate, buildDefaultCommunityShareSettings } fro
 import { t, tCount } from '../../i18n';
 import type { CommunityShareSettings } from '../../types/settings';
 import { describeCommunitySharingState, describeVaultToCommunity } from './CommunityShareSection';
-import { formatCommunityDate } from '../../communityShare/sharingWords';
+import { formatCommunityDate } from './CommunityTimelineBlock';
 
 function connected(next: Partial<CommunityShareSettings> = {}): CommunityShareSettings {
     const settings = buildDefaultCommunityShareSettings();
@@ -76,20 +76,6 @@ describe('the sharing level row', () => {
         const state = describeCommunitySharingState(settings);
         expect(state.action).toBe('resume');
         expect(state.name).toBe(t('ui.communityShareSection.websiteLevelPausedName'));
-    });
-
-    it('while paused, says it was paused in Radial Timeline and when, and whether Community has heard', () => {
-        const settings = level2();
-        settings.sharingPaused = true;
-        settings.sharingPausedAt = '2026-11-22T13:20:00Z';
-        const date = formatCommunityDate('2026-11-22T13:20:00Z');
-        expect(describeCommunitySharingState(settings).desc).toBe(t('ui.communitySharing.pausedHere', { date }));
-        settings.sharingNoticeOwed = { action: 'pause', pausedAt: '2026-11-22T13:20:00Z' };
-        expect(describeCommunitySharingState(settings).desc).toBe(t('ui.communitySharing.pausedHereUntold', { date }));
-        // A pause from before its time was kept.
-        settings.sharingPausedAt = undefined;
-        settings.sharingNoticeOwed = undefined;
-        expect(describeCommunitySharingState(settings).desc).toBe(t('ui.communityShareSection.pausedDesc'));
     });
 
     it('closed, Vault → Community says the level, only known counts above zero, and the sync state', () => {

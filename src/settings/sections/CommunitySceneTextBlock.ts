@@ -26,7 +26,7 @@ import { SceneTextSendModal } from '../../modals/SceneTextSendModal';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import type { BookProfile, CommunityShareSettings } from '../../types/settings';
 import { COMMUNITY_PRIVATE_SCENES_SECTION_KEY } from '../settingsAnchors';
-import { formatCommunityDate } from '../../communityShare/sharingWords';
+import { formatCommunityDate } from './CommunityTimelineBlock';
 import { t, tCount } from '../../i18n';
 
 export interface CommunitySceneTextBlockProps {

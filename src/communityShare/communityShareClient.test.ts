@@ -150,14 +150,9 @@ describe('Community Share mutators write against live state, not a pre-await sna
         await armReadyToPublish(harness);
         plugin.settings.communityShare.scheduledPublishEnabled = true;
 
-        // The author clicks Pause while the payload is on the wire. (The pause's
-        // own notice goes through this mock too, so the click happens once.)
-        let clicked = false;
+        // The author clicks Pause while the payload is on the wire.
         vi.spyOn(obsidian, 'requestUrl').mockImplementation(async () => {
-            if (!clicked) {
-                clicked = true;
-                await pauseCommunitySharing(plugin as never);
-            }
+            await pauseCommunitySharing(plugin as never);
             return { status: 201, text: JSON.stringify(publishedBody) } as never;
         });
 
@@ -190,8 +185,7 @@ describe('Community Share mutators write against live state, not a pre-await sna
         const outcome = await syncCommunityShareIfDue(plugin as never);
 
         expect(outcome).toBe('skipped');
-        // Only the pause's own notice left: no report.
-        expect(request.mock.calls.map(([args]) => String((args as { url: string }).url).split('/').pop())).toEqual(['community-share-context']);
+        expect(request).not.toHaveBeenCalled();
         const after = plugin.settings.communityShare;
         expect(after.sharingPaused).toBe(true);
         expect(after.scheduledPublishEnabled).toBe(false);
@@ -344,8 +338,7 @@ describe('Community Share checks the live state right before each request leaves
         });
 
         await expect(publishCommunityShareReport(plugin as never)).rejects.toMatchObject({ code: 'sharing_paused' });
-        // Only the pause's own notice left: no report.
-        expect(request.mock.calls.map(([args]) => String((args as { url: string }).url).split('/').pop())).toEqual(['community-share-context']);
+        expect(request).not.toHaveBeenCalled();
         expect(plugin.settings.communityShare.sharingPaused).toBe(true);
     });
 

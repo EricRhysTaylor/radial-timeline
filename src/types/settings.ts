@@ -1030,12 +1030,6 @@ export interface CommunityShareConnectionSettings {
     /** Payload hash of the last successful publish/sync; automatic syncs skip when unchanged. */
     lastSyncedPayloadHash?: string;
     disconnectedAt?: string;
-    /**
-     * Set when Community answered that this connection was disconnected
-     * (409 `connection_disconnected`): who and when, for the badge and its
-     * note. Cleared by a new connection or a local Disconnect.
-     */
-    serverDisconnect?: CommunityServerDisconnect;
     secretId?: string;
     /**
      * Book-list sync health for this connection (community-project-sync),
@@ -1047,24 +1041,6 @@ export interface CommunityShareConnectionSettings {
     bookListSyncError?: string;
     /** ISO time of that failed attempt. Cleared with the error. */
     bookListSyncFailedAt?: string;
-}
-
-/** A disconnect Community reported, with its side; `at` and `by` are null for one from before 2026-11-22. */
-export interface CommunityServerDisconnect {
-    at: string | null;
-    by: 'vault' | 'community' | 'system' | null;
-    cause: 'disconnect' | 'new_connection';
-}
-
-/**
- * A pause or resume Community has not heard yet (its content-free notice
- * failed). A pause is told with the next resume, as `paused_at`; a resume is
- * sent again before the next outbound sync.
- */
-export interface CommunitySharingNoticeOwed {
-    action: 'pause' | 'resume';
-    /** This vault's time of a pause whose own notice never arrived. */
-    pausedAt?: string;
 }
 
 export interface CommunitySharePreviewState {
@@ -1103,10 +1079,6 @@ export interface CommunityShareSettings {
      * disconnect.
      */
     sharingPaused: boolean;
-    /** When this vault paused sharing; kept only while paused. */
-    sharingPausedAt?: string;
-    /** The Pause or Resume notice Community has not heard yet. */
-    sharingNoticeOwed?: CommunitySharingNoticeOwed;
     workingNowEnabled: boolean;
     fieldPolicy: CommunityShareFieldPolicy;
     redactionPolicy: Record<string, boolean>;
@@ -1209,13 +1181,6 @@ export interface CommunityTimelineShareRecord {
      * cannot take the id from the scene the website knows. Stays in plugin data.
      */
     sceneIdPaths?: Record<string, string>;
-    /** When Keep timeline updated was turned off in this vault; kept while it is off. */
-    updatesStoppedAt?: string;
-    /**
-     * The off or on notice Community has not heard yet. A stop is told with
-     * the next resume, as `stopped_at`; a resume goes out before the next push.
-     */
-    updatesNoticeOwed?: { action: 'stop' | 'resume'; stoppedAt?: string };
 }
 
 /** Desk Lamps choices for one Community profile (plugin data, never frontmatter). */

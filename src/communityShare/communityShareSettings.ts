@@ -3,13 +3,11 @@ import type {
     CommunityDailyBackfillRecord,
     CommunityDeskLampsRecord,
     CommunityShareAudience,
-    CommunityServerDisconnect,
     CommunityShareConnectionSettings,
     CommunityShareFieldKey,
     CommunityShareFieldPolicy,
     CommunityShareSettings,
     CommunityShareTier,
-    CommunitySharingNoticeOwed,
     CommunityTimelineShareRecord
 } from '../types/settings';
 
@@ -327,39 +325,9 @@ function normalizeTimelineShares(value: unknown): Record<string, CommunityTimeli
                 : {}),
             ...(Number.isInteger(record.scenesWithoutStableId) ? { scenesWithoutStableId: record.scenesWithoutStableId } : {}),
             ...(normalizeSceneIdPaths(record.sceneIdPaths) ?? {}), // SAFE: a share record saved before sceneIdPaths existed holds none
-            ...(record.enabled !== true && isTime(record.updatesStoppedAt) ? { updatesStoppedAt: record.updatesStoppedAt } : {}),
-            ...normalizeUpdatesNotice(record.updatesNoticeOwed),
         };
     }
     return Object.keys(records).length > 0 ? records : undefined;
-}
-
-const isTime = (value: unknown): value is string => typeof value === 'string' && !Number.isNaN(Date.parse(value));
-
-function normalizeUpdatesNotice(value: unknown): Pick<CommunityTimelineShareRecord, 'updatesNoticeOwed'> {
-    if (!value || typeof value !== 'object') return {};
-    const owed = value as { action?: unknown; stoppedAt?: unknown };
-    if (owed.action !== 'stop' && owed.action !== 'resume') return {};
-    return { updatesNoticeOwed: { action: owed.action, ...(isTime(owed.stoppedAt) ? { stoppedAt: owed.stoppedAt } : {}) } };
-}
-
-function normalizeSharingNotice(value: unknown): CommunitySharingNoticeOwed | undefined {
-    if (!value || typeof value !== 'object') return undefined;
-    const owed = value as { action?: unknown; pausedAt?: unknown };
-    if (owed.action !== 'pause' && owed.action !== 'resume') return undefined;
-    // A pause is told with its own time; one without a time cannot be told.
-    if (owed.action === 'pause' && !isTime(owed.pausedAt)) return undefined;
-    return { action: owed.action, ...(isTime(owed.pausedAt) ? { pausedAt: owed.pausedAt } : {}) };
-}
-
-function normalizeServerDisconnect(value: unknown): CommunityServerDisconnect | undefined {
-    if (!value || typeof value !== 'object') return undefined;
-    const record = value as Partial<CommunityServerDisconnect>;
-    return {
-        at: isTime(record.at) ? record.at : null,
-        by: record.by === 'vault' || record.by === 'community' || record.by === 'system' ? record.by : null,
-        cause: record.cause === 'new_connection' ? 'new_connection' : 'disconnect',
-    };
 }
 
 export const COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION = 1;
@@ -488,8 +456,6 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         // Hard-freeze flag: absent in pre-existing data normalizes to false,
         // so an untouched connection keeps its current behavior.
         sharingPaused: input?.sharingPaused === true,
-        sharingPausedAt: input?.sharingPaused === true && isTime(input.sharingPausedAt) ? input.sharingPausedAt : undefined,
-        sharingNoticeOwed: normalizeSharingNotice(input?.sharingNoticeOwed),
         sceneTextLevel: input?.sceneTextLevel === true,
         sceneTextTermsVersion: typeof input?.sceneTextTermsVersion === 'string' && input.sceneTextTermsVersion ? input.sceneTextTermsVersion : undefined,
         workingNowEnabled: false,
@@ -506,8 +472,6 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
             lastSyncedAt: connection.lastSyncedAt,
             lastSyncedPayloadHash: connection.lastSyncedPayloadHash,
             disconnectedAt: connection.disconnectedAt,
-            // Community's word on a disconnect stands only while this vault is disconnected.
-            serverDisconnect: connection.status === 'disconnected' ? normalizeServerDisconnect(connection.serverDisconnect) : undefined,
             secretId: connection.secretId,
             ...normalizeBookListSync(connection)
         },

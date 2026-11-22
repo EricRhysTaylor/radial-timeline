@@ -20,7 +20,6 @@ import {
     syncCommunityProjectsIfConnected,
     disconnectCommunityShare,
     fetchCommunityShareContext,
-    fetchVaultSharingState,
     pauseCommunitySharing,
     resumeCommunitySharing,
     revokeCommunityShareReport,
@@ -34,9 +33,7 @@ import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types
 import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
-import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
-import { accountPausedNote, formatCommunityDate, serverDisconnectNote } from '../../communityShare/sharingWords';
-import type { VaultSharingState } from '../../communityShare/sharingState';
+import { formatCommunityDate, renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { knownSceneTextCounts, renderCommunitySceneTextBlock } from './CommunitySceneTextBlock';
 import { agreeToSceneTextTerms } from '../../modals/SceneReleaseConsentModal';
 import { renderCommunityBookFromCommunityBlock } from './CommunityBookFromCommunityBlock';
@@ -109,24 +106,6 @@ let websiteContextInflight = false;
 let sharingDetailsOpen = false;
 const WEBSITE_CONTEXT_TTL_MS = 5 * 60 * 1000;
 
-// Community's word on this vault's connection and the account's standing
-// (community-share-context `history`), refreshed at most once per TTL like the
-// website context. A failed read leaves the keychain's answer standing.
-interface VaultStateCache {
-    connectionId: string;
-    fetchedAt: number;
-    state?: VaultSharingState;
-    error?: string;
-}
-let vaultStateCache: VaultStateCache | null = null;
-let vaultStateInflight = false;
-
-function knownVaultSharingState(connectionId: string): VaultStateCache | null {
-    return vaultStateCache?.connectionId === connectionId && Date.now() - vaultStateCache.fetchedAt < WEBSITE_CONTEXT_TTL_MS
-        ? vaultStateCache
-        : null;
-}
-
 function getCachedWebsiteContext(settings: CommunityShareSettings): WebsiteContextCache | null {
     const connectionId = settings.connection.connectionId;
     if (!connectionId || !websiteContextCache || websiteContextCache.connectionId !== connectionId
@@ -178,7 +157,6 @@ function getActiveBook(plugin: RadialTimelinePlugin) {
 
 function formatStatus(settings: CommunityShareSettings): string {
     if (settings.connection.status === 'connected') return t('ui.communityShareSection.statusConnected');
-    if (settings.connection.serverDisconnect) return t('ui.communitySharing.statusDisconnected');
     if (settings.connection.status === 'paused') return t('ui.communityShareSection.statusPaused');
     if (settings.connection.status === 'revoked') return t('ui.communityShareSection.statusRevoked');
     if (settings.connection.status === 'pending') return t('ui.communityShareSection.statusPending');
@@ -236,14 +214,7 @@ export function describeCommunitySharingState(settings: CommunityShareSettings):
     const mode = deriveCommunityShareMode(settings);
     const level = getModeShortLabels()[mode];
     if (settings.sharingPaused) {
-        const pausedAt = settings.sharingPausedAt;
-        // Who paused and when; until Community has heard, the line says when it will.
-        const desc = !pausedAt
-            ? t('ui.communityShareSection.pausedDesc')
-            : settings.sharingNoticeOwed?.action === 'pause'
-                ? t('ui.communitySharing.pausedHereUntold', { date: formatCommunityDate(pausedAt) })
-                : t('ui.communitySharing.pausedHere', { date: formatCommunityDate(pausedAt) });
-        return { name: t('ui.communityShareSection.websiteLevelPausedName'), desc, action: 'resume', canBegin: false };
+        return { name: t('ui.communityShareSection.websiteLevelPausedName'), desc: t('ui.communityShareSection.pausedDesc'), action: 'resume', canBegin: false };
     }
     if (settings.scheduledPublishEnabled) {
         const lastSynced = settings.connection.lastSyncedAt;
@@ -432,7 +403,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const hero = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.CARD_HERO} ${ERT_CLASSES.STACK}` });
     const badgeRow = hero.createDiv({ cls: ERT_CLASSES.INLINE });
     const badge = badgeRow.createSpan({ cls: ERT_CLASSES.BADGE_PILL });
-    setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.connection.serverDisconnect ? 'unplug' : settings.enabled ? 'shield-check' : 'shield');
+    setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
     const badgeText = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeLabel', { status: isConnected ? t('ui.communityShareSection.badgeChecking') : formatStatus(settings) }) });
     const wikiLink = withAccessibleLabel(badge.createEl('a', {
         href: docsUrl('Settings-Community'),
@@ -556,35 +527,9 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             button.buttonEl.addClass('ert-btn--icon-left');
             renderState(true);
             const secretId = settings.connection.secretId;
-            const connectionId = settings.connection.connectionId;
-            void (secretId && connectionId ? getSecret(plugin.app, secretId) : Promise.resolve(null)).then(secret => {
+            void (secretId && settings.connection.connectionId ? getSecret(plugin.app, secretId) : Promise.resolve(null)).then(secret => {
                 // This render may have been replaced while the keychain was being read.
                 if (!section.isConnected) return;
-                // A key in the keychain is not proof the connection stands: Community
-                // says so, or answers who disconnected it and when (recorded by the
-                // client, which turns this vault Disconnected).
-                const known = secret && connectionId ? knownVaultSharingState(connectionId) : null;
-                if (secret && connectionId && !known) {
-                    if (!vaultStateInflight) {
-                        vaultStateInflight = true;
-                        void fetchVaultSharingState(plugin)
-                            .then(state => { vaultStateCache = { connectionId, fetchedAt: Date.now(), state }; })
-                            .catch((error: unknown) => {
-                                vaultStateCache = { connectionId, fetchedAt: Date.now(), error: error instanceof Error ? error.message : String(error) };
-                            })
-                            .finally(() => {
-                                vaultStateInflight = false;
-                                if (!containerEl.isConnected) return;
-                                containerEl.empty();
-                                renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                            });
-                    }
-                    return;
-                }
-                const accountPaused = known?.state?.accountPaused;
-                if (accountPaused) {
-                    statusRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: accountPausedNote(accountPaused) });
-                }
                 checked = true;
                 connectionHealthy = Boolean(secret);
                 badgeText.setText(t('ui.communityShareSection.badgeLabel', { status: t(connectionHealthy ? 'ui.communityShareSection.statusConnected' : 'ui.communityShareSection.badgeReconnect') }));
@@ -632,10 +577,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     } else {
         const codeRow = renderConnectionCodeSetting(activationSection);
-        // Community said who disconnected this vault and when; the code row is the next step.
-        if (settings.connection.serverDisconnect) {
-            codeRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: serverDisconnectNote(settings.connection.serverDisconnect) });
-        }
         if (settings.lastError) {
             codeRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
         }

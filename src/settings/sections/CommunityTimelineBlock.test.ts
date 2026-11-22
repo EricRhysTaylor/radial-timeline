@@ -68,7 +68,7 @@ describe('timeline privacy details', () => {
 
 describe('Community dates', () => {
     it('writes Last sent and Website checked in one format, kept on one line', async () => {
-        const { formatCommunityDate } = await import('../../communityShare/sharingWords');
+        const { formatCommunityDate } = await import('./CommunityTimelineBlock');
         const at = Date.UTC(2026, 10, 18, 23, 1);
         const fromIso = formatCommunityDate(new Date(at).toISOString());
         const fromMs = formatCommunityDate(at);
@@ -78,70 +78,6 @@ describe('Community dates', () => {
         expect(fromMs).not.toMatch(/[ \u202F]/);
         expect(fromMs).not.toMatch(/:\d\d:\d\d/);
         expect(formatCommunityDate('not a date')).toBe('not a date');
-    });
-});
-
-describe('who paused this book, and when', () => {
-    const AT = '2026-11-22T13:20:00Z';
-    const base = { vaultUpdatesPaused: null, timelineUpdatesStopped: null, updateHeld: null, timeline: null, vaultSharingPaused: null, accountPaused: null, history: [] };
-
-    it('says each pause that stands on Community, with its date, before any send is refused', async () => {
-        const { standingBookNotes } = await import('./CommunityTimelineBlock');
-        const { formatCommunityDate } = await import('../../communityShare/sharingWords');
-        const date = formatCommunityDate(AT);
-        expect(standingBookNotes(null)).toEqual([]);
-        expect(standingBookNotes({ ...base, vaultUpdatesPaused: { at: AT, side: 'community', cause: 'author' } }))
-            .toEqual([t('ui.communitySharing.vaultUpdatesPaused', { date })]);
-        expect(standingBookNotes({ ...base, vaultUpdatesPaused: { at: AT, side: 'community', cause: 'restore' }, updateHeld: { at: AT } }))
-            .toEqual([t('ui.communitySharing.vaultUpdatesPausedRestore', { date }), t('ui.communitySharing.updateHeld', { date })]);
-        expect(standingBookNotes({ ...base, timeline: { status: 'private', changedAt: AT, side: 'community', cause: 'author' } }))
-            .toEqual([t('ui.communitySharing.takenOffline', { date })]);
-        // A timeline that arrived private was never taken offline.
-        expect(standingBookNotes({ ...base, timeline: { status: 'private', changedAt: null, side: null, cause: null } })).toEqual([]);
-    });
-
-    it('shows a refused send once when the standing note already says it', async () => {
-        vi.stubGlobal('window', { setTimeout: vi.fn() });
-        const { formatCommunityDate } = await import('../../communityShare/sharingWords');
-        const paused = t('ui.communitySharing.vaultUpdatesPaused', { date: formatCommunityDate(AT) });
-        const node = { createDiv: () => node, createEl: () => node, addEventListener: () => {} };
-        const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'standing-notes' }, sharingPaused: false } } };
-        const book = { id: 'standing-notes-book', title: 'Book', sourceFolder: 'Book' };
-        state.record.lastError = paused;
-        state.fetch.mockReset().mockResolvedValue({ ok: true, shared: false, project_id: 'project', sharing: { ...base, vaultUpdatesPaused: { at: AT, side: 'community', cause: 'author' } } });
-        const render = () => { state.notes = []; renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: node as never, book: book as never, rerender: render }); };
-        render();
-        await vi.waitFor(() => expect(state.notes.filter(note => note === paused)).toHaveLength(1));
-        state.record.lastError = '';
-    });
-
-    it('folds the Sharing history under one line naming the newest change', async () => {
-        vi.stubGlobal('window', { setTimeout: vi.fn() });
-        const { formatCommunityDate } = await import('../../communityShare/sharingWords');
-        const made: Array<{ tag: string; text?: string; open?: boolean }> = [];
-        const node: Record<string, unknown> = {
-            createDiv: () => node,
-            addEventListener: () => {},
-            createEl: (tag: string, options?: { text?: string }) => { const el = { ...node, tag, text: options?.text, open: false }; made.push(el as never); return el; },
-        };
-        const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'history-list' }, sharingPaused: false } } };
-        const book = { id: 'history-list-book', title: 'Book', sourceFolder: 'Book' };
-        state.fetch.mockReset().mockResolvedValue({
-            ok: true, shared: false, project_id: 'project',
-            sharing: { ...base, history: [
-                { event: 'sharing_paused', side: 'vault', at: '2026-11-21T10:00:00Z', cause: null, sceneTitle: null },
-                { event: 'vault_updates_paused', side: 'community', at: AT, cause: 'author', sceneTitle: null },
-            ] },
-        });
-        const render = () => { made.length = 0; renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: node as never, book: book as never, rerender: render }); };
-        render();
-        await vi.waitFor(() => expect(made.some(el => el.tag === 'details')).toBe(true));
-        expect(made.find(el => el.tag === 'details')?.open).toBe(false);
-        expect(made.find(el => el.tag === 'summary')?.text).toBe(t('ui.communitySharing.historySummary', { what: 'Vault updates paused on Community', date: formatCommunityDate(AT) }));
-        expect(made.filter(el => el.tag === 'li').map(el => el.text)).toEqual([
-            t('ui.communitySharing.historyRow', { date: formatCommunityDate(AT), what: 'Vault updates paused on Community' }),
-            t('ui.communitySharing.historyRow', { date: formatCommunityDate('2026-11-21T10:00:00Z'), what: 'Sharing paused in Radial Timeline' }),
-        ]);
     });
 });
 

@@ -19,7 +19,7 @@ import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { SubplotCanvasModal } from '../timetable/SubplotCanvasModal';
 import { CanvasWorkspacePicker } from '../timetable/CanvasWorkspacePicker';
-import { storyMapPrefix } from '../timetable/storyMapPaths';
+import { bookStoryMaps, preferredStoryMap } from '../timetable/storyMapPaths';
 import RadialTimelinePlugin from '../main';
 import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
@@ -622,11 +622,9 @@ export class RadialTimelineView extends ItemView {
                 { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
                 { label: t('ui.timeLineView.canvasAction'), icon: 'layout-dashboard', run: (anchor) => {
                     const book = getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings) : undefined;
-                    const prefix = book ? storyMapPrefix(book) : undefined;
-                    const candidates = prefix ? this.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : [];
+                    const candidates = book ? bookStoryMaps(this.app.vault.getFiles(), book) : [];
                     const openPaths = new Set(this.app.workspace.getLeavesOfType('canvas').map(leaf => (leaf.view as { file?: TFile }).file?.path));
-                    const openMatches = candidates.filter(file => openPaths.has(file.path));
-                    const match = openMatches.length === 1 ? openMatches[0] : candidates.find(file => file.path === `${prefix}.canvas`) ?? (candidates.length === 1 ? candidates[0] : undefined);
+                    const match = book ? preferredStoryMap(candidates, openPaths, book) : undefined;
                     const choose = (file: TFile | null): void => {
                         if (file) void this.app.workspace.openLinkText(file.path, '', true);
                         else new SubplotCanvasModal(this.app, this.plugin, book?.id).open();

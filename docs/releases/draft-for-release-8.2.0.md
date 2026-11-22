@@ -26,8 +26,8 @@ See [Scenes asked for on Community](https://github.com/EricRhysTaylor/radial-tim
 
 ### Canvas subplot branches
 
-- **On every device.** Canvas subplot branches now keep their review details in a small file beside the Canvas, so **Map out of date — review updates** and text drops work on every device that syncs the vault. The details follow the Canvas when you rename it or its folder.
-- **A clearer name.** The command that builds a book's subplots on a Canvas is now **Canvas create subplot branches**, and each subplot becomes a branch.
+- **On every device.** Canvas subplot branches now keep their review details in a small file beside the Canvas, so **Branches out of date — review updates** and text drops work on every device that syncs the vault. The details follow the Canvas when you rename it or its folder.
+- **A clearer name.** The command that builds a book's subplots on a Canvas is now **Canvas create subplot branches**, and each subplot becomes a branch. New ones are saved in a **Canvas** folder as *Book - Subplot Branches*; the ones you already have keep their names and keep working.
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/851a70a4b5aca96f181d60432c1febecb301128b/wiki/images/canvas-subplot-branches.webp" alt="Act 1 of The Odyssey as Canvas subplot branches: the Telemachus Comes of Age, Penelope and the Suitors, and Hospitality and Loyalty lanes, each a row of linked scene cards joined in narrative order" width="800">
 

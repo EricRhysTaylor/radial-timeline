@@ -4,7 +4,7 @@ import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRe
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import { registerNoteDropCapture } from './NoteDropCapture';
 import { CanvasWorkspacePicker } from './CanvasWorkspacePicker';
-import { storyMapPrefix } from './storyMapPaths';
+import { bookStoryMaps, preferredStoryMap } from './storyMapPaths';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
@@ -2377,11 +2377,9 @@ export class TimetableView extends BasesView {
             const ids = this.bookIdsInView();
             const bookId = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
             const book = this.plugin.settings.books.find(candidate => candidate.id === bookId);
-            const prefix = book ? storyMapPrefix(book) : undefined;
-            const candidates = prefix ? this.plugin.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : [];
+            const candidates = book ? bookStoryMaps(this.plugin.app.vault.getFiles(), book) : [];
             const openPaths = new Set(this.plugin.app.workspace.getLeavesOfType('canvas').map(leaf => (leaf.view as { file?: TFile }).file?.path));
-            const openMatches = candidates.filter(file => openPaths.has(file.path));
-            const match = openMatches.length === 1 ? openMatches[0] : candidates.find(file => file.path === `${prefix}.canvas`) ?? (candidates.length === 1 ? candidates[0] : undefined);
+            const match = book ? preferredStoryMap(candidates, openPaths, book) : undefined;
             const open = (file: TFile | null): void => {
                 if (file) void this.plugin.app.workspace.openLinkText(file.path, '', true);
                 else new SubplotCanvasModal(this.plugin.app, this.plugin, bookId).open();
@@ -2477,11 +2475,9 @@ export class TimetableView extends BasesView {
                 const ids = this.bookIdsInView();
                 const bookId = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
                 const book = this.plugin.settings.books.find(candidate => candidate.id === bookId);
-                const prefix = book ? storyMapPrefix(book) : undefined;
-                const candidates = prefix ? this.plugin.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : undefined;
+                const candidates = book ? bookStoryMaps(this.plugin.app.vault.getFiles(), book) : undefined;
                 const openPaths = new Set(this.plugin.app.workspace.getLeavesOfType('canvas').map(leaf => (leaf.view as { file?: TFile }).file?.path));
-                const openMatches = candidates?.filter(file => openPaths.has(file.path)) ?? [];
-                const match = openMatches.length === 1 ? openMatches[0] : candidates?.find(file => file.path === `${prefix}.canvas`) ?? (candidates?.length === 1 ? candidates[0] : undefined);
+                const match = book && candidates ? preferredStoryMap(candidates, openPaths, book) : undefined;
                 const choose = (file: TFile | null) => {
                     if (file) void open(file).catch(error => new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000));
                     else new SubplotCanvasModal(this.plugin.app, this.plugin, bookId, open).open();

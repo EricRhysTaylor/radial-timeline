@@ -21,7 +21,7 @@
  *   `state`, so a lost answer is settled by Community, never assumed.
  * - The book is registered in Book Manager only after Community confirms.
  *   Registered earlier, a background book-list send would make a second card.
- * - Cancelled or expired after writing: the notes stay, the record is kept as
+ * - Cancelled, expired or no longer on Community after writing: the notes stay, the record is kept as
  *   `cancelled` until the author has been told, and the folder is not a book.
  *
  * The vault, Community and plugin data are passed in, so tests can stop the
@@ -45,13 +45,19 @@ import {
     commitCommunityShare,
     fetchBookTransferState,
     finishBookTransfer,
+    isBookTransferNotFound,
     keepTimelineUpdated,
 } from './communityShareClient';
 import { COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION, bookTransferFor, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export interface BookTransferVault {
-    /** Anything at this path in the vault, under any spelling a file system that ignores case treats as the same. */
+    /**
+     * Anything at this path in the vault or on disk, under any spelling a file
+     * system that ignores case, or Windows, treats as the same.
+     */
     exists(path: string): Promise<boolean>;
+    /** A folder at exactly this path with nothing in it. */
+    isEmptyFolder(path: string): Promise<boolean>;
     createFolder(path: string): Promise<void>;
     /** A new note. Fails when something is already at the path. */
     create(path: string, content: string): Promise<void>;
@@ -197,13 +203,18 @@ async function writeNotes(
     const { vault, store } = deps;
     let record = initial;
     if (!record.folderCreated) {
-        // Before the folder exists no note has been written, so a folder found
-        // here is someone else's: the record goes, and the author picks a name.
+        // No note has been written yet. An empty folder at exactly this path is
+        // this run's own, made just before the app closed and the record could
+        // say so. Anything else is someone else's: the record goes, and the
+        // author picks a name.
         if (await vault.exists(record.folder)) {
-            await store.remove(transferId);
-            return { kind: 'stopped', outcome: { kind: 'stopped', message: t('ui.bookFromCommunity.folderAppeared', { folder: record.folder }), folderGone: true } };
+            if (!await vault.isEmptyFolder(record.folder)) {
+                await store.remove(transferId);
+                return { kind: 'stopped', outcome: { kind: 'stopped', message: t('ui.bookFromCommunity.folderAppeared', { folder: record.folder }), folderGone: true } };
+            }
+        } else {
+            await vault.createFolder(record.folder);
         }
-        await vault.createFolder(record.folder);
         record = { ...record, folderCreated: true };
         await store.put(transferId, record);
     }
@@ -295,17 +306,19 @@ async function tellCommunity(
 
     if (doneError !== null) {
         // Refused, or the answer was lost: Community says where this stands.
-        let state: BookTransferState;
+        let state: BookTransferState | null;
         try {
             state = await deps.server.state(transferId);
-        } catch {
-            return { kind: 'stopped', message: refusalSentence(doneError) ?? t('ui.bookFromCommunity.answerLost') };
+        } catch (error) {
+            if (!isBookTransferNotFound(error)) return { kind: 'stopped', message: refusalSentence(doneError) ?? t('ui.bookFromCommunity.answerLost') };
+            state = null;
         }
-        if (state.state === 'open') return { kind: 'stopped', message: refusalSentence(doneError) ?? t('ui.bookFromCommunity.answerLost') };
-        // Done names the book it was done for; without that name nothing is assumed.
-        if (state.state === 'done' && !state.pluginBookKey) return { kind: 'stopped', message: t('ui.communityShareClient.bookTransferUnexpected') };
-        if (state.state !== 'done' || state.pluginBookKey !== record.bookId) {
-            // Cancelled, expired, or finished under another book id: the notes stay, the folder is not a book.
+        const ended = endedOnCommunity(state, record);
+        if (ended === 'unsure') {
+            return { kind: 'stopped', message: state?.state === 'open' ? refusalSentence(doneError) ?? t('ui.bookFromCommunity.answerLost') : t('ui.communityShareClient.bookTransferUnexpected') };
+        }
+        if (ended) {
+            // Cancelled, expired, gone, or finished under another book id: the notes stay, the folder is not a book.
             await deps.store.put(transferId, { ...record, phase: 'cancelled' });
             return { kind: 'cancelled', title: record.title, folder: record.folder };
         }
@@ -314,6 +327,49 @@ async function tellCommunity(
     await deps.register(record);
     await deps.store.remove(transferId);
     return { kind: 'done', bookId: record.bookId, title: record.title, folder: record.folder };
+}
+
+/**
+ * Whether Community has ended this transfer for this book: true when it was
+ * cancelled, expired, finished under another book id, or is no longer held
+ * (`state` null), false when it was done for this book, `unsure` while it is
+ * open or done for a book it does not name.
+ */
+function endedOnCommunity(state: BookTransferState | null, record: CommunityBookTransferRecord): boolean | 'unsure' {
+    if (!state) return true;
+    if (state.state === 'open') return 'unsure';
+    if (state.state !== 'done') return true;
+    // Done names the book it was done for; without that name nothing is assumed.
+    if (!state.pluginBookKey) return 'unsure';
+    return state.pluginBookKey !== record.bookId;
+}
+
+/**
+ * The book of a transfer with a record can no longer be read. When Community
+ * no longer holds the transfer, or says it ended, the record becomes
+ * `cancelled`, so the card offers its dismiss button and says where the notes
+ * are. Returns whether it did. A record is never changed on an answer that
+ * leaves the transfer open, or on no answer.
+ */
+export async function settleUnreadableTransfer(
+    deps: Pick<BookTransferDeps, 'server' | 'store'>,
+    transferId: string,
+    readError: unknown
+): Promise<boolean> {
+    const id = transferId.toLowerCase();
+    const record = deps.store.get(id);
+    if (!record || record.phase === 'cancelled') return false;
+    let state: BookTransferState | null = null;
+    if (!isBookTransferNotFound(readError)) {
+        try {
+            state = await deps.server.state(id);
+        } catch (error) {
+            if (!isBookTransferNotFound(error)) return false;
+        }
+    }
+    if (endedOnCommunity(state, record) !== true) return false;
+    await deps.store.put(id, { ...record, phase: 'cancelled' });
+    return true;
 }
 
 // ── Obsidian ────────────────────────────────────────────────────────────────
@@ -325,6 +381,23 @@ async function tellCommunity(
 export function takenInVault(app: App, path: string): boolean {
     const wanted = normalizePath(path).toLowerCase();
     return app.vault.getAllLoadedFiles().some(file => file.path.toLowerCase() === wanted);
+}
+
+/**
+ * The writer's check before it makes a folder or a note: the vault's list, and
+ * then the disk itself, which also answers for a file Obsidian has not listed
+ * and for a name Windows would spell another way.
+ */
+async function takenOnDisk(app: App, path: string): Promise<boolean> {
+    return takenInVault(app, path) || await app.vault.adapter.exists(normalizePath(path)); // SAFE: the Vault API answers only for files Obsidian has listed; this asks the disk so nothing unlisted is written over
+}
+
+/** A folder Obsidian lists at exactly this path, empty both there and on disk. */
+async function emptyFolderAt(app: App, path: string): Promise<boolean> {
+    const folder = app.vault.getFolderByPath(normalizePath(path));
+    if (!folder || folder.children.length > 0) return false;
+    const listed = await app.vault.adapter.list(folder.path); // SAFE: read-only; a folder is taken as the run's own only when the disk, not just Obsidian's list, holds nothing in it
+    return listed.files.length === 0 && listed.folders.length === 0;
 }
 
 /** A note's text read from disk, not from Obsidian's cache. */
@@ -363,7 +436,8 @@ export function obsidianBookTransferDeps(plugin: RadialTimelinePlugin): BookTran
     const { app } = plugin;
     return {
         vault: {
-            exists: async path => takenInVault(app, path),
+            exists: path => takenOnDisk(app, path),
+            isEmptyFolder: path => emptyFolderAt(app, path),
             createFolder: async path => { await app.vault.createFolder(path); },
             create: async (path, content) => { await app.vault.create(path, content); },
             read: path => readNote(app, path),

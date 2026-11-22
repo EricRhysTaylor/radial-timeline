@@ -40,6 +40,19 @@ import { sceneBlocksFromNote, sceneTextHash, sceneTextJson, type SceneBlock, typ
 /** The longest title kept in a file name, in characters: well inside every file system's limit with its number and `.md`. */
 const MAX_TITLE_IN_FILE_NAME = 120;
 
+/** Names Windows keeps for devices: a file or folder with one, with or without an extension, cannot be made there. */
+const WINDOWS_DEVICE_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])\s*(\..*)?$/i;
+
+/** Why a file or folder name would not be kept as written on every desktop, or null when it would. */
+export function nameProblem(name: string): 'trailing' | 'reserved' | null {
+    // Windows makes "Wait..." as "Wait", so a note or folder already named "Wait" would be taken for it.
+    if (/[. ]$/.test(name)) return 'trailing';
+    return WINDOWS_DEVICE_NAME.test(name) ? 'reserved' : null;
+}
+
+/** A sanitized name with the periods and spaces Windows would drop from its end removed. */
+const withoutTrailingDots = (name: string): string => name.replace(/[. ]+$/, '');
+
 /** The digits every scene number is padded to: two, or as many as the last scene's number has. */
 export function sceneNumberWidth(scenes: readonly Pick<TransferScene, 'order'>[]): number {
     return Math.max(2, ...scenes.map(scene => String(scene.order).length));
@@ -52,7 +65,7 @@ export function sceneNumberWidth(scenes: readonly Pick<TransferScene, 'order'>[]
  * number is kept as it is, with one number rather than two.
  */
 export function transferNoteName(scene: Pick<TransferScene, 'order' | 'title'>, width: number): string {
-    const title = [...sanitizeFileName(scene.title)].slice(0, MAX_TITLE_IN_FILE_NAME).join('').trim();
+    const title = withoutTrailingDots([...sanitizeFileName(scene.title)].slice(0, MAX_TITLE_IN_FILE_NAME).join('').trim());
     const ownNumber = extractPrefixToken(title);
     if (ownNumber !== null && Number(ownNumber) === scene.order) return title;
     return `${String(scene.order).padStart(width, '0')} ${title || 'Scene'}`; // SAFE: a file name needs words after its number; a title with no characters a file name can hold is named Scene, as manuscript import names one
@@ -67,6 +80,7 @@ export function transferNotePath(folder: string, fileName: string): string {
     const inside = fileName.length > 0 && !fileName.includes('/') && !fileName.includes('\\') && !fileName.startsWith('.')
         && fileName.endsWith('.md') && isPathInFolderScope(path, folder) && path.split('/').every(segment => segment !== '..' && segment !== '.');
     if (!inside) throw new Error(`Refused to write a note outside the new book folder: ${fileName}`);
+    if (nameProblem(fileName) || nameProblem(fileName.slice(0, -'.md'.length))) throw new Error(`Refused a note name Windows would not keep as written: ${fileName}`);
     return path;
 }
 
@@ -75,21 +89,32 @@ export function transferNotePath(folder: string, fileName: string): string {
 /**
  * The folder offered for the new book: beside the active book's folder, or at
  * the vault root when there is no book, named for the book, with " 2", " 3"
- * when that name is taken.
+ * when that name is taken or is one Windows keeps for a device.
  */
 export function suggestTransferFolder(title: string, activeBookFolder: string | undefined, isTaken: (folder: string) => boolean): string {
     const parent = activeBookFolder?.trim() ? dirname(activeBookFolder) : '';
-    const base = sanitizeFileName(title) || 'Book'; // SAFE: a title with no characters a folder name can hold still needs a folder name
+    const base = withoutTrailingDots(sanitizeFileName(title)) || 'Book'; // SAFE: a title with no characters a folder name can hold still needs a folder name
+    // "CON 2" is a name Windows keeps as written; "nul.txt 2" is still the device NUL, so its number goes before the period.
+    const numbered = (attempt: number): string => {
+        const appended = `${base} ${attempt}`;
+        if (!nameProblem(appended)) return appended;
+        const dot = base.indexOf('.');
+        return `${base.slice(0, dot).trimEnd()} ${attempt}${base.slice(dot)}`;
+    };
     for (let attempt = 1; ; attempt += 1) {
-        const name = attempt === 1 ? base : `${base} ${attempt}`;
+        const name = attempt === 1 ? base : numbered(attempt);
         const folder = parent ? `${parent}/${name}` : name;
-        if (!isTaken(folder)) return folder;
+        if (!nameProblem(name) && !isTaken(folder)) return folder;
     }
 }
 
 export type TransferFolderProblem =
     | { kind: 'empty' }
     | { kind: 'invalid' }
+    /** A folder name ending in a period or a space, which Windows drops. */
+    | { kind: 'trailing'; name: string }
+    /** A folder name Windows keeps for a device (CON, NUL, COM1…). */
+    | { kind: 'reserved'; name: string }
     | { kind: 'exists' }
     | { kind: 'overlap'; book: string }
     | { kind: 'parent'; parent: string };
@@ -111,8 +136,14 @@ export function checkTransferFolder(
 ): TransferFolderCheck {
     if (!input.replace(/[\\/]/g, '').trim()) return { folder: '', problem: { kind: 'empty' } };
     const folder = normalizePath(input.trim());
+    const segments = folder.split('/');
+    // Each name must be kept as written on every desktop, so the folder checked is the folder made.
+    for (const segment of segments) {
+        const problem = segment.trim() ? nameProblem(segment) : null;
+        if (problem) return { folder, problem: { kind: problem, name: segment } };
+    }
     // Each name must be one a note's folder can have: no characters a path or a link reserves, no leading period.
-    if (folder.split('/').some(segment => !segment.trim() || segment !== sanitizeFileName(segment))) return { folder, problem: { kind: 'invalid' } };
+    if (segments.some(segment => !segment.trim() || segment !== sanitizeFileName(segment))) return { folder, problem: { kind: 'invalid' } };
     if (vault.exists(folder)) return { folder, problem: { kind: 'exists' } };
     const overlap = getOverlappingBook(books, folder);
     if (overlap) return { folder, problem: { kind: 'overlap', book: overlap.title } };

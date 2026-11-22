@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { CommunityShareError } from './communityShareClient';
-import { runBookTransfer, type BookTransferDeps, type BookTransferStart } from './bookTransferWriter';
+import { obsidianBookTransferDeps, runBookTransfer, settleUnreadableTransfer, type BookTransferDeps, type BookTransferStart } from './bookTransferWriter';
 import type { PlannedSceneNote } from './bookTransferPlan';
 import type { BookTransferState } from './bookTransferDocument';
 import type { CommunityBookTransferRecord } from '../types/settings';
@@ -67,6 +67,7 @@ function world(folders: string[] = ['Books']): World {
     w.deps = {
         vault: {
             exists: async path => w.files.has(path) || w.folders.has(path),
+            isEmptyFolder: async path => w.folders.has(path) && ![...w.files.keys(), ...w.folders].some(entry => entry.startsWith(`${path}/`)),
             createFolder: async path => {
                 if (w.folders.has(path) || w.files.has(path)) throw new Error('Folder already exists.');
                 w.log.push(`createFolder ${path}`);
@@ -265,7 +266,7 @@ describe('the folder', () => {
         expect(w.files.size).toBe(0);
     });
 
-    it('a folder that appeared after the record, before the folder was made, ends the record with nothing written', async () => {
+    it('a folder with something in it that appeared after the record, before the folder was made, ends the record with nothing written', async () => {
         const w = world();
         // The record is saved; the app closes before the folder is made.
         const createFolder = w.deps.vault.createFolder;
@@ -274,10 +275,82 @@ describe('the folder', () => {
         expect(w.records.get(TRANSFER_ID)?.folderCreated).toBe(false);
         w.deps.vault.createFolder = createFolder;
         w.folders.add(FOLDER);
+        w.files.set(`${FOLDER}/Someone else.md`, 'Not this book.');
+        const outcome = await runBookTransfer(w.deps, start());
+        expect(outcome).toMatchObject({ kind: 'stopped', folderGone: true });
+        expect(w.records.size).toBe(0);
+        expect(w.files.size).toBe(1);
+        expect(w.files.get(`${FOLDER}/Someone else.md`)).toBe('Not this book.');
+    });
+
+    it('a folder made just before the app closed, before the record said so, is the run\'s own: Continue writes into it', async () => {
+        const w = world();
+        w.closeAppOnPut = record => record.folderCreated;
+        await expect(runBookTransfer(w.deps, start())).rejects.toThrow('The app closed.');
+        expect(w.folders.has(FOLDER)).toBe(true);
+        expect(w.records.get(TRANSFER_ID)?.folderCreated).toBe(false);
+
+        const outcome = await runBookTransfer(w.deps, start());
+        expect(outcome).toMatchObject({ kind: 'done', folder: FOLDER });
+        expect(w.log.filter(step => step.startsWith('createFolder'))).toHaveLength(1);
+        expect(w.creates.size).toBe(3);
+    });
+
+    it('an empty folder at another spelling of the record\'s folder is not taken as the run\'s own', async () => {
+        const w = world();
+        w.deps.vault.createFolder = async () => { throw new Error('The app closed.'); };
+        await expect(runBookTransfer(w.deps, start())).rejects.toThrow('The app closed.');
+        // A file system that ignores case reports the other spelling as the same folder.
+        w.folders.add('Books/the lighthouse');
+        w.deps.vault.exists = async path => [...w.folders, ...w.files.keys()].some(entry => entry.toLowerCase() === path.toLowerCase());
         const outcome = await runBookTransfer(w.deps, start());
         expect(outcome).toMatchObject({ kind: 'stopped', folderGone: true });
         expect(w.records.size).toBe(0);
         expect(w.files.size).toBe(0);
+    });
+});
+
+describe('the vault check on disk (Obsidian)', () => {
+    const plugin = (onDisk: string[], folders: Record<string, { children: unknown[]; onDisk: string[] }> = {}) => ({
+        app: {
+            vault: {
+                getAllLoadedFiles: () => [],
+                getFolderByPath: (path: string) => (folders[path] ? { path, children: folders[path].children } : null),
+                adapter: {
+                    exists: async (path: string) => onDisk.includes(path),
+                    list: async (path: string) => ({ files: folders[path]?.onDisk ?? [], folders: [] }),
+                },
+            },
+        },
+        settings: {},
+    });
+
+    it('a path Obsidian has not listed but the disk holds counts as taken', async () => {
+        const deps = obsidianBookTransferDeps(plugin(['Books/Wait']) as never);
+        expect(await deps.vault.exists('Books/Wait')).toBe(true);
+        expect(await deps.vault.exists('Books/Elsewhere')).toBe(false);
+    });
+
+    it('a folder is empty only when Obsidian and the disk both find nothing in it', async () => {
+        const deps = obsidianBookTransferDeps(plugin([], {
+            'Books/Empty': { children: [], onDisk: [] },
+            'Books/Hidden file': { children: [], onDisk: ['Books/Hidden file/.sync'] },
+            'Books/Listed': { children: [{}], onDisk: [] },
+        }) as never);
+        expect(await deps.vault.isEmptyFolder('Books/Empty')).toBe(true);
+        expect(await deps.vault.isEmptyFolder('Books/Hidden file')).toBe(false);
+        expect(await deps.vault.isEmptyFolder('Books/Listed')).toBe(false);
+        expect(await deps.vault.isEmptyFolder('Books/Missing')).toBe(false);
+    });
+
+    it('a note the disk already holds is never written over: the run stops with a sentence', async () => {
+        const w = world();
+        // Obsidian does not list the note; the disk has one at its path (Windows spells "Landfall." as "Landfall").
+        w.deps.vault.exists = async path => w.files.has(path) || w.folders.has(path) || path === `${FOLDER}/03 Landfall.md`;
+        const outcome = await runBookTransfer(w.deps, start());
+        expect(outcome).toEqual({ kind: 'stopped', message: '03 Landfall.md is in the folder and was not written for this book. Rename it, then choose Continue.' });
+        expect(w.creates.has(`${FOLDER}/03 Landfall.md`)).toBe(false);
+        expect(w.log).not.toContain('register');
     });
 });
 
@@ -364,6 +437,17 @@ describe('telling Community', () => {
         expect(w.creates.size).toBe(creates);
     });
 
+    it('a transfer Community no longer holds has ended: the notes stay and the record waits for the author', async () => {
+        const w = world();
+        const gone = new CommunityShareError('transfer_not_found', 'Community has no such transfer.');
+        w.server.done = async () => { throw gone; };
+        w.server.state = async () => { throw gone; };
+        expect(await runBookTransfer(w.deps, start())).toEqual({ kind: 'cancelled', title: 'The Lighthouse', folder: FOLDER });
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('cancelled');
+        expect(w.files.size).toBe(3);
+        expect(w.registered).toEqual([]);
+    });
+
     it('a refusal while the transfer is still open is shown as Community sent it', async () => {
         const w = world();
         const sentence = 'The scene list changed on Community. Open the book\'s Share page, then add the book again.';
@@ -395,5 +479,69 @@ describe('telling Community', () => {
         await runBookTransfer(w.deps, start());
         expect(registeredBeforeDone).toBe(false);
         expect(w.log.indexOf('register')).toBeGreaterThan(w.log.findIndex(step => step.startsWith('done')));
+    });
+});
+
+describe('a book that can no longer be read from Community', () => {
+    const recorded = (w: World, phase: CommunityBookTransferRecord['phase'] = 'writing'): void => {
+        w.records.set(TRANSFER_ID, {
+            schemaVersion: 1,
+            profileId: 'profile-1',
+            connectionId: 'conn-1',
+            bookId: 'book-1',
+            folder: FOLDER,
+            title: 'The Lighthouse',
+            folderCreated: true,
+            notes: { scn_0a1b2c3d: `${FOLDER}/01 The Docks.md` },
+            phase,
+            startedAt: '2026-11-21T12:00:00Z',
+        });
+    };
+    const notFound = new CommunityShareError('transfer_not_found', 'Community has no such transfer.');
+
+    it('read answered transfer_not_found: the record is canceled without asking again, so the card offers its dismiss button', async () => {
+        const w = world();
+        recorded(w);
+        expect(await settleUnreadableTransfer(w.deps, TRANSFER_ID.toUpperCase(), notFound)).toBe(true);
+        expect(w.records.get(TRANSFER_ID)).toMatchObject({ phase: 'cancelled', folder: FOLDER, notes: { scn_0a1b2c3d: `${FOLDER}/01 The Docks.md` } });
+        expect(w.log).not.toContain('state');
+    });
+
+    it('state answered transfer_not_found: the record is canceled', async () => {
+        const w = world();
+        recorded(w);
+        w.server.state = async () => { throw notFound; };
+        expect(await settleUnreadableTransfer(w.deps, TRANSFER_ID, new Error('offline'))).toBe(true);
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('cancelled');
+    });
+
+    it('cancelled or expired on Community: the record is canceled', async () => {
+        const w = world();
+        recorded(w);
+        w.server.state = async () => ({ state: 'expired', expiresAt: 'x' });
+        expect(await settleUnreadableTransfer(w.deps, TRANSFER_ID, new Error('read failed'))).toBe(true);
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('cancelled');
+    });
+
+    const kept: Array<[string, () => Promise<BookTransferState>]> = [
+        ['still open', async () => ({ state: 'open', expiresAt: 'x' })],
+        ['done for this book', async () => ({ state: 'done', pluginBookKey: 'book-1', expiresAt: 'x' })],
+        ['done for a book it does not name', async () => ({ state: 'done', expiresAt: 'x' })],
+        ['not answered', async () => { throw new Error('offline'); }],
+        ['refused for another reason', async () => { throw new CommunityShareError('sharing_level_required', 'Choose a level.'); }],
+    ];
+
+    it.each(kept)('%s: the record is kept as it was', async (_case, state) => {
+        const w = world();
+        recorded(w);
+        w.server.state = state;
+        expect(await settleUnreadableTransfer(w.deps, TRANSFER_ID, new Error('read failed'))).toBe(false);
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('writing');
+    });
+
+    it('without a record, nothing is saved', async () => {
+        const w = world();
+        expect(await settleUnreadableTransfer(w.deps, TRANSFER_ID, notFound)).toBe(false);
+        expect(w.records.size).toBe(0);
     });
 });

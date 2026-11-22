@@ -23,6 +23,7 @@ import type { BookProfile, RadialTimelineSettings } from '../types/settings';
 import { buildTimelineSharePayload, type TimelineSharePayload } from './timelineSharePayload';
 import {
     checkTransferFolder,
+    nameProblem,
     planBookTransfer,
     sceneBlocksToMarkdown,
     suggestTransferFolder,
@@ -433,6 +434,22 @@ describe('file names', () => {
         expect(transferNoteName({ order: 6, title: '.hidden' }, 2)).toBe('06 hidden');
     });
 
+    it('drops the periods and spaces Windows would drop from the end of a title, and never makes a device name', () => {
+        expect(transferNoteName({ order: 7, title: 'Wait...' }, 2)).toBe('07 Wait');
+        expect(transferNoteName({ order: 8, title: '8 The End. ' }, 2)).toBe('8 The End');
+        expect(transferNoteName({ order: 9, title: '...' }, 2)).toBe('09 Scene');
+        for (const title of ['CON', 'nul', 'Com1', 'LPT9.txt', 'aux.']) {
+            expect(nameProblem(`${transferNoteName({ order: 1, title }, 2)}.md`)).toBeNull();
+        }
+    });
+
+    it('refuses a note name Windows would not keep as written', () => {
+        for (const name of ['CON.md', 'nul.md', 'Com3.md', 'lpt1.md', 'Wait..md', 'Wait .md']) {
+            expect(() => transferNotePath(FOLDER, name)).toThrow(/Windows would not keep/);
+        }
+        expect(transferNotePath(FOLDER, 'Console.md')).toBe(`${FOLDER}/Console.md`);
+    });
+
     it('never places a note anywhere but directly inside the new folder', () => {
         expect(transferNotePath(FOLDER, '01 One.md')).toBe(`${FOLDER}/01 One.md`);
         for (const name of ['../01 One.md', 'Sub/01 One.md', 'Sub\\01 One.md', '.01 One.md', '01 One.txt', '', '..', '.md']) {
@@ -462,6 +479,26 @@ describe('the folder', () => {
     it('is offered at the vault root when there is no book', () => {
         expect(suggestTransferFolder('The Lighthouse', undefined, () => false)).toBe('The Lighthouse');
         expect(suggestTransferFolder('What? #1', '', () => false)).toBe('What 1');
+    });
+
+    it('is offered under a name Windows keeps as written', () => {
+        expect(suggestTransferFolder('Wait...', 'Books/Mira', () => false)).toBe('Books/Wait');
+        expect(suggestTransferFolder('Wait...', 'Books/Mira', folder => folder === 'Books/Wait')).toBe('Books/Wait 2');
+        expect(suggestTransferFolder('...', undefined, () => false)).toBe('Book');
+        expect(suggestTransferFolder('CON', 'Books/Mira', () => false)).toBe('Books/CON 2');
+        expect(suggestTransferFolder('nul.txt', undefined, () => false)).toBe('nul 2.txt');
+        expect(suggestTransferFolder('nul.txt', undefined, folder => folder === 'nul 2.txt')).toBe('nul 3.txt');
+    });
+
+    it('refuses a name Windows would change or keeps for a device, saying which', () => {
+        const v = vault([], ['Books']);
+        expect(checkTransferFolder('Books/Wait...', v, []).problem).toEqual({ kind: 'trailing', name: 'Wait...' });
+        expect(checkTransferFolder('Books /The Lighthouse', v, []).problem).toEqual({ kind: 'trailing', name: 'Books ' });
+        for (const name of ['CON', 'prn', 'Aux', 'NUL.txt', 'com1', 'LPT9', 'con .md']) {
+            expect(checkTransferFolder(`Books/${name}`, v, []).problem).toEqual({ kind: 'reserved', name });
+        }
+        expect(checkTransferFolder('Books/Console', v, []).problem).toBeNull();
+        expect(checkTransferFolder('Books/COM10', v, []).problem).toBeNull();
     });
 
     it('must be new, inside a folder that exists, and clear of every book', () => {

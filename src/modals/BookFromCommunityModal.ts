@@ -21,7 +21,6 @@ import type RadialTimelinePlugin from '../main';
 import {
     BOOK_TRANSFER_FAILED,
     CommunityShareError,
-    fetchBookTransferState,
     readBookTransfer,
 } from '../communityShare/communityShareClient';
 import { bookTransferFor, normalizeCommunityShareSettings } from '../communityShare/communityShareSettings';
@@ -37,6 +36,7 @@ import {
 import {
     obsidianBookTransferDeps,
     runBookTransfer,
+    settleUnreadableTransfer,
     takenInVault,
     type BookTransferProgress,
 } from '../communityShare/bookTransferWriter';
@@ -60,6 +60,8 @@ function folderProblemText(folder: string, problem: TransferFolderProblem): stri
     switch (problem.kind) {
         case 'empty': return t('ui.bookFromCommunity.folderEmpty');
         case 'invalid': return t('ui.bookFromCommunity.folderInvalid');
+        case 'trailing': return t('ui.bookFromCommunity.folderTrailing', { name: problem.name });
+        case 'reserved': return t('ui.bookFromCommunity.folderReserved', { name: problem.name });
         case 'exists': return t('ui.bookFromCommunity.folderExists', { folder });
         case 'overlap': return t('ui.bookFromCommunity.folderOverlapsBook', { folder, book: problem.book });
         case 'parent': return t('ui.bookFromCommunity.folderParentMissing', { parent: problem.parent });
@@ -117,25 +119,22 @@ export class BookFromCommunityModal extends ErtModal {
                 this.folder = this.suggestFolder(this.plan.title);
             } catch (error) {
                 this.loadError = errorText(error, t('ui.communityShareClient.bookTransferFailed'));
-                if (record) await this.settleEndedTransfer();
+                if (record) await this.settleEndedTransfer(error);
             }
         }
         this.loading = false;
         this.render();
     }
 
-    /** The book can no longer be read: when Community ended it after notes were written, the record says so. */
-    private async settleEndedTransfer(): Promise<void> {
-        const record = this.record();
-        if (!record) return;
+    /** The book can no longer be read: when Community ended it, or no longer has it, the record says so. */
+    private async settleEndedTransfer(readError: unknown): Promise<void> {
         try {
-            const state = await fetchBookTransferState(this.plugin, this.transferId);
-            if (state.state === 'open' || (state.state === 'done' && state.pluginBookKey === record.bookId)) return;
-            await obsidianBookTransferDeps(this.plugin).store.put(this.transferId, { ...record, phase: 'cancelled' });
+            if (!await settleUnreadableTransfer(obsidianBookTransferDeps(this.plugin), this.transferId, readError)) return;
             this.loadError = null;
             this.options.onChanged?.();
-        } catch {
-            // The read's own sentence stays on screen.
+        } catch (error) {
+            // Plugin data could not be saved; the read's own sentence stays on screen.
+            console.error('Book from Community could not save its record:', error);
         }
     }
 

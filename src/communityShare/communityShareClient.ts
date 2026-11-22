@@ -1656,6 +1656,11 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
 /** The code of a call the website answered without a refusal code of its own. */
 export const BOOK_TRANSFER_FAILED = 'book_transfer_failed';
 
+/** Community no longer holds this transfer (deleted, or past keeping): it has ended, the same as cancelled. */
+export function isBookTransferNotFound(error: unknown): boolean {
+    return error instanceof CommunityShareError && error.code === 'transfer_not_found';
+}
+
 /**
  * One call to timeline-transfer-sync. The outcome is a book whose timeline is
  * kept updated from this vault, so the gate is the timeline's: connected, not

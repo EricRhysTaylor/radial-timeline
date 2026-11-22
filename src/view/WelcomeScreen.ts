@@ -77,9 +77,7 @@ const getWelcomeCopy = () => ({
         steps: [
             { icon: 'compass', text: t('ui.welcomeScreen.workflowStepBookManager'), link: 'book-manager' },
             { icon: 'file-plus', text: t('ui.welcomeScreen.workflowStepCreateNote') },
-            { icon: 'layers', text: t('ui.welcomeScreen.workflowStepPopulate') },
-            { icon: 'map-pin', text: t('ui.welcomeScreen.workflowStepDecide') },
-            { icon: 'target', text: t('ui.welcomeScreen.workflowStepTrack') }
+            { icon: 'layers', text: t('ui.welcomeScreen.workflowStepPopulate') }
         ]
     },
     feedback: t('ui.welcomeScreen.feedback'),
@@ -500,13 +498,8 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline, dismis
 
     const body = container.createDiv({ cls: 'rt-welcome-body' });
 
-    // Two description paragraphs stay together directly under the title. The
-    // feedback line's [bracketed] phrase links to Community Help.
+    // Put the starting choices first; feedback links follow the quick start.
     body.createEl('p', { cls: 'rt-welcome-paragraph', text: WELCOME_COPY.intro });
-    const feedbackP = body.createEl('p', { cls: 'rt-welcome-paragraph' });
-    appendTextWithLinks(feedbackP, WELCOME_COPY.feedback, [WELCOME_URLS.feedback], 'ert-welcome-step-link');
-    feedbackP.appendText(' ');
-    appendTextWithLinks(feedbackP, WELCOME_COPY.feedbackContact, [WELCOME_URLS.contact], 'ert-welcome-step-link');
 
     // Starting points: a finished demo, a new book, or an imported manuscript.
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
@@ -599,8 +592,10 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline, dismis
         }
     }
 
-    // Closing notes + odds and ends
-    body.createEl('p', { cls: 'rt-welcome-paragraph rt-welcome-footnote', text: WELCOME_COPY.updateNote });
+    const feedbackP = body.createEl('p', { cls: 'rt-welcome-paragraph rt-welcome-feedback' });
+    appendTextWithLinks(feedbackP, WELCOME_COPY.feedback, [WELCOME_URLS.feedback], 'ert-welcome-step-link');
+    feedbackP.appendText(' ');
+    appendTextWithLinks(feedbackP, WELCOME_COPY.feedbackContact, [WELCOME_URLS.contact], 'ert-welcome-step-link');
 
     // Resource links, two columns, ABOVE the backup block.
     // Left column: YouTube, Wiki. Right column: Community, Bug reports.

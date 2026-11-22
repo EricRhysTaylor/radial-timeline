@@ -1116,6 +1116,42 @@ export interface CommunityShareSettings {
      * record never holds scene text or a hash of it.
      */
     sceneBodyShares?: Record<string, CommunitySceneBodyShareRecord>;
+    /**
+     * Books from Community being made into vault books, keyed by the website's
+     * transfer id (communityShare/bookTransferWriter.ts). A record is written
+     * before the first note and removed once its book is in Book Manager, so a
+     * restart continues and never writes a note twice. Scoped like
+     * timelineShares: a record made for another profile or connection is ignored.
+     */
+    bookTransfers?: Record<string, CommunityBookTransferRecord>;
+}
+
+/**
+ * One Community book on its way into the vault (plugin data, never frontmatter).
+ * It holds where the notes go and which were written: never the timeline or
+ * any scene text.
+ */
+export interface CommunityBookTransferRecord {
+    schemaVersion: 1;
+    /** Website profile and connection the book was offered to. */
+    profileId: string;
+    connectionId: string;
+    /** The new book's Book Manager id, made before the first note is written. */
+    bookId: string;
+    /** The folder this run creates. Every note is written inside it and nowhere else. */
+    folder: string;
+    title: string;
+    /** True once this run created the folder: an existing folder is never written into. */
+    folderCreated: boolean;
+    /** Each note written so far, scene id → vault path. A scene listed here is never written again. */
+    notes: Record<string, string>;
+    /**
+     * `writing` until every note is written and checked on disk; `written`
+     * until Community answers; `cancelled` when Community cancelled it after
+     * notes were written, kept until the author has been told.
+     */
+    phase: 'writing' | 'written' | 'cancelled';
+    startedAt: string;
 }
 
 /** One book's Share scene body state (plugin data, never frontmatter). */

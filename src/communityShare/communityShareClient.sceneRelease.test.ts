@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('obsidian', () => ({
     apiVersion: '1.9.0',
     Platform: {},
+    normalizePath: (path: string) => path.replace(/\/+$/, ''),
     requestUrl: vi.fn()
 }));
 
@@ -116,7 +117,13 @@ function harness() {
                 delete: (id: string) => { secrets.delete(id); },
                 listSecrets: () => Array.from(secrets.keys())
             },
-            vault: { read: readNote, cachedRead: readNote },
+            vault: {
+                read: readNote,
+                cachedRead: readNote,
+                getFolderByPath: (path: string) => ({ path }),
+                getMarkdownFiles: () => [{ path: 'Books/Private Path/1 Scene.md' }],
+            },
+            metadataCache: { getFileCache: () => ({ frontmatter: {} }) },
             workspace: { layoutReady: true }
         },
         settings: { activeBookId: 'book-1', books: [book], actCount: 3, communityShare: settings },

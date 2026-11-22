@@ -1,13 +1,24 @@
 import { isTimelinePreviewDocument, type TimelinePreviewDocument } from './timelinePreview';
 import { SCENE_AUTHOR_AGREEMENT_VERSION } from './sceneAgreement';
-import { apiVersion, Platform, requestUrl } from 'obsidian';
+import { apiVersion, normalizePath, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, sceneBodyShareFor, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import { sceneTextProblem, type SceneBlock, type SceneTextProblem } from './sceneReleaseText';
+import {
+    readBookTransferDone,
+    readBookTransferList,
+    readBookTransferRead,
+    readBookTransferState,
+    type BookTransferDone,
+    type BookTransferOffer,
+    type BookTransferRead,
+    type BookTransferState,
+} from './bookTransferDocument';
 import { isOpaqueSceneId } from '../utils/sceneIds';
+import { isPathInFolderScope } from '../utils/pathScope';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -1387,6 +1398,29 @@ async function saveTimelineRecord(
     await plugin.saveSettings();
 }
 
+/** The code of a send held in the vault because the book could not be read whole. Nothing was sent. */
+const TIMELINE_SCAN_HELD = 'timeline_scan_held';
+
+/**
+ * Why this book's timeline cannot be read whole right now, or null when it
+ * can. A timeline built from a partial read looks to the website like scenes
+ * the author removed, so a send the plugin knows is incomplete is never made:
+ *
+ * - `layout`: Obsidian has not finished opening the vault.
+ * - `folder`: the book's folder is not in the vault (not created yet on this
+ *   device, or still on its way from a sync service).
+ * - `unread`: a note in the folder has not been read into Obsidian's metadata
+ *   cache yet, so the scene it may hold would be left out.
+ */
+export function timelineScanHold(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'sourceFolder'>): 'layout' | 'folder' | 'unread' | null {
+    const { workspace, vault, metadataCache } = plugin.app;
+    if (!workspace.layoutReady) return 'layout';
+    const folder = normalizePath(book.sourceFolder);
+    if (!vault.getFolderByPath(folder)) return 'folder';
+    const unread = vault.getMarkdownFiles().some(file => isPathInFolderScope(file.path, folder) && metadataCache.getFileCache(file) === null);
+    return unread ? 'unread' : null;
+}
+
 /**
  * Send one book's timeline. Returns null when nothing changed since the last
  * send. `create` is the author turning Share timeline on; a background update
@@ -1399,6 +1433,13 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
     const profileId = connection.profileId;
     if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
+
+    const hold = timelineScanHold(plugin, book);
+    if (hold) {
+        throw new CommunityShareError(TIMELINE_SCAN_HELD, t(hold === 'folder'
+            ? 'ui.communityShareClient.timelineFolderMissing'
+            : 'ui.communityShareClient.timelineStillReading'));
+    }
 
     // This book's metadata comes from the same read as its scenes: the plugin-wide
     // BookMeta follows whichever book was read last.
@@ -1579,6 +1620,9 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             const code = error instanceof CommunityShareError ? error.code : 'timeline_share_failed';
             // Pause or Disconnect landing mid-run is a clean stop, not a failure.
             if (code === 'sharing_paused' || code === 'connection_changed') return;
+            // A book that cannot be read whole yet is held here, with nothing
+            // sent and nothing recorded, and tried again on the next cycle.
+            if (code === TIMELINE_SCAN_HELD) continue;
             const message = error instanceof Error ? error.message : t('ui.communityShareClient.timelineShareFailed');
             const removed = code === 'timeline_not_shared';
             try {
@@ -1597,6 +1641,91 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             if (SYNC_STOP_CODES.has(code)) return;
         }
     }
+}
+
+// -- Book from Community (Settings → Community) -------------------------------
+//
+// A book whose timeline was made on the website, brought into the vault as a
+// new book. The one read the plugin gets: `read` answers the author's own
+// stored timeline and, when they ticked it on the website, their own released
+// scene text, and only while the website holds an open transfer for this
+// connection. Nothing about the vault is sent but the new book's id and the
+// scene ids it wrote. Contract: Command Center "Stage B contract"; the writer
+// is communityShare/bookTransferWriter.ts.
+
+/** The code of a call the website answered without a refusal code of its own. */
+export const BOOK_TRANSFER_FAILED = 'book_transfer_failed';
+
+/**
+ * One call to timeline-transfer-sync. The outcome is a book whose timeline is
+ * kept updated from this vault, so the gate is the timeline's: connected, not
+ * paused, and a level above Private. Checked before the secret is read and
+ * again immediately before the request leaves, like every sender here.
+ */
+async function postBookTransfer<T>(
+    plugin: RadialTimelinePlugin,
+    action: Record<string, unknown>,
+    read: (value: unknown) => T | null
+): Promise<T> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    const live = assertStillSendable(plugin, connection);
+    if (!canShareTimelineToCommunity(live)) {
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.timelineLevelRequired'));
+    }
+    const unexpected = t('ui.communityShareClient.bookTransferUnexpected');
+    const raw = await postCommunityFunction(
+        plugin,
+        'timeline-transfer-sync',
+        { connection_id: connectionId, current_secret: currentSecret, ...action },
+        isOkResponse,
+        { code: BOOK_TRANSFER_FAILED, message: t('ui.communityShareClient.bookTransferFailed') },
+        unexpected
+    );
+    const answer = read(raw);
+    if (answer === null) throw new CommunityShareError('invalid_response', unexpected);
+    return answer;
+}
+
+/** The books Community is holding for this vault. Sends the connection's credentials and nothing else. */
+export function listBookTransfers(plugin: RadialTimelinePlugin): Promise<BookTransferOffer[]> {
+    return postBookTransfer(plugin, { action: 'list' }, readBookTransferList);
+}
+
+/** One waiting book: its timeline, and its released text when the author ticked that on the website. */
+export function readBookTransfer(plugin: RadialTimelinePlugin, transferId: string): Promise<BookTransferRead> {
+    return postBookTransfer(plugin, { action: 'read', transfer_id: transferId }, value => readBookTransferRead(value, transferId));
+}
+
+/**
+ * Tell Community the notes are written. Carries the new book's id and the scene
+ * ids, no text. A repeat gets the same answer, so it is safe to send again.
+ */
+export function finishBookTransfer(
+    plugin: RadialTimelinePlugin,
+    transferId: string,
+    done: { pluginBookKey: string; sceneIds: string[] }
+): Promise<BookTransferDone> {
+    return postBookTransfer(
+        plugin,
+        { action: 'done', transfer_id: transferId, plugin_book_key: done.pluginBookKey, scene_ids: done.sceneIds },
+        value => readBookTransferDone(value, done.pluginBookKey)
+    );
+}
+
+/** Where a transfer stands on Community. Asked whenever the plugin is not sure: it never assumes. */
+export function fetchBookTransferState(plugin: RadialTimelinePlugin, transferId: string): Promise<BookTransferState> {
+    return postBookTransfer(plugin, { action: 'state', transfer_id: transferId }, readBookTransferState);
+}
+
+/**
+ * Keep timeline updated, turned on for a book Community already follows from
+ * this vault (a book just made from Community). Sends nothing itself: the next
+ * timeline update goes out with the book sync, without `create`.
+ */
+export async function keepTimelineUpdated(plugin: RadialTimelinePlugin, bookId: string): Promise<void> {
+    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
+    if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
+    await saveTimelineRecord(plugin, bookId, profileId, () => ({ profileId, enabled: true }));
 }
 
 // -- Private scenes (Settings → Community) ------------------------------------

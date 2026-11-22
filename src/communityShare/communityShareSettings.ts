@@ -1,4 +1,5 @@
 import type {
+    CommunityBookTransferRecord,
     CommunityDailyBackfillRecord,
     CommunityDeskLampsRecord,
     CommunitySceneBodyShareRecord,
@@ -312,6 +313,63 @@ function normalizeSceneBodyShares(value: unknown): Record<string, CommunityScene
     return Object.keys(records).length > 0 ? records : undefined;
 }
 
+export const COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION = 1;
+
+const BOOK_TRANSFER_PHASES: ReadonlySet<unknown> = new Set(['writing', 'written', 'cancelled']);
+
+/**
+ * Book-from-Community records, field by field. A record of another schema
+ * version, or with a field missing, is dropped: a run with no record writes
+ * into no existing folder, so a dropped record can never cause a second write.
+ */
+function normalizeBookTransfers(value: unknown): Record<string, CommunityBookTransferRecord> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const text = (field: unknown): field is string => typeof field === 'string' && field.length > 0;
+    const records: Record<string, CommunityBookTransferRecord> = {};
+    for (const [transferId, raw] of Object.entries(value as Record<string, unknown>)) {
+        const record = raw as Partial<CommunityBookTransferRecord> | null;
+        if (!COMMUNITY_UUID_RE.test(transferId) || !record || record.schemaVersion !== COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION) continue;
+        if (!text(record.profileId) || !text(record.connectionId) || !text(record.bookId) || !text(record.folder) || !text(record.title)) continue;
+        if (!BOOK_TRANSFER_PHASES.has(record.phase) || !text(record.startedAt)) continue;
+        const notes: Record<string, string> = {};
+        if (record.notes && typeof record.notes === 'object' && !Array.isArray(record.notes)) {
+            for (const [sceneId, path] of Object.entries(record.notes as Record<string, unknown>)) {
+                if (sceneId && text(path)) notes[sceneId] = path;
+            }
+        }
+        records[transferId.toLowerCase()] = {
+            schemaVersion: COMMUNITY_BOOK_TRANSFER_SCHEMA_VERSION,
+            profileId: record.profileId,
+            connectionId: record.connectionId,
+            bookId: record.bookId,
+            folder: record.folder,
+            title: record.title,
+            folderCreated: record.folderCreated === true,
+            notes,
+            phase: record.phase as CommunityBookTransferRecord['phase'], // SAFE: checked against BOOK_TRANSFER_PHASES above
+            startedAt: record.startedAt,
+        };
+    }
+    return Object.keys(records).length > 0 ? records : undefined;
+}
+
+/**
+ * The book-from-Community records of the connected profile and connection,
+ * as [transfer id, record]. A record made for another account or connection is
+ * ignored, as timelineShareFor ignores one.
+ */
+export function bookTransferRecords(settings: CommunityShareSettings): Array<[string, CommunityBookTransferRecord]> {
+    const { profileId, connectionId } = settings.connection;
+    if (!profileId || !connectionId) return [];
+    return Object.entries(settings.bookTransfers ?? {}) // SAFE: no record means no book is on its way
+        .filter(([, record]) => record.profileId === profileId && record.connectionId === connectionId);
+}
+
+/** One transfer's record for the connected profile and connection. */
+export function bookTransferFor(settings: CommunityShareSettings, transferId: string): CommunityBookTransferRecord | undefined {
+    return bookTransferRecords(settings).find(([id]) => id === transferId.toLowerCase())?.[1];
+}
+
 /**
  * This book's Share scene body record for the connected profile. A record made
  * for another account is ignored, as timelineShareFor ignores one.
@@ -417,6 +475,7 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill),
         deskLamps: normalizeDeskLamps(input?.deskLamps),
         timelineShares: normalizeTimelineShares(input?.timelineShares),
-        sceneBodyShares: normalizeSceneBodyShares(input?.sceneBodyShares)
+        sceneBodyShares: normalizeSceneBodyShares(input?.sceneBodyShares),
+        bookTransfers: normalizeBookTransfers(input?.bookTransfers)
     };
 }

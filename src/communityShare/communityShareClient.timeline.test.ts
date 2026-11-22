@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('obsidian', () => ({
     apiVersion: '1.9.0',
     Platform: {},
+    normalizePath: (path: string) => path.replace(/\/+$/, ''),
     requestUrl: vi.fn()
 }));
 
@@ -50,6 +51,13 @@ function harness() {
         projectId: PROJECT_ID,
         secretId: 'rt.community-share.connection-secret'
     };
+    // The vault as Obsidian holds it once loaded: the book's folder, and each
+    // note in it read into the metadata cache.
+    const vault = {
+        folders: new Set<string>(['Books/Private Path']),
+        files: [{ path: 'Books/Private Path/1 Scene.md' }],
+        unread: new Set<string>(),
+    };
     const plugin = {
         manifest: { version: '7.4.0' },
         app: {
@@ -58,7 +66,15 @@ function harness() {
                 setSecret: (id: string, value: string) => { secrets.set(id, value); },
                 delete: (id: string) => { secrets.delete(id); },
                 listSecrets: () => Array.from(secrets.keys())
-            }
+            },
+            workspace: { layoutReady: true },
+            vault: {
+                getFolderByPath: (path: string) => (vault.folders.has(path) ? { path } : null),
+                getMarkdownFiles: () => vault.files,
+            },
+            metadataCache: {
+                getFileCache: (file: { path: string }) => (vault.unread.has(file.path) ? null : { frontmatter: {} }),
+            },
         },
         settings: { activeBookId: 'book-1', books: [book], actCount: 3, communityShare: settings },
         getSceneDataService: () => ({ getSceneDataWithBookMeta: sceneData }),
@@ -67,7 +83,7 @@ function harness() {
         getWritingSessionService: () => ({ getRangeStats: async () => ({}) }),
         saveSettings: vi.fn(async () => undefined)
     };
-    return { plugin, book, scenes, sceneData };
+    return { plugin, book, scenes, sceneData, vault };
 }
 
 function respondWith(...bodies: Array<{ status?: number; body: unknown }>) {
@@ -526,5 +542,60 @@ describe('fetchTimelineShareStatus', () => {
         respondWith({ body: { ok: true, shared: true, project_id: 'not-a-uuid' } });
         await expect(fetchTimelineShareStatus(h.plugin as never, 'book-1'))
             .rejects.toMatchObject({ code: 'invalid_response' });
+    });
+});
+
+describe('a timeline the vault has not finished reading is held in the vault (spec section 5)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const holds: Array<[string, (h: ReturnType<typeof harness>) => void]> = [
+        ['Obsidian is still opening the vault', h => { h.plugin.app.workspace.layoutReady = false; }],
+        ['the book\'s folder is not in the vault', h => { h.vault.folders.clear(); }],
+        ['a note in the folder is not read yet', h => { h.vault.unread.add('Books/Private Path/1 Scene.md'); }],
+    ];
+
+    it.each(holds)('holds a background update while %s, sends nothing and records nothing', async (_case, hold) => {
+        const h = harness();
+        await started(h);
+        const before = JSON.stringify(timelineShareFor(h.plugin.settings.communityShare, 'book-1'));
+        h.scenes[0].synopsis = 'Changed.';
+        hold(h);
+        const request = respondWith({ body: answer('active') });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        expect(timelineCalls(request)).toEqual([]);
+        expect(JSON.stringify(timelineShareFor(h.plugin.settings.communityShare, 'book-1'))).toBe(before);
+        expect(h.sceneData).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends on the next cycle once the vault is read', async () => {
+        const h = harness();
+        await started(h);
+        h.scenes[0].synopsis = 'Changed.';
+        h.vault.unread.add('Books/Private Path/1 Scene.md');
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        h.vault.unread.clear();
+        const request = respondWith({ body: answer('active') });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        expect(timelineCalls(request)).toHaveLength(1);
+    });
+
+    it('a note outside the book does not hold it', async () => {
+        const h = harness();
+        await started(h);
+        h.scenes[0].synopsis = 'Changed.';
+        h.vault.files.push({ path: 'Other/Unread.md' });
+        h.vault.unread.add('Other/Unread.md');
+        const request = respondWith({ body: answer('active') });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        expect(timelineCalls(request)).toHaveLength(1);
+    });
+
+    it('turning it on while the vault is still being read says so and sends nothing', async () => {
+        const h = harness();
+        h.vault.unread.add('Books/Private Path/1 Scene.md');
+        const request = respondToProjectSyncAndTimeline(answer());
+        await expect(startTimelineSharing(h.plugin as never, h.book as never))
+            .rejects.toThrow(/still reading/i);
+        expect(timelineCalls(request)).toEqual([]);
     });
 });

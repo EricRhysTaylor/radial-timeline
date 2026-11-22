@@ -184,24 +184,30 @@ Posture:
 - **Never published at any level:** manuscript text, scene/note/vault paths,
   file or folder names, raw writing-session rows, exact session timestamps,
   and API/license keys or plugin secrets.
-- **Scene text leaves only when you release a scene.** With **Share scene
-  body** on for a book, you can release the text of a chosen scene to readers
-  you name on the website; only they can read it, signed in, and it is never
-  public. The preview shows exactly what is sent: the scene's prose, with its
-  properties, comments, callouts, link syntax and block ids removed. Nothing is
-  sent in the background, and a released scene changes only when you press
-  **Update**. Whether a scene changed since its release is worked out in your
-  vault, with nothing sent. **Take down** deletes the text on the website.
-  No scene text is stored in plugin settings. On the website, a released
-  scene that a reader reports is hidden and its text is sent to the
-  Community's AI provider to be checked against the content rules; the
-  release terms the plugin shows say so.
+- **Scene text leaves only when you send a scene.** At **Level 4** you ask
+  for a scene on the Community website (choosing its rating and readers
+  there); Radial Timeline then lists the request, and the scene's text goes
+  up only when you press **Send** in **Send scene to Community**. The dialog
+  shows exactly what is sent: the scene's prose, with its properties,
+  comments, callouts, link syntax and block ids removed. Readers are the
+  people you name, or every signed-in member if you open the scene to
+  everyone on the website. Nothing is sent in the background, and a released
+  scene changes only when you ask for an update on Community and send it.
+  Whether a scene changed since its release is worked out in your vault,
+  with nothing sent. Take a scene down on the website to delete its text
+  there. No scene text is stored in plugin settings.
+- **Where scene text goes on the Community website.** Your scene text goes
+  to an AI provider only when you ask for a feedback summary on Community.
+  Nothing is filtered before it goes up. A reader can report a scene, and a
+  report goes to a person for review, not to AI.
 - **Level 2** publishes the public profile and project shells, plus an
   optional Author Progress Report graphic. The APR route is separately
   opt-in per campaign and defaults off.
 - **Level 3** adds writing-activity summaries: a daily aggregate feed
   (writing days, rounded minutes and word totals, coarse mode mix) and the
   **Working Clock** rollup described below.
+- **Level 4** adds the text of each scene you send when Community asks for
+  it, as described above. It sends the same profile and activity as Level 3.
 - **Author-controlled teardown.** Pause, take offline, delete shared data,
   and disconnect are all available from the Community tab. Disconnecting
   requires a new one-time linking key to reconnect.

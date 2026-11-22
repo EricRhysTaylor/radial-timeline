@@ -5747,8 +5747,8 @@ export const en = {
             details: 'Review map details', outOfDate: 'Map out of date — review updates',
         },
         subplotCanvas: {
-            command: 'Canvas subplot branches',
-            paletteCommand: 'Canvas subplot branches',
+            command: 'Canvas create subplot branches',
+            paletteCommand: 'Canvas create subplot branches',
             toolbarLabel: 'Canvas map',
             badge: 'CANVAS MAP',
             title: 'Create subplot branches',

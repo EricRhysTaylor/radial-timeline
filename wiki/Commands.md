@@ -32,7 +32,7 @@ These are the main command-palette entries.
 21. **[Timetable reset columns to recommended](#timetable-reset-columns-to-recommended)**
 22. **[Timetable restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
 23. **[Scene promote note](#scene-promote-note)**
-24. **[Canvas subplot branches](#canvas-subplot-branches)**
+24. **[Canvas create subplot branches](#canvas-create-subplot-branches)**
 25. **[Canvas convert cards to scenes or sketches](#canvas-convert-cards-to-scenes-or-sketches)**
 26. **[Scene time assignment](Scene-Time)** ← standalone guide
 27. **[Welcome screen](#welcome-screen)**
@@ -266,9 +266,9 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh]
 
 ---
 
-## Canvas subplot branches
+## Canvas create subplot branches
 
-**Radial timeline: Canvas subplot branches** builds a new Canvas of the book’s scenes, one branch per subplot. The same dialog opens from the timeline title bar and the Timetable’s **Canvas map** button. See [Canvas subplot branches](Timetable#canvas-subplot-branches).
+**Radial Timeline: Canvas create subplot branches** builds a new Canvas of the book’s scenes, one branch per subplot. The same dialog opens from the timeline title bar and the Timetable’s **Canvas map** button. See [Canvas subplot branches](Timetable#canvas-subplot-branches).
 
 ---
 

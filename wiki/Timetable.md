@@ -166,7 +166,7 @@ Sketches have a grip too, in Narrative. Drop a sketch on a scene to place it aft
 
 ## Canvas subplot branches
 
-On a Canvas, each subplot becomes a branch. **Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial timeline: Canvas subplot branches** opens **Create subplot branches**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
+On a Canvas, each subplot becomes a branch. **Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial Timeline: Canvas create subplot branches** opens **Create subplot branches**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
 
 Each scene appears in every subplot lane it belongs to, as a card linked to its note, and lines connect the scenes of a lane in narrative order. Moving cards does not reorder your manuscript.
 

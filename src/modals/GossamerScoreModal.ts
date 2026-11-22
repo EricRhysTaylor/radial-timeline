@@ -62,7 +62,6 @@ export class GossamerScoreModal extends Modal {
   private plotBeats: TimelineItem[];
   private entries: BeatScoreEntry[] = [];
   // Internal name retained for local state continuity; controls inclusion of Beat Purpose text.
-  private includeBeatDescriptions = false;
   /** Path of the most recent manuscript export during this modal session. */
   private lastManuscriptPath: string | null = null;
   private saveBtn?: ButtonComponent;

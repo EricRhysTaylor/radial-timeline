@@ -26,7 +26,7 @@ function cloneBeatDefinition(beat: BeatDefinition): BeatDefinition {
     };
 }
 
-function cloneBeatConfig(config: BeatSystemConfig | undefined): BeatSystemConfig {
+export function cloneBeatConfig(config: BeatSystemConfig | undefined): BeatSystemConfig {
     return {
         beatYamlAdvanced: typeof config?.beatYamlAdvanced === 'string' ? config.beatYamlAdvanced : '',
         beatHoverMetadataFields: Array.isArray(config?.beatHoverMetadataFields)

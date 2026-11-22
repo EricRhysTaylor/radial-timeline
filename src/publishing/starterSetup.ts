@@ -15,7 +15,8 @@ import { normalizePath, TFile, TFolder } from 'obsidian';
 import { createHash } from 'crypto'; // SAFE: exact retired starter sample fingerprinting
 import type RadialTimelinePlugin from '../main';
 import { getPandocFolder, isPandocAvailable } from '../utils/exportFormats';
-import { compactTemplatePathForStorage, isAbsolutePath } from '../utils/templateImport';
+import { compactTemplatePathForStorage } from '../utils/templateImport';
+import { isAbsolutePath } from '../utils/paths';
 import { getActiveBookExportContext } from '../utils/exportContext';
 import { resolveManuscriptOutputFolder } from '../utils/aiOutput';
 import {

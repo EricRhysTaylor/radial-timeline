@@ -18,7 +18,7 @@
 import { Notice, Setting } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
-    CommunityShareError,
+    communityShareErrorText,
     fetchSceneReleaseStatus,
     setSceneBodySharing,
     type SceneReleaseStatus,
@@ -52,10 +52,6 @@ interface SceneStatusCache {
 let statusCache: SceneStatusCache | null = null;
 let statusInflight = false;
 const STATUS_TTL_MS = 60 * 1000;
-
-function errorText(error: unknown, fallback: string): string {
-    return error instanceof CommunityShareError ? error.message : fallback;
-}
 
 function addNote(setting: Setting, text: string): void {
     setting.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text });
@@ -106,7 +102,7 @@ export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, reren
                         statusCache = { key, fetchedAt: Date.now(), answer: { ...status, consent: true } };
                     }
                 } catch (error) {
-                    new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+                    new Notice(communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
                 }
                 rerender();
             });
@@ -133,7 +129,7 @@ export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, reren
                 statusCache = {
                     key,
                     fetchedAt: Date.now(),
-                    error: errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')),
+                    error: communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')),
                 };
             })
             .finally(() => {
@@ -155,7 +151,7 @@ export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, reren
                 try {
                     if (!await ensureReleaseTerms(plugin, book, answer)) return;
                 } catch (error) {
-                    new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+                    new Notice(communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
                     return;
                 }
                 if (statusCache?.key === key && statusCache.answer) {

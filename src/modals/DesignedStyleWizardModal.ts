@@ -508,7 +508,6 @@ export class DesignedStyleWizardModal extends Modal {
     private categoryIconEl: HTMLElement | null = null;
     private saveButton: ButtonComponent | null = null;
     private saving = false;
-    private validationBannerEl: HTMLElement | null = null;
     /**
      * Refs to the modal title + subtitle in the header. Updated in
      * `refreshFromArchetype` so the displayed copy follows the user's
@@ -629,7 +628,6 @@ export class DesignedStyleWizardModal extends Modal {
         this.activePanel = null;
         this.categorySelect = null;
         this.saveButton = null;
-        this.validationBannerEl = null;
     }
 
     private openLatexPreview(): void {
@@ -2401,9 +2399,6 @@ export class DesignedStyleWizardModal extends Modal {
             validation.warnings.forEach(warn => {
                 list.createDiv({ cls: 'ert-style-wizard__validation-warning', text: warn });
             });
-            this.validationBannerEl = banner;
-        } else {
-            this.validationBannerEl = null;
         }
 
         // Sanity-check LaTeX generation — surface any generator error in the

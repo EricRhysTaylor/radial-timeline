@@ -6,7 +6,7 @@
 
 import { App, ButtonComponent, Notice, Setting } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { CommunityShareError, takeDownSceneRelease, type SceneReleaseSummary } from '../communityShare/communityShareClient';
+import { communityShareErrorText, takeDownSceneRelease, type SceneReleaseSummary } from '../communityShare/communityShareClient';
 import { COMMUNITY_SITE_URL } from '../communityShare/communityMailbox';
 import { loadSceneReleaseList, type SceneReleaseList, type SceneReleaseRow } from '../communityShare/sceneReleaseVault';
 import { t, tCount } from '../i18n';
@@ -26,10 +26,6 @@ import {
     selectableKeys,
     type SceneBatchKind,
 } from './sceneReleaseSelection';
-
-function errorText(error: unknown, fallback: string): string {
-    return error instanceof CommunityShareError ? error.message : fallback;
-}
 
 function releaseFacts(key: string, release: SceneReleaseSummary): string {
     return t(key, { version: release.version, readers: tCount('reader', release.readers) });
@@ -122,7 +118,7 @@ export class SceneReleaseListModal extends ErtModal {
         try {
             list = await loadSceneReleaseList(this.plugin, this.book);
         } catch (caught) {
-            error = errorText(caught, t('ui.sceneReleaseModal.listFailed'));
+            error = communityShareErrorText(caught, t('ui.sceneReleaseModal.listFailed'));
         }
         // A newer reload owns the dialog now.
         if (load !== this.loads) return;
@@ -335,7 +331,7 @@ export class SceneReleaseListModal extends ErtModal {
             }
         } catch (error) {
             this.busy = false;
-            new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+            new Notice(communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
             return;
         }
         if (this.list === list) this.list = { ...list, status: { ...list.status, consent: true } };
@@ -404,7 +400,7 @@ export class SceneReleaseListModal extends ErtModal {
             await takeDownSceneRelease(this.plugin, this.book, release.id);
             new Notice(t('ui.sceneReleaseModal.takenDownNotice'));
         } catch (error) {
-            new Notice(errorText(error, t('ui.sceneReleaseModal.takeDownFailed')));
+            new Notice(communityShareErrorText(error, t('ui.sceneReleaseModal.takeDownFailed')));
         }
         this.busy = false;
         // A refusal can mean the website's state moved, so both paths reread it.

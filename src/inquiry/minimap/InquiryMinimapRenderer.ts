@@ -284,7 +284,6 @@ export class InquiryMinimapRenderer {
 
     private backboneStartColors?: BackboneColors;
     private backboneTargetColors?: BackboneColors;
-    private backboneOscillationPhaseOffset = 0;
     private backboneFadeTimer?: number;
     private backboneProgressRatio = 0;
     private runningStyleSource?: Element;
@@ -694,7 +693,6 @@ export class InquiryMinimapRenderer {
         this.cancelFadeOut();
         this.backboneStartColors = getBackboneStartColors(styleSource);
         this.backboneTargetColors = getBackboneTargetColors();
-        this.backboneOscillationPhaseOffset = Math.PI / 2;
         this.setRunningBackboneProgress(0);
         if (this.minimapBaseline) {
             this.minimapBaseline.style.removeProperty('stroke');
@@ -740,7 +738,6 @@ export class InquiryMinimapRenderer {
         this.lastSweepUpdate = 0;
         this.backboneStartColors = undefined;
         this.backboneTargetColors = undefined;
-        this.backboneOscillationPhaseOffset = 0;
         this.runningStyleSource = undefined;
         // Clear inline fill set by applyRunningBackboneColor() during the run
         // so the glow/shine revert to their CSS-defined fill on next render.

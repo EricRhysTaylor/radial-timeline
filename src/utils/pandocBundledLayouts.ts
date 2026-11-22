@@ -9,7 +9,7 @@ import { PANDOC_HIGHLIGHTING_TEMPLATE } from '../publishing/designedStyleFragmen
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
 import { getPandocFolder } from './exportFormats';
 import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
-import { basename } from './paths';
+import { basename, isAbsolutePath } from './paths';
 import { t } from '../i18n';
 
 interface BundledPandocLayoutTemplate extends PandocLayoutTemplate {
@@ -69,10 +69,6 @@ const LEGACY_BUNDLED_LAYOUT_ID_MAP: Record<string, string> = {
 const LEGACY_BUNDLED_LAYOUT_BASENAME_MAP: Record<string, string> = {
     'signature_literary_rt.tex': BUNDLED_FICTION_SIGNATURE_ID,
 };
-
-function isAbsolutePath(value: string): boolean {
-    return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
-}
 
 function resolveCanonicalBundledLayoutId(layout: PandocLayoutTemplate, canonicalIds: Set<string>): string | null {
     const rawId = (layout.id || '').trim();

@@ -39,7 +39,6 @@ type PreviewDims = {
 
 class SaveTemplateModal extends Modal {
     private nameInput!: TextComponent;
-    private descriptionEl: HTMLElement | null = null;
     private onSave: (name: string) => void;
     private defaultName: string;
 
@@ -83,7 +82,7 @@ class SaveTemplateModal extends Modal {
             });
         nameSetting.settingEl.addClass('ert-template-dialog-setting');
 
-        this.descriptionEl = form.createDiv({ cls: 'ert-template-dialog-note', text: t('bookDesigner.saveTemplate.note') });
+        form.createDiv({ cls: 'ert-template-dialog-note', text: t('bookDesigner.saveTemplate.note') });
 
         const footer = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(footer)

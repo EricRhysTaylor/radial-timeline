@@ -140,7 +140,6 @@ export class SceneAnalysisProcessingModal extends Modal {
 
     // Animation state for progress bar estimation
     private animationIntervalId: number | null = null;
-    private currentEstimatedSeconds: number = 0;
 
     constructor(
         app: App,
@@ -1268,7 +1267,6 @@ export class SceneAnalysisProcessingModal extends Modal {
         this.updateQueueHighlightByIndex(sceneIndex);
 
         const estimatedSeconds = this.estimateDuration(tripletMetric);
-        this.currentEstimatedSeconds = estimatedSeconds;
 
         // Get current progress bar position
         const currentStyle = this.progressBarEl?.style.getPropertyValue('--progress-width');

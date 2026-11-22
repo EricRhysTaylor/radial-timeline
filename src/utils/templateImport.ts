@@ -26,7 +26,7 @@ import { getImportedTemplatePreviewPath } from '../publishing/importedTemplatePr
 import { recordTemplateCheckedHere } from '../publishing/importedTemplateState';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
 import { hashTemplateText, type ImportedTemplateCheckRecord } from '../publishing/importedTemplateCheck';
-import { basename } from './paths';
+import { basename, isAbsolutePath } from './paths';
 import { t } from '../i18n';
 
 export interface ImportedTemplateCandidate {
@@ -49,10 +49,6 @@ export interface TemplateImportInput {
 }
 
 const TEMPLATE_EXTENSION = /\.(tex|ltx|latex)$/i;
-
-export function isAbsolutePath(value: string): boolean {
-    return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
-}
 
 export function compactTemplatePathForStorage(plugin: RadialTimelinePlugin, rawPath: string): string {
     const trimmed = rawPath.trim();

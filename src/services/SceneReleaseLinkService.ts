@@ -19,7 +19,7 @@
 
 import { Notice, type ObsidianProtocolData } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { CommunityShareError, fetchCommunityShareContext } from '../communityShare/communityShareClient';
+import { communityShareErrorText, fetchCommunityShareContext } from '../communityShare/communityShareClient';
 import { normalizeCommunityShareSettings } from '../communityShare/communityShareSettings';
 import {
     SCENE_RELEASE_PROTOCOL_ACTION,
@@ -37,10 +37,6 @@ import { SceneReleasePreviewModal } from '../modals/SceneReleasePreviewModal';
 import { COMMUNITY_PRIVATE_SCENES_SECTION_KEY } from '../settings/settingsAnchors';
 import type { BookProfile } from '../types/settings';
 import { openSettingsTab } from '../utils/obsidianInternals';
-
-function errorText(error: unknown, fallback: string): string {
-    return error instanceof CommunityShareError ? error.message : fallback;
-}
 
 /** Settings → Community, scrolled to Private scenes. */
 function openPrivateScenesSettings(plugin: RadialTimelinePlugin): void {
@@ -84,7 +80,7 @@ export async function openSceneReleaseLink(plugin: RadialTimelinePlugin, params:
     try {
         projects = (await fetchCommunityShareContext(plugin)).projects;
     } catch (error) {
-        new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+        new Notice(communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
         return;
     }
     // The settings are read again: the author may have changed them while the website answered.
@@ -113,7 +109,7 @@ async function openForBook(plugin: RadialTimelinePlugin, book: BookProfile, link
     try {
         list = await loadSceneReleaseList(plugin, book);
     } catch (error) {
-        new Notice(errorText(error, t('ui.sceneReleaseModal.listFailed')));
+        new Notice(communityShareErrorText(error, t('ui.sceneReleaseModal.listFailed')));
         return;
     }
     const open = sceneReleaseLinkOpen(list.status, list.rows, link);
@@ -125,7 +121,7 @@ async function openForBook(plugin: RadialTimelinePlugin, book: BookProfile, link
     try {
         if (!await ensureReleaseTerms(plugin, book, list.status)) return;
     } catch (error) {
-        new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+        new Notice(communityShareErrorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
         return;
     }
     if (open.kind === 'preview') {

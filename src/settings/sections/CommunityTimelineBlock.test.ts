@@ -19,7 +19,10 @@ vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     },
 }));
 vi.mock('../wikiLink', () => ({ addHeadingIcon: () => {}, applyErtHeaderLayout: () => {} }));
-vi.mock('../../communityShare/communityShareClient', () => ({ CommunityShareError: class extends Error { constructor(_code: string, message: string) { super(message); } }, fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save }));
+vi.mock('../../communityShare/communityShareClient', () => {
+    class MockCommunityShareError extends Error { constructor(_code: string, message: string) { super(message); } }
+    return { CommunityShareError: MockCommunityShareError, communityShareErrorText: (error: unknown, fallback: string) => (error instanceof MockCommunityShareError ? error.message : fallback), fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save };
+});
 vi.mock('../../communityShare/communityShareSettings', () => ({ normalizeCommunityShareSettings: (value: unknown) => value, canShareTimelineToCommunity: () => true, timelineShareFor: () => state.record }));
 vi.mock('../../communityShare/communityMailbox', () => ({ COMMUNITY_SITE_URL: 'https://example.test' }));
 vi.mock('../../modals/ErtConfirmModal', () => ({ confirmWithErtModal: vi.fn() }));

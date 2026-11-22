@@ -12,6 +12,11 @@ export function basename(path: string): string {
     return path.split(/[\\/]/).pop() || path;
 }
 
+/** True for an OS absolute path: POSIX (`/…`) or a Windows drive (`C:\…`, `C:/…`). */
+export function isAbsolutePath(value: string): boolean {
+    return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
+}
+
 /** The last path segment without its final extension ("0.2 Title Page.md" → "0.2 Title Page"). */
 export function fileStem(path: string): string {
     const name = basename(path);

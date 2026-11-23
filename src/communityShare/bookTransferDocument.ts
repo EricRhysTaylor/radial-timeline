@@ -161,7 +161,7 @@ export function readTransferDocument(value: unknown): TransferDocument | null {
     const orders = new Set<number>();
     for (const raw of value.scenes) {
         // Only a scene is written as a scene note. The stored field is absent on older documents.
-        if (isRecord(raw) && raw.itemType !== undefined && String(raw.itemType).toLowerCase() !== 'scene') return null;
+        if (isRecord(raw) && raw.itemType !== undefined && (!isText(raw.itemType) || raw.itemType.toLowerCase() !== 'scene')) return null;
         const scene = readScene(raw);
         if (!scene || ids.has(scene.id) || orders.has(scene.order)) return null;
         ids.add(scene.id);

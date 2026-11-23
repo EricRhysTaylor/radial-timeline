@@ -89,10 +89,38 @@ describe('checking an imported template again', () => {
         writeFileSync(vault.abs(PATH), edited);
         runCheck.mockImplementation(async ({ templateText }: { templateText: string }): Promise<ImportedTemplateCheckResult> => ({ ok: true, pdf: PDF, record: recordFor(templateText) }));
         expect((await recheckImportedTemplate(vault.plugin, layout)).ok).toBe(true);
-        expect(runCheck.mock.calls[0][0]).toMatchObject({ templateText: edited, layout });
+        expect(runCheck.mock.calls[0][0]).toMatchObject({ templateText: edited, layout: { id: layout.id, path: layout.path } });
         expect(layout.importCheck?.sha256).toBe(hashTemplateText(edited));
         expect(vault.saveSettings).toHaveBeenCalledOnce();
         expect(getImportedTemplateState(vault.plugin, layout)).toBe('ready');
+    });
+
+    it('turns on chapters and parts for a template that has gained the structural macros', async () => {
+        const structured = TEXT.replace('\\begin{document}', '\\newcommand{\\rtPart}[3]{}\n\\newcommand{\\rtChapter}[1]{}\n\\newcommand{\\rtSceneSep}{}\n\\begin{document}');
+        writeFileSync(vault.abs(PATH), structured);
+        runCheck.mockImplementation(async ({ templateText }: { templateText: string }) => ({ ok: true, pdf: PDF, record: recordFor(templateText) }));
+        expect((await recheckImportedTemplate(vault.plugin, layout)).ok).toBe(true);
+        // The test PDF is built with chapters and parts, and so is every later export.
+        expect(runCheck.mock.calls[0][0].layout).toMatchObject({ usesModernClassicStructure: true, hasEpigraphs: true });
+        expect(layout).toMatchObject({ usesModernClassicStructure: true, hasEpigraphs: true });
+        expect(vault.saveSettings).toHaveBeenCalledOnce();
+
+        // Taking the macros out again goes back to scene headings.
+        writeFileSync(vault.abs(PATH), TEXT);
+        expect((await recheckImportedTemplate(vault.plugin, layout)).ok).toBe(true);
+        expect(layout).toMatchObject({ usesModernClassicStructure: false, hasEpigraphs: false });
+    });
+
+    it('keeps the old structure when the check of a newly structured template fails', async () => {
+        writeFileSync(vault.abs(PATH), TEXT.replace('\\begin{document}', '\\newcommand{\\rtPart}[3]{}\n\\newcommand{\\rtChapter}[1]{}\n\\newcommand{\\rtSceneSep}{}\n\\begin{document}'));
+        runCheck.mockResolvedValue({ ok: false, reason: 'latex', message: 'failed', latexLines: [], cause: null });
+        await recheckImportedTemplate(vault.plugin, layout);
+        expect(layout.usesModernClassicStructure).toBeUndefined();
+        vault.saveSettings.mockRejectedValueOnce(new Error('QA write denied'));
+        runCheck.mockImplementation(async ({ templateText }: { templateText: string }) => ({ ok: true, pdf: PDF, record: recordFor(templateText) }));
+        await expect(recheckImportedTemplate(vault.plugin, layout)).rejects.toThrow('QA write denied');
+        expect(layout.usesModernClassicStructure).toBeUndefined();
+        expect(layout.hasEpigraphs).toBeUndefined();
     });
 
     it('changes nothing when the check fails', async () => {

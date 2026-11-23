@@ -23,6 +23,7 @@ import type RadialTimelinePlugin from '../main';
 import type { PandocLayoutTemplate } from '../types';
 import { readResolvedTemplateText, resolveTemplatePath, validatePandocLayout } from '../utils/exportFormats';
 import { hashTemplateText, runImportedTemplateCheck, type ImportedTemplateCheckResult } from './importedTemplateCheck';
+import { templateDefinesStructuralMacros } from './templateFacts';
 import { t } from '../i18n';
 
 /**
@@ -102,6 +103,11 @@ export function describeImportedTemplateBlock(
  * Build a new test PDF from the template as it is on disk now and, if it
  * builds, record it. A failed check changes nothing: the layout keeps its old
  * record and stays unusable until a check passes.
+ *
+ * The template's structure is read again too, the same way an import reads
+ * it: a template that has gained `\rtPart`, `\rtChapter` and `\rtSceneSep`
+ * since it was imported builds its test PDF, and every later export, with
+ * chapters and parts. One that has lost them goes back to scene headings.
  */
 export async function recheckImportedTemplate(
     plugin: RadialTimelinePlugin,
@@ -111,13 +117,21 @@ export async function recheckImportedTemplate(
     if (text === null) {
         return { ok: false, reason: 'missing', message: t('ui.templateImport.blockMissing', { name: layout.name }), latexLines: [], cause: null };
     }
-    const result = await runImportedTemplateCheck({ layout, templateText: text, pandocPath: plugin.settings.pandocPath });
+    const structural = templateDefinesStructuralMacros(text);
+    const checked: PandocLayoutTemplate = { ...layout, usesModernClassicStructure: structural, hasEpigraphs: structural };
+    const result = await runImportedTemplateCheck({ layout: checked, templateText: text, pandocPath: plugin.settings.pandocPath });
     if (!result.ok) return result;
     if (plugin.isSettingsPersistenceBlocked()) throw new Error(t('ui.main.settingsSaveBlocked'));
-    const previous = layout.importCheck;
+    const previous = {
+        importCheck: layout.importCheck,
+        usesModernClassicStructure: layout.usesModernClassicStructure,
+        hasEpigraphs: layout.hasEpigraphs,
+    };
     layout.importCheck = result.record;
+    layout.usesModernClassicStructure = structural;
+    layout.hasEpigraphs = structural;
     try { await plugin.saveSettings(); }
-    catch (error) { layout.importCheck = previous; throw error; }
+    catch (error) { Object.assign(layout, previous); throw error; }
     recordTemplateCheckedHere(plugin, layout.id, result.record.sha256);
     return result;
 }

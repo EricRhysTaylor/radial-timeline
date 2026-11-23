@@ -807,6 +807,48 @@ describe('Refusals say who and when', () => {
         expect(record?.lastError).not.toMatch(/deleted/i);
     });
 
+    // Handoffs e2e 2026-11-22 (A20, A21): the book-list sync on the next start
+    // made the disconnected book again as a stray private card and switched the
+    // connection to it. Community now leaves it out and lists it as disconnected.
+    it('the book-list sync lists a disconnected book: Keep timeline updated turns off with when, and the binding Community reports is kept', async () => {
+        const h = harness();
+        await started(h);
+        const request = respondByAction({
+            'community-project-sync:': {
+                body: { ok: true, created: 0, updated: 0, projects: [], removed: [], connection_project_id: null,
+                    disconnected: [{ book_key: 'book-1', title: 'Public Name', at: '2026-11-22T20:08:00Z', side: 'community', message: 'Disconnected.' }] },
+            },
+        });
+        await syncCommunityProjectsIfConnected(h.plugin as never);
+        const sync = calls(request).find(call => call.endpoint === 'community-project-sync')!;
+        // An automatic sync never asks for a new book.
+        expect(JSON.stringify(sync.body)).not.toContain('share_as_new_book');
+        const record = timelineShareFor(h.plugin.settings.communityShare, 'book-1');
+        expect(record?.enabled).toBe(false);
+        expect(record?.lastError).toBe(t('ui.communitySharing.bookDisconnected', { date: formatCommunityDate('2026-11-22T20:08:00Z') }));
+        expect(h.plugin.settings.communityShare.connection.projectId).toBeNull();
+    });
+
+    it('turning Keep timeline updated on is the author\'s choice: that one book goes as a new book', async () => {
+        const h = harness();
+        h.plugin.settings.books = [h.book, { id: 'book-2', title: 'Other', sourceFolder: 'Books/Other' }] as never;
+        const request = respondByAction({});
+        await startTimelineSharing(h.plugin as never, h.book as never);
+        const sync = calls(request).find(call => call.endpoint === 'community-project-sync')!;
+        const entries = sync.body.projects as Array<Record<string, unknown>>;
+        expect(entries.find(entry => entry.book_key === 'book-1')?.share_as_new_book).toBe(true);
+        expect(entries.find(entry => entry.book_key === 'book-2')).not.toHaveProperty('share_as_new_book');
+    });
+
+    it('a book-list answer with a malformed disconnected list is refused, not half-read', async () => {
+        const h = harness();
+        await started(h);
+        respondByAction({ 'community-project-sync:': { body: { ok: true, created: 0, updated: 0, projects: [], disconnected: [{ book_key: 'book-1' }] } } });
+        await syncCommunityProjectsIfConnected(h.plugin as never);
+        expect(timelineShareFor(h.plugin.settings.communityShare, 'book-1')?.enabled).toBe(true);
+        expect(h.plugin.settings.communityShare.connection.bookListSyncError).toBeTruthy();
+    });
+
     it('the status read of a disconnected book turns updates off too', async () => {
         const h = harness();
         await started(h);

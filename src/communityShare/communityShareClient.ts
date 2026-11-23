@@ -8,7 +8,7 @@ import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareSceneText, canShareT
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import type { SceneTextProblem } from './sceneReleaseText';
 import { readBookSharingState, readServerDisconnect, readVaultSharingState, type BookSharingState, type VaultSharingState } from './sharingState';
-import { refusalMessage } from './sharingWords';
+import { bookDisconnectedNote, refusalMessage } from './sharingWords';
 import {
     readBookTransferDone,
     readBookTransferList,
@@ -562,6 +562,17 @@ interface ProjectSyncSuccess {
     projects: Array<{ id: string; book_key: string; title: string; visibility: string }>;
     /** The connection's bound project after this sync (null while unbound); absent on servers that predate project-less activation. */
     connection_project_id?: string | null;
+    /**
+     * Books of this batch the author disconnected from this vault on Community
+     * ("Disconnect this book from the vault"): the sync made nothing for them
+     * and they are not in `projects`. Absent on servers before 2026-11-22.
+     */
+    disconnected?: ProjectSyncDisconnectedBook[];
+}
+
+interface ProjectSyncDisconnectedBook {
+    book_key: string;
+    at: string;
 }
 
 export interface CommunityShareContextProfile {
@@ -599,7 +610,13 @@ function isAprUploadSuccess(value: unknown): value is AprUploadSuccess {
 function isProjectSyncSuccess(value: unknown): value is ProjectSyncSuccess {
     const v = value as ProjectSyncSuccess;
     return !!v && v.ok === true && Array.isArray(v.projects)
-        && (v.connection_project_id === undefined || v.connection_project_id === null || typeof v.connection_project_id === 'string');
+        && (v.connection_project_id === undefined || v.connection_project_id === null || typeof v.connection_project_id === 'string')
+        && (v.disconnected === undefined || (Array.isArray(v.disconnected) && v.disconnected.every(isProjectSyncDisconnectedBook)));
+}
+
+function isProjectSyncDisconnectedBook(value: unknown): value is ProjectSyncDisconnectedBook {
+    const v = value as ProjectSyncDisconnectedBook;
+    return !!v && typeof v.book_key === 'string' && typeof v.at === 'string' && !Number.isNaN(Date.parse(v.at));
 }
 
 function isCommunityShareContext(value: unknown): value is CommunityShareContext {
@@ -942,12 +959,23 @@ const BOOK_LIST_SYNC_NOT_DUE = new Set(['connection_required', 'sharing_paused',
  * the connection (bookListSyncedAt, or bookListSyncError + bookListSyncFailedAt)
  * for the Mailbox's Community sync row. With no books nothing is sent and
  * nothing is recorded.
+ *
+ * A book the author disconnected from this vault on Community is not made
+ * again by this sync: Community leaves it out and lists it in `disconnected`,
+ * and its Keep timeline updated row says so, with when. `shareAsNewBookKey`
+ * is the one exception, and only the author sets it: turning Keep timeline
+ * updated on for that book (startTimelineSharing) sends it as a new private
+ * book, the next step that row offers.
  */
-export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess> {
+export async function syncCommunityProjects(
+    plugin: RadialTimelinePlugin,
+    options: { shareAsNewBookKey?: string } = {}
+): Promise<ProjectSyncSuccess> {
     const attemptConnectionId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.connectionId;
+    const requestedAt = Date.now();
     let parsed: ProjectSyncSuccess | null;
     try {
-        parsed = await postCommunityProjects(plugin);
+        parsed = await postCommunityProjects(plugin, options.shareAsNewBookKey);
     } catch (error) {
         if (!(error instanceof CommunityShareError && BOOK_LIST_SYNC_NOT_DUE.has(error.code))) {
             await recordBookListSync(plugin, attemptConnectionId, { failed: error instanceof Error ? error.message : String(error) });
@@ -955,7 +983,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         throw error;
     }
     if (!parsed) return { ok: true, created: 0, updated: 0, projects: [] };
-    await recordBookListSync(plugin, attemptConnectionId, { synced: parsed });
+    await recordBookListSync(plugin, attemptConnectionId, { synced: parsed, requestedAt });
     return parsed;
 }
 
@@ -972,11 +1000,16 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
  * connection_project_id. Servers that predate the field omit it. A changed
  * binding changes the report's project, so a ready preview goes stale and is
  * reviewed again before the next manual publish.
+ *
+ * A book Community lists as disconnected from this vault has Keep timeline
+ * updated turned off here, with the dated note and its next step, the same as
+ * the timeline sync's own book_disconnected refusal. A row turned on again
+ * while the sync was out is left alone.
  */
 async function recordBookListSync(
     plugin: RadialTimelinePlugin,
     attemptConnectionId: string | undefined,
-    outcome: { synced: ProjectSyncSuccess } | { failed: string }
+    outcome: { synced: ProjectSyncSuccess; requestedAt: number } | { failed: string }
 ): Promise<void> {
     const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!attemptConnectionId || live.connection.connectionId !== attemptConnectionId) return;
@@ -991,25 +1024,39 @@ async function recordBookListSync(
         const cached = live.connection.projectId ?? null; // SAFE: an absent cached id and null both mean unbound
         const projectId = bound === undefined ? live.connection.projectId : bound;
         const rebound = bound !== undefined && cached !== bound;
-        commitCommunityShare(plugin, current => ({
-            ...current,
-            connection: {
-                ...current.connection,
-                projectId,
-                bookListSyncedAt: at,
-                bookListSyncError: undefined,
-                bookListSyncFailedAt: undefined
-            },
-            preview: rebound && current.preview.status === 'ready'
-                ? { ...current.preview, status: 'stale' }
-                : current.preview
-        }));
+        const disconnected = outcome.synced.disconnected ?? []; // SAFE: absent on servers before 2026-11-22, which list no disconnected books
+        commitCommunityShare(plugin, current => {
+            const timelineShares = { ...current.timelineShares };
+            for (const book of disconnected) {
+                const record = timelineShares[book.book_key];
+                if (!record || record.profileId !== current.connection.profileId || sentSince(record, outcome.requestedAt)) continue;
+                timelineShares[book.book_key] = { ...record, enabled: false, lastError: bookDisconnectedNote(book.at) };
+            }
+            return {
+                ...current,
+                connection: {
+                    ...current.connection,
+                    projectId,
+                    bookListSyncedAt: at,
+                    bookListSyncError: undefined,
+                    bookListSyncFailedAt: undefined
+                },
+                preview: rebound && current.preview.status === 'ready'
+                    ? { ...current.preview, status: 'stale' }
+                    : current.preview,
+                timelineShares
+            };
+        });
     }
     await plugin.saveSettings();
 }
 
-/** Send the Book Manager list; null when there are no books, so nothing was sent. */
-async function postCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess | null> {
+/**
+ * Send the Book Manager list; null when there are no books, so nothing was
+ * sent. `shareAsNewBookKey` marks the one book the author chose to send as a
+ * new book after it was disconnected on Community (syncCommunityProjects).
+ */
+async function postCommunityProjects(plugin: RadialTimelinePlugin, shareAsNewBookKey?: string): Promise<ProjectSyncSuccess | null> {
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
 
     const books = (plugin.settings.books ?? []).slice(0, 50); // SAFE: no books configured means nothing to sync; the empty-list branch below returns early
@@ -1043,7 +1090,8 @@ async function postCommunityProjects(plugin: RadialTimelinePlugin): Promise<Proj
                 press_target_date: targetDate(book.stageTargetDates?.Press),
                 ...(book.id === activeBookId ? {
                     zero_draft_mode: plugin.settings.enableZeroDraftMode === true
-                } : {})
+                } : {}),
+                ...(book.id === shareAsNewBookKey ? { share_as_new_book: true } : {})
             }))
         },
         isProjectSyncSuccess,
@@ -1756,14 +1804,17 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
 /**
  * Share timeline, turned on. Sends the book, private: the website holds it until
  * the author reviews it and goes live there. Syncs the book list first, because
- * a timeline attaches to the book's project shell.
+ * a timeline attaches to the book's project shell. Turning it on is the
+ * author's choice to send this book, so a book disconnected from this vault on
+ * Community goes as a new private book (the next step its row offers); the
+ * disconnected book stays on Community, and the two are kept separate.
  */
 export async function startTimelineSharing(plugin: RadialTimelinePlugin, book: BookProfile): Promise<TimelineShareAnswer> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!canShareTimelineToCommunity(current)) {
         throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.timelineLevelRequired'));
     }
-    await syncCommunityProjects(plugin);
+    await syncCommunityProjects(plugin, { shareAsNewBookKey: book.id });
     const answer = await pushTimeline(plugin, book, true);
     if (!answer) throw new CommunityShareError('invalid_response', t('ui.communityShareClient.timelineShareUnexpected'));
     return answer;

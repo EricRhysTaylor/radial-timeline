@@ -10,34 +10,54 @@ export function portableStoryMap(record: StoryMapProvenance, bookFolder: string)
     return { schemaVersion: 1, bookFolder, provenance };
 }
 
-export function readPortableStoryMap(value: unknown, books: ReadonlyArray<{ id: string; sourceFolder: string }>): StoryMapProvenance | null {
+/**
+ * A sidecar's baseline, checked for shape: schema, ids, edges and that every
+ * file card is one of its scenes. Where those notes sit is checked by
+ * readPortableStoryMap.
+ */
+function readPortableShape(value: unknown, bookId: string): { bookFolder: string; record: StoryMapProvenance } | null {
     if (!value || typeof value !== 'object') return null;
     const raw = value as Partial<PortableStoryMap>;
     if (raw.schemaVersion !== 1 || typeof raw.bookFolder !== 'string' || !raw.bookFolder.trim()) return null;
-    const matching = books.filter(book => book.sourceFolder === raw.bookFolder);
-    if (matching.length !== 1 || !raw.provenance || typeof raw.provenance !== 'object') return null;
-    const record = { ...raw.provenance, bookId: matching[0].id };
+    if (!raw.provenance || typeof raw.provenance !== 'object') return null;
+    const record = { ...raw.provenance, bookId };
     if (!isStoryMapProvenance(record)) return null;
-    const inside = (path: string) => path.startsWith(`${raw.bookFolder}/`) && !path.split('/').some(part => !part || part === '.' || part === '..');
-    if (record.scenes.some(scene => !inside(scene.path)) || (record.generated.nodes ?? []).some(node => node.type === 'file' && (typeof node.file !== 'string' || !inside(node.file)))) return null;
     const scenePaths = new Set(record.scenes.map(scene => scene.path));
     const nodes = record.generated.nodes ?? [];
     const nodeIds = new Set(nodes.map(node => node.id));
     if (scenePaths.size !== record.scenes.length || nodeIds.size !== nodes.length || nodes.some(node => !node.id || (node.type === 'file' && (typeof node.file !== 'string' || !scenePaths.has(node.file))))) return null;
     if ((record.generated.edges ?? []).some(edge => !nodeIds.has(edge.fromNode) || !nodeIds.has(edge.toNode))) return null;
+    return { bookFolder: raw.bookFolder, record };
+}
+
+export function readPortableStoryMap(value: unknown, books: ReadonlyArray<{ id: string; sourceFolder: string }>): StoryMapProvenance | null {
+    const folder = value && typeof value === 'object' ? (value as Partial<PortableStoryMap>).bookFolder : undefined;
+    const matching = books.filter(book => book.sourceFolder === folder);
+    if (matching.length !== 1) return null;
+    const read = readPortableShape(value, matching[0].id);
+    if (!read) return null;
+    const { bookFolder, record } = read;
+    const inside = (path: string) => path.startsWith(`${bookFolder}/`) && !path.split('/').some(part => !part || part === '.' || part === '..');
+    if (record.scenes.some(scene => !inside(scene.path)) || (record.generated.nodes ?? []).some(node => node.type === 'file' && (typeof node.file !== 'string' || !inside(node.file)))) return null;
     return record;
 }
 
-/** Follow vault renames using only the portable folder, never a device-specific ID. */
+/**
+ * Follow vault renames using only the portable folder, never a device-specific ID.
+ *
+ * A book folder rename reaches here as one event for the folder and one for
+ * each note in it, in whatever order Obsidian sends them. A note's event moves
+ * that note before the folder has moved, so between events the sidecar can
+ * name notes outside its folder. The rebase therefore checks shape only; once
+ * every event has arrived, the folder and all its notes have moved together
+ * and readPortableStoryMap accepts the sidecar again.
+ */
 export function rebasePortableStoryMap(value: unknown, oldPath: string, newPath: string): PortableStoryMap | null {
-    if (!value || typeof value !== 'object') return null;
-    const raw = value as Partial<PortableStoryMap>;
-    if (typeof raw.bookFolder !== 'string') return null;
-    const record = readPortableStoryMap(value, [{ id: 'portable', sourceFolder: raw.bookFolder }]);
-    if (!record) return null;
+    const read = readPortableShape(value, 'portable');
+    if (!read) return null;
     const rebase = (path: string) => path === oldPath ? newPath : path.startsWith(`${oldPath}/`) ? `${newPath}${path.slice(oldPath.length)}` : path;
-    const updated = rebaseStoryMapProvenance({ portable: record }, oldPath, newPath).portable;
-    return { ...raw, ...portableStoryMap(updated, rebase(raw.bookFolder)) };
+    const updated = rebaseStoryMapProvenance({ portable: read.record }, oldPath, newPath).portable;
+    return { ...(value as PortableStoryMap), ...portableStoryMap(updated, rebase(read.bookFolder)) };
 }
 
 /** An existing local record wins; a missing record may be restored from its sidecar. */

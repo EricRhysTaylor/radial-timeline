@@ -68,4 +68,44 @@ describe('portable story map baseline', () => {
         expect(readPortableStoryMap(movedBook, [{ id: 'new-id', sourceFolder: 'New Book' }])).not.toBeNull();
         expect(value.provenance.scenes[0].path).toBe('Book/1.md');
     });
+
+    describe('a book folder renamed, whatever order Obsidian reports it in', () => {
+        const two: StoryMapProvenance = {
+            ...baseline,
+            scenes: [{ path: 'Book/1.md', act: 1, subplots: ['Main Plot'] }, { path: 'Book/Part/2.md', act: 1, subplots: ['Main Plot'] }],
+            generated: {
+                nodes: [
+                    { id: 'a', type: 'file', file: 'Book/1.md', x: 0, y: 0, width: 100, height: 100 },
+                    { id: 'b', type: 'file', file: 'Book/Part/2.md', x: 200, y: 0, width: 100, height: 100 },
+                ],
+                edges: [{ id: 'e', fromNode: 'a', toNode: 'b' }],
+            },
+        };
+        const events: Array<[string, string]> = [['Book', 'New Book'], ['Book/1.md', 'New Book/1.md'], ['Book/Part', 'New Book/Part'], ['Book/Part/2.md', 'New Book/Part/2.md']];
+        const apply = (order: Array<[string, string]>) => order.reduce<unknown>((map, [from, to]) => rebasePortableStoryMap(map, from, to) ?? map, portableStoryMap(two, 'Book'));
+
+        it.each([
+            ['folder first', events],
+            ['notes first', [...events].reverse()],
+            ['mixed', [events[1], events[0], events[3], events[2]]],
+        ])('%s: the map reads again under the new folder', (_order, order) => {
+            const moved = apply(order) as ReturnType<typeof portableStoryMap>;
+            expect(moved.bookFolder).toBe('New Book');
+            expect(readPortableStoryMap(moved, [{ id: 'new-id', sourceFolder: 'New Book' }])).toEqual({
+                ...two,
+                bookId: 'new-id',
+                scenes: [{ path: 'New Book/1.md', act: 1, subplots: ['Main Plot'] }, { path: 'New Book/Part/2.md', act: 1, subplots: ['Main Plot'] }],
+                generated: { ...two.generated, nodes: [
+                    { ...two.generated.nodes![0], file: 'New Book/1.md' },
+                    { ...two.generated.nodes![1], file: 'New Book/Part/2.md' },
+                ] },
+            });
+        });
+
+        it('a note moved out of the book on its own still reads as outside the book', () => {
+            const moved = rebasePortableStoryMap(portableStoryMap(two, 'Book'), 'Book/1.md', 'Elsewhere/1.md');
+            expect(moved?.provenance.scenes[0].path).toBe('Elsewhere/1.md');
+            expect(readPortableStoryMap(moved, [{ id: 'b', sourceFolder: 'Book' }])).toBeNull();
+        });
+    });
 });

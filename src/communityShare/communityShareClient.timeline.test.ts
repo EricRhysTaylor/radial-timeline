@@ -20,7 +20,8 @@ import {
     startTimelineSharing,
     stopTimelineSharing,
     syncCommunityProjectsIfConnected,
-    syncCommunityTimelinesIfDue
+    syncCommunityTimelinesIfDue,
+    timelineHeldNote
 } from './communityShareClient';
 
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';
@@ -574,6 +575,22 @@ describe('a timeline the vault has not finished reading is held in the vault (sp
         expect(timelineCalls(request)).toEqual([]);
         expect(JSON.stringify(timelineShareFor(h.plugin.settings.communityShare, 'book-1'))).toBe(before);
         expect(h.sceneData).toHaveBeenCalledTimes(1);
+    });
+
+    it('says why updates are held, with the next step, for as long as the hold lasts', async () => {
+        const h = harness();
+        await started(h);
+        expect(timelineHeldNote(h.plugin as never, h.book)).toBeNull();
+        h.vault.unread.add('Books/Private Path/1 Scene.md');
+        expect(timelineHeldNote(h.plugin as never, h.book))
+            .toBe(t('ui.communityShareSection.timelineHeldUnread', { note: 'Books/Private Path/1 Scene.md' }));
+        h.vault.unread.clear();
+        h.vault.folders.clear();
+        expect(timelineHeldNote(h.plugin as never, h.book))
+            .toBe(t('ui.communityShareSection.timelineHeldFolder', { folder: 'Books/Private Path' }));
+        // Still opening the vault: that passes on its own, so nothing is said.
+        h.plugin.app.workspace.layoutReady = false;
+        expect(timelineHeldNote(h.plugin as never, h.book)).toBeNull();
     });
 
     it('sends on the next cycle once the vault is read', async () => {

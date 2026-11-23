@@ -19,6 +19,7 @@ import {
     setTimelineShareDetails,
     startTimelineSharing,
     stopTimelineSharing,
+    timelineHeldNote,
     type TimelineSceneDetail,
     type TimelineShareAnswer,
 } from '../../communityShare/communityShareClient';
@@ -251,6 +252,10 @@ function drawCommunityTimelineBlock({ plugin, book, rerender }: CommunityTimelin
     if (record?.lastSentAt) {
         addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: formatCommunityDate(record.lastSentAt) }), 'sent');
     }
+    // Background updates skip a book they cannot read whole and record
+    // nothing; the reason is read here, while it lasts.
+    const held = record?.enabled && !paused ? timelineHeldNote(plugin, book) : null;
+    if (held) addNote(shareRow, held, 'warning');
     // A refused send says what the standing note says, so each shows once.
     const standing = standingBookNotes(answer?.sharing);
     for (const note of standing) addNote(shareRow, note, 'warning');

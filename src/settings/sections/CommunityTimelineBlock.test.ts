@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ rows: [] as Array<{ name: string; toggle?: { disabled: boolean; change: (value: boolean) => Promise<void> } }>, notes: [] as string[], record: { enabled: true, lastError: '' }, save: vi.fn(), fetch: vi.fn() }));
+const state = vi.hoisted(() => ({ rows: [] as Array<{ name: string; toggle?: { disabled: boolean; change: (value: boolean) => Promise<void> } }>, notes: [] as string[], record: { enabled: true, lastError: '' }, save: vi.fn(), fetch: vi.fn(), held: vi.fn((): string | null => null) }));
 vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     ...await original<typeof import('../../../tests/mocks/obsidian')>(),
     Notice: class {},
@@ -19,7 +19,7 @@ vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     },
 }));
 vi.mock('../wikiLink', () => ({ addHeadingIcon: () => {}, applyErtHeaderLayout: () => {} }));
-vi.mock('../../communityShare/communityShareClient', () => ({ CommunityShareError: class extends Error { constructor(_code: string, message: string) { super(message); } }, fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save }));
+vi.mock('../../communityShare/communityShareClient', () => ({ CommunityShareError: class extends Error { constructor(_code: string, message: string) { super(message); } }, fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save, timelineHeldNote: state.held }));
 vi.mock('../../communityShare/communityShareSettings', () => ({ normalizeCommunityShareSettings: (value: unknown) => value, canShareTimelineToCommunity: () => true, timelineShareFor: () => state.record }));
 vi.mock('../../communityShare/communityMailbox', () => ({ COMMUNITY_SITE_URL: 'https://example.test' }));
 vi.mock('../../modals/ErtConfirmModal', () => ({ confirmWithErtModal: vi.fn() }));
@@ -63,6 +63,25 @@ describe('timeline privacy details', () => {
         await vi.waitFor(() => expect(state.rows.some(row => row.name === t('ui.communityShareSection.timelineDetailCast'))).toBe(true));
         await find('ui.communityShareSection.timelineDetailCast').change(false);
         expect(state.save).toHaveBeenLastCalledWith(plugin, book.id, { hiddenSceneFields: applied ? ['synopsis', 'title', 'characters'] : ['synopsis', 'characters'] });
+    });
+});
+
+describe('Keep timeline updated, held in the vault', () => {
+    it('shows why updates are held, with the next step, while the hold lasts', async () => {
+        vi.stubGlobal('window', { setTimeout: vi.fn() });
+        state.fetch.mockReset().mockResolvedValue({ ok: true, shared: false, project_id: 'project' });
+        const node = { createDiv: () => node, createEl: () => node, addEventListener: () => {}, empty: () => { state.notes = []; }, isConnected: true };
+        const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'held-note' }, sharingPaused: false } } };
+        const book = { id: 'held-note-book', title: 'Book', sourceFolder: 'Book' };
+        const render = () => { state.notes = []; renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: node as never, book: book as never, rerender: render }); };
+        state.held.mockReturnValue('Updates held: the folder Book is missing from this vault.');
+        render();
+        expect(state.held).toHaveBeenCalledWith(plugin, book);
+        expect(state.notes).toContain('Updates held: the folder Book is missing from this vault.');
+        state.held.mockReturnValue(null);
+        render();
+        expect(state.notes.some(note => note.startsWith('Updates held'))).toBe(false);
+        state.held.mockReset().mockReturnValue(null);
     });
 });
 

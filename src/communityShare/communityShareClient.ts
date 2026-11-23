@@ -1629,16 +1629,39 @@ const TIMELINE_SCAN_HELD = 'timeline_scan_held';
  * - `layout`: Obsidian has not finished opening the vault.
  * - `folder`: the book's folder is not in the vault (not created yet on this
  *   device, or still on its way from a sync service).
- * - `unread`: a note in the folder has not been read into Obsidian's metadata
- *   cache yet, so the scene it may hold would be left out.
+ * - `unread`: a note in the folder (`notePath`, the first one found) has not
+ *   been read into Obsidian's metadata cache yet, so the scene it may hold
+ *   would be left out.
+ *
+ * A background update that meets a hold sends nothing and records nothing;
+ * Settings → Community asks again when it draws the book (timelineHeldNote),
+ * so a hold that lasts is on screen with its next step.
  */
-export function timelineScanHold(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'sourceFolder'>): 'layout' | 'folder' | 'unread' | null {
+export type TimelineScanHold =
+    | { kind: 'layout' }
+    | { kind: 'folder' }
+    | { kind: 'unread'; notePath: string };
+
+export function timelineScanHold(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'sourceFolder'>): TimelineScanHold | null {
     const { workspace, vault, metadataCache } = plugin.app;
-    if (!workspace.layoutReady) return 'layout';
+    if (!workspace.layoutReady) return { kind: 'layout' };
     const folder = normalizePath(book.sourceFolder);
-    if (!vault.getFolderByPath(folder)) return 'folder';
-    const unread = vault.getMarkdownFiles().some(file => isPathInFolderScope(file.path, folder) && metadataCache.getFileCache(file) === null);
-    return unread ? 'unread' : null;
+    if (!vault.getFolderByPath(folder)) return { kind: 'folder' };
+    const unread = vault.getMarkdownFiles().find(file => isPathInFolderScope(file.path, folder) && metadataCache.getFileCache(file) === null);
+    return unread ? { kind: 'unread', notePath: unread.path } : null;
+}
+
+/**
+ * Why Keep timeline updated is holding this book's updates, with the next
+ * step, or null when nothing holds them. For the book's row in Settings →
+ * Community, which is drawn only once the vault has opened.
+ */
+export function timelineHeldNote(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'sourceFolder'>): string | null {
+    const hold = timelineScanHold(plugin, book);
+    if (!hold || hold.kind === 'layout') return null;
+    return hold.kind === 'folder'
+        ? t('ui.communityShareSection.timelineHeldFolder', { folder: normalizePath(book.sourceFolder) })
+        : t('ui.communityShareSection.timelineHeldUnread', { note: hold.notePath });
 }
 
 /**
@@ -1663,7 +1686,7 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
 
     const hold = timelineScanHold(plugin, book);
     if (hold) {
-        throw new CommunityShareError(TIMELINE_SCAN_HELD, t(hold === 'folder'
+        throw new CommunityShareError(TIMELINE_SCAN_HELD, t(hold.kind === 'folder'
             ? 'ui.communityShareClient.timelineFolderMissing'
             : 'ui.communityShareClient.timelineStillReading'));
     }

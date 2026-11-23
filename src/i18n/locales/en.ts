@@ -3631,6 +3631,8 @@ export const en = {
             timelineShareLive: 'Updates are on. The timeline is published.',
             timelineStopNote: 'Turned off, the timeline on Community stays as it is. Take it offline or delete it there.',
             timelineLastSent: 'Last sent {{date}}.',
+            timelineHeldFolder: 'Updates held: the folder {{folder}} is missing from this vault. Check the book’s source folder in Book Manager; updates go out once the folder is there.',
+            timelineHeldUnread: 'Updates held until Obsidian finishes reading {{note}}. If this line stays, restart Obsidian.',
             timelineConfirmTitle: 'Share this timeline?',
             timelineConfirmMessage: 'Radial Timeline sends scene order, acts, subplots, status and publish stage. It also sends titles, synopses, cast, narration and story dates, stored privately until you reveal a scene. A new timeline arrives private, and one already live stays live. You choose which scenes readers see.',
             timelineConfirmButton: 'Send timeline',

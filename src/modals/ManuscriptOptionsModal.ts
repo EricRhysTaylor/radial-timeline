@@ -959,7 +959,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.sourceSaveAsButton = undefined;
         this.savedSourceNoticeEl = undefined;
         this.sourceErrorEl = undefined;
-        card.createEl('h4', { cls: 'ert-section-title', text: t('manuscriptModal.exportTypeManuscript') });
+        card.createEl('h4', { cls: 'ert-section-title', text: t('manuscriptModal.sourceHeading') });
         if (this.savedSourceStorageError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.savedSourceStorageError });
         if (this.plugin.isSettingsPersistenceBlocked()) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.manuscriptOptionsModal.settingsUnreadable') });
         if (this.savedManuscripts.length) {

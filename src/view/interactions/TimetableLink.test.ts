@@ -6,6 +6,7 @@ describe('timeline to Canvas', () => {
     it('pins the hovered scene on Shift and keeps normal hover events distinct', () => {
         class SceneElement {
             ownerDocument = { defaultView: {} };
+            instanceOf(type: typeof SceneElement) { return this instanceof type; }
             closest() { return this; }
             getAttribute() { return 'Story%2FScene.md'; }
             querySelector() { return null; }
@@ -26,9 +27,33 @@ describe('timeline to Canvas', () => {
         } finally { dispose(); vi.unstubAllGlobals(); }
     });
 
+    it('lights a Timetable row from a timeline in a popout window', () => {
+        class SceneElement {}
+        /** A scene cell of a popout window: its own window's Element, never the main window's. */
+        class PopoutSceneElement {
+            ownerDocument = { defaultView: {} };
+            instanceOf(type: { name: string }) { return type.name === 'SceneElement'; }
+            closest() { return this; }
+            getAttribute() { return 'Story%2FScene.md'; }
+            querySelector() { return null; }
+        }
+        vi.stubGlobal('Element', SceneElement);
+        const handlers = new Map<string, (event: Event) => void>();
+        const svg = { ownerDocument: { defaultView: {} } } as unknown as SVGSVGElement;
+        const view = { renderScope: { registerDomEvent: (_el: HTMLElement, name: string, handler: (event: Event) => void) => { handlers.set(name, handler); } } };
+        const markLinkedRow = vi.fn();
+        const untrack = trackTimetable({ markLinkedRow } as never);
+        try {
+            linkSceneHoverToTimetable(view, svg);
+            handlers.get('pointerover')!({ target: new PopoutSceneElement(), shiftKey: false } as unknown as Event);
+            expect(markLinkedRow.mock.calls).toEqual([['Story/Scene.md', null, false]]);
+        } finally { untrack(); vi.unstubAllGlobals(); }
+    });
+
     it('lights a Timetable row on hover but scrolls to it only with Shift', () => {
         class SceneElement {
             ownerDocument = { defaultView: {} };
+            instanceOf(type: typeof SceneElement) { return this instanceof type; }
             closest() { return this; }
             getAttribute() { return 'Story%2FScene.md'; }
             querySelector() { return null; }

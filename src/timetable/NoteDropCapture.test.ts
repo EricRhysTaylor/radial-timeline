@@ -19,11 +19,23 @@ describe('a note dragged over a target of its own', () => {
     class FakeElement {
         dataset: Record<string, string> = {};
         constructor(private readonly path?: string) { if (path) this.dataset.path = path; }
+        // Obsidian's cross-window check, as the main window sees it.
+        instanceOf(type: typeof FakeElement): boolean { return this instanceof type; }
         closest(): FakeElement | null { return this.path ? this : null; }
         matches(): boolean { return false; }
     }
+    /** An element of a popout window: its own window's Element, never the main window's. */
+    class PopoutElement {
+        dataset: Record<string, string> = {};
+        constructor(path: string) { this.dataset.path = path; }
+        instanceOf(type: { name: string }): boolean { return type.name === 'FakeElement'; }
+        closest(): PopoutElement { return this; }
+        matches(): boolean { return false; }
+    }
+    // Obsidian's targetNode is the event's target, typed as a Node.
+    const on = (target: unknown) => ({ target, targetNode: target });
     const file = new TFile('Notes/Plan.md');
-    function setup(ownDrop: boolean) {
+    function setup(ownDrop: boolean, dragged: unknown = new FakeElement(file.path)) {
         const handlers = new Map<string, (event: unknown) => void>();
         const banner = { createSpan: () => ({}), addClass: vi.fn(), removeClass: vi.fn(), remove: vi.fn(), previousElementSibling: null, isConnected: true };
         const doc = {};
@@ -31,8 +43,8 @@ describe('a note dragged over a target of its own', () => {
         const owner = { registerDomEvent: (_: unknown, type: string, handler: (event: unknown) => void) => handlers.set(type, handler), register: () => undefined };
         const plugin = { app: { vault: { getAbstractFileByPath: () => file }, metadataCache: { getFileCache: () => ({ frontmatter: {} }) } } } as unknown as RadialTimelinePlugin;
         registerNoteDropCapture(owner as unknown as Component, host as unknown as HTMLElement, plugin, () => 'book', { ownDropPoint: () => ownDrop });
-        handlers.get('dragstart')!({ target: new FakeElement(file.path) });
-        const event = () => ({ clientX: 10, clientY: 10, target: new FakeElement(), preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } });
+        handlers.get('dragstart')!(on(dragged));
+        const event = () => ({ clientX: 10, clientY: 10, ...on(new FakeElement()), preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } });
         return { handlers, banner, event };
     }
     const open = vi.spyOn(Modal.prototype, 'open');
@@ -53,6 +65,14 @@ describe('a note dragged over a target of its own', () => {
     });
     it('opens Add note to the book everywhere else', () => {
         const { handlers, event } = setup(false);
+        const drop = event();
+        handlers.get('drop')!(drop);
+        expect(drop.stopImmediatePropagation).toHaveBeenCalled();
+        vi.runAllTimers();
+        expect(open).toHaveBeenCalledTimes(1);
+    });
+    it('takes a note dragged from a file explorer in a popout window', () => {
+        const { handlers, event } = setup(false, new PopoutElement(file.path));
         const drop = event();
         handlers.get('drop')!(drop);
         expect(drop.stopImmediatePropagation).toHaveBeenCalled();

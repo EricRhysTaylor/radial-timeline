@@ -235,7 +235,8 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
     };
     owner.registerDomEvent(host.ownerDocument, 'dragstart', (event: DragEvent) => {
         explorerFile = null;
-        const element = event.target instanceof Element ? event.target : null;
+        const node = event.targetNode;
+        const element = node?.instanceOf(Element) ? node : null;
         const source = element?.closest<HTMLElement>('.nav-file-title[data-path], .nav-file[data-path]');
         const path = source?.dataset.path;
         const file = path ? plugin.app.vault.getAbstractFileByPath(path) : null;

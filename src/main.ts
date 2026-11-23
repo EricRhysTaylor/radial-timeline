@@ -408,7 +408,8 @@ export default class RadialTimelinePlugin extends Plugin {
         const service = this.writingSessionService;
         if (!service?.getActiveSession()) return;
         const now = Date.now();
-        if (typeof document !== 'undefined' && document.hasFocus && !document.hasFocus()) return;
+        // The window the author is in, a popout window included.
+        if (!activeDocument.hasFocus()) return;
         const file = this.app.workspace.getActiveFile();
         if (!file || !this.isSceneFile(file.path)) return;
         // Navigation must survive scroll bursts and a preceding non-scene leaf event.
@@ -773,7 +774,10 @@ export default class RadialTimelinePlugin extends Plugin {
         this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.signalWritingActivity(true)));
         this.registerEvent(this.app.workspace.on('file-open', () => this.signalWritingActivity(true)));
         this.registerDomEvent(window, 'focus', () => this.signalWritingActivity(true));
-        this.registerDomEvent(document, 'scroll', () => this.signalWritingActivity(), { capture: true });
+        // Each window has its own document: scrolling a scene in a popout window counts too.
+        const onScroll = () => this.signalWritingActivity();
+        this.registerDomEvent(this.app.workspace.containerEl.doc, 'scroll', onScroll, { capture: true });
+        this.registerEvent(this.app.workspace.on('window-open', (win) => this.registerDomEvent(win.doc, 'scroll', onScroll, { capture: true })));
         this.publishingValidationService = new PublishingValidationService(this);
         this.timelineAuditAiService = new TimelineAuditAiService(this);
         

@@ -11,6 +11,7 @@ import { drawPdfPage, renderPdfPagePng } from '../publishing/importedTemplatePre
 import { buildImportedTemplateFactRows, renderImportedTemplateFacts, type ImportedTemplateFactRow } from '../settings/sections/publish/ImportedLayoutSummary';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
+import { movesOutOf } from '../utils/eventTargets';
 import { t } from '../i18n';
 
 type ImportTemplateStep = 1 | 2 | 3 | 4;
@@ -520,10 +521,7 @@ export class ImportTemplateModal extends Modal {
             picker.addClass('is-dragover');
         });
         picker.addEventListener('dragleave', (event) => {
-            const related = event.relatedTarget;
-            if (!(related instanceof Node) || !picker.contains(related)) {
-                picker.removeClass('is-dragover');
-            }
+            if (movesOutOf(picker, event)) picker.removeClass('is-dragover');
         });
         picker.addEventListener('drop', (event) => {
             event.preventDefault();

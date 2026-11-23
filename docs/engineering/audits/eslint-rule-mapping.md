@@ -5,10 +5,12 @@ project doctrine is not mistaken for generic Obsidian guidance that
 `eslint-plugin-obsidianmd` now owns.
 
 Status: **step 4 / selective ratchet enforcement**. The full Obsidian preset is
-still report-only. Two confirmed replacement rules are now enforced through a
-committed baseline in `scripts/eslint-obsidian-enforced-baseline.json`:
-`obsidianmd/no-static-styles-assignment` and `obsidianmd/prefer-window-timers`.
-No custom checks have been deleted yet.
+still report-only. Selected rules are enforced through a committed baseline in
+`scripts/eslint-obsidian-enforced-baseline.json`; the list is
+`ENFORCED_OBSIDIAN_RULES` in `eslint.obsidian.enforced.config.mjs`. The 8.2.1
+pass (2026-11-23) cleared the community-store scan's `prefer-instanceof`,
+`prefer-active-doc` and `no-tfile-tfolder-cast` warnings and added those three
+rules at zero. No custom checks have been deleted yet.
 
 ## Preconditions discovered
 

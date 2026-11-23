@@ -1,4 +1,5 @@
 import { setAccessibleLabel } from '../utils/domTooltip';
+import { elementOf } from '../utils/eventTargets';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -86,14 +87,14 @@ export class SketchDrawer extends Component {
                 return;
             }
             // A bar field lost focus: once focus has settled outside the drawer's fields, the table may redraw.
-            if (evt.target instanceof HTMLInputElement) {
+            if (evt.targetNode?.instanceOf(HTMLInputElement)) {
                 window.setTimeout(() => {
                     if (!this.isEditing()) this.host.editingEnded();
                 }, 0);
             }
         });
         this.registerDomEvent(this.el, 'keydown', (evt: KeyboardEvent) => {
-            if (evt.key === 'Enter' && evt.target instanceof HTMLInputElement && evt.target.matches('.ert-timetable__drawer-title')) {
+            if (evt.key === 'Enter' && evt.targetNode?.instanceOf(HTMLInputElement) && evt.targetNode.matches('.ert-timetable__drawer-title')) {
                 // Enter names the sketch and moves on to its text; the change event does the renaming.
                 evt.preventDefault();
                 this.showEditor();
@@ -104,7 +105,7 @@ export class SketchDrawer extends Component {
                 void this.flush().then(() => this.host.close(this.file.path));
                 return;
             }
-            if (evt.key === 'Enter' && evt.target instanceof Element && evt.target.matches('.ert-timetable__drawer-preview')) {
+            if (evt.key === 'Enter' && evt.targetNode?.instanceOf(Element) && evt.targetNode.matches('.ert-timetable__drawer-preview')) {
                 evt.preventDefault();
                 this.showEditor();
             }
@@ -122,7 +123,8 @@ export class SketchDrawer extends Component {
     }
 
     private handleClick(evt: MouseEvent): void {
-        const target = evt.target instanceof Element ? evt.target : null;
+        const node = evt.targetNode;
+        const target = node?.instanceOf(Element) ? node : null;
         if (!target) return;
         const ring = target.closest<HTMLElement>('.ert-timetable__drawer-ring');
         if (ring?.dataset.ring) {
@@ -158,13 +160,13 @@ export class SketchDrawer extends Component {
     }
 
     private handleChange(evt: Event): void {
-        const target = evt.target;
-        if (target instanceof HTMLSelectElement && target.matches('.ert-timetable__drawer-act')) {
+        const target = elementOf(evt.target);
+        if (target?.instanceOf(HTMLSelectElement) && target.matches('.ert-timetable__drawer-act')) {
             void this.writeProperty('Act', target.value === '' ? null : Number(target.value));
-        } else if (target instanceof HTMLInputElement && target.matches('.ert-timetable__drawer-when')) {
+        } else if (target?.instanceOf(HTMLInputElement) && target.matches('.ert-timetable__drawer-when')) {
             const value = target.value.trim();
             void this.writeProperty('When', value === '' ? null : value);
-        } else if (target instanceof HTMLInputElement && target.matches('.ert-timetable__drawer-title')) {
+        } else if (target?.instanceOf(HTMLInputElement) && target.matches('.ert-timetable__drawer-title')) {
             this.host.rename(this.file, target.value);
         }
     }
@@ -172,7 +174,7 @@ export class SketchDrawer extends Component {
     /** True while the author is typing in the drawer (its text or a bar field), so the table holds off redrawing. */
     isEditing(): boolean {
         const active = this.el.ownerDocument.activeElement;
-        return active instanceof HTMLElement && this.el.contains(active) && active.matches('textarea, input[type="text"]');
+        return !!active?.instanceOf(HTMLElement) && this.el.contains(active) && active.matches('textarea, input[type="text"]');
     }
 
     /** Put the cursor in the editor as soon as the body has loaded. */

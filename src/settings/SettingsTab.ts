@@ -757,7 +757,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     private findSettingsScrollHost(target: HTMLElement): HTMLElement | null {
         const host = target.closest<HTMLElement>('.vertical-tab-content, .ert-settings-tab-content');
-        return host instanceof HTMLElement ? host : null;
+        return host?.instanceOf(HTMLElement) ? host : null;
     }
 
     private isSectionVisibleWithinHost(target: HTMLElement, host: HTMLElement): boolean {

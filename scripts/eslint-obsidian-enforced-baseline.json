@@ -4,7 +4,10 @@
     "obsidianmd/prefer-window-timers",
     "obsidianmd/ui/sentence-case",
     "@typescript-eslint/no-unnecessary-type-assertion",
-    "@typescript-eslint/no-floating-promises"
+    "@typescript-eslint/no-floating-promises",
+    "obsidianmd/prefer-instanceof",
+    "obsidianmd/prefer-active-doc",
+    "obsidianmd/no-tfile-tfolder-cast"
   ],
   "total": 0,
   "byRule": {
@@ -12,9 +15,12 @@
     "obsidianmd/prefer-window-timers": 0,
     "obsidianmd/ui/sentence-case": 0,
     "@typescript-eslint/no-unnecessary-type-assertion": 0,
-    "@typescript-eslint/no-floating-promises": 0
+    "@typescript-eslint/no-floating-promises": 0,
+    "obsidianmd/prefer-instanceof": 0,
+    "obsidianmd/prefer-active-doc": 0,
+    "obsidianmd/no-tfile-tfolder-cast": 0
   },
-  "updatedAt": "2026-06-12T02:10:01.808Z",
+  "updatedAt": "2026-11-23T17:45:53.771Z",
   "mode": "ratchet",
   "note": "Fails when selected eslint-plugin-obsidianmd rule counts increase."
 }

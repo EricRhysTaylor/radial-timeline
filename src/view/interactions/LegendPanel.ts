@@ -276,7 +276,8 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     // own click, so pressing another key's button closes this one.
     component.registerDomEvent(doc, 'pointerdown', (evt: PointerEvent) => {
         if (!isOpen()) return;
-        const target = evt.target instanceof Node ? evt.target : null;
+        const node = evt.targetNode;
+        const target = node?.instanceOf(Node) ? node : null;
         if (target && (panel.contains(target) || trigger.contains(target))) return;
         hide();
     }, { capture: true });

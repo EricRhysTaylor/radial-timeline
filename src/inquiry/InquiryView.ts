@@ -38,6 +38,7 @@ import {
     InquiryZone
 } from './state';
 import { replayTransientClass } from '../utils/domClassEffects';
+import { elementOf } from '../utils/eventTargets';
 import { providerSupportsCitations } from '../api/providerCapabilities';
 import { formatProviderCacheTtlLabel, normalizeGeminiCacheTtlSeconds, resolveProviderCacheWindowMs } from '../ai/settings/cacheWindows';
 import type {
@@ -931,9 +932,7 @@ export class InquiryView extends ItemView {
             navNextButton: this.navNextButton,
             onBackgroundClick: (event: MouseEvent) => {
                 if (!this.isErrorState()) return;
-                const target = event.target;
-                if (!(target instanceof Element)) return;
-                const backgroundTarget = target.closest('.ert-inquiry-bg, .ert-inquiry-bg-image');
+                const backgroundTarget = elementOf(event.target)?.closest('.ert-inquiry-bg, .ert-inquiry-bg-image');
                 if (!backgroundTarget) return;
                 this.dismissError();
             },
@@ -1272,7 +1271,7 @@ export class InquiryView extends ItemView {
 
     private scrollAndPulseAiSetting(target: AiSettingsFocus, shouldScroll: boolean): void {
         const el = activeDocument.querySelector(`[data-ert-role="ai-setting:${target}"]`);
-        if (!(el instanceof HTMLElement)) return;
+        if (!el?.instanceOf(HTMLElement)) return;
         if (shouldScroll) {
             el.scrollIntoView({ block: 'center' });
         }
@@ -5323,7 +5322,7 @@ export class InquiryView extends ItemView {
 
     private scrollInquirySetting(target: 'sources-heading' | 'class-scope' | 'scan-roots' | 'class-presets'): void {
         const el = activeDocument.querySelector(`[data-ert-role="inquiry-setting:${target}"]`);
-        if (!(el instanceof HTMLElement)) return;
+        if (!el?.instanceOf(HTMLElement)) return;
         el.scrollIntoView({ block: 'start' });
     }
 

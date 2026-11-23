@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TFile, TFolder } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
 import type { WritingSessionRecord } from '../types/settings';
@@ -1066,8 +1067,41 @@ describe('portable session log corruption handling', () => {
             .toBe('Radial Timeline/Writing Sessions.corrupt-2026-07-27.json');
     });
 
+    it('never reads a folder at the log path as the log', async () => {
+        const read = vi.fn(async () => '{"records":[]}');
+        const calls: string[] = [];
+        const plugin = {
+            settings: {
+                writingSessions: {
+                    defaults: { defaultMode: 'drafting' },
+                    records: [],
+                    active: {
+                        id: 'active-session', mode: 'drafting', stage: 'Zero', stagePreference: 'Zero',
+                        startedAt: '2026-07-27T10:00:00.000Z', lastResumedAt: '2026-07-27T10:00:00.000Z',
+                        lastSeenAt: '2026-07-27T10:30:00.000Z', elapsedMsBeforePause: 0,
+                    },
+                },
+            },
+            saveSettings: async () => undefined,
+            app: {
+                vault: {
+                    getAbstractFileByPath: (path: string) => new TFolder(path),
+                    read,
+                    modify: async () => { calls.push('modify'); },
+                    create: async (path: string) => { calls.push(`create:${path}`); },
+                },
+            },
+        };
+        const service = new WritingSessionService(plugin as any);
+
+        await service.stop({ elapsedMs: 1800000, wordsAdded: 500, scenesCompletedPaths: [] });
+
+        expect(read).not.toHaveBeenCalled();
+        expect(calls).toEqual(['create:Radial Timeline/Writing Sessions.json']);
+    });
+
     it('renames an unparseable archive instead of overwriting it', async () => {
-        const existingFile = { path: 'Radial Timeline/Writing Sessions.json' };
+        const existingFile = new TFile('Radial Timeline/Writing Sessions.json');
         const calls: string[] = [];
         let created = '';
         const plugin = {

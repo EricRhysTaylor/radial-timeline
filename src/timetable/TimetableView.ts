@@ -141,6 +141,7 @@ import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { coloringDateLabel } from './coloringDates';
 import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
+import { elementOf, movesOutOf } from '../utils/eventTargets';
 import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
 import { basesViewFilters, internalDraggedFiles } from '../utils/obsidianInternals';
@@ -494,7 +495,7 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl.win, STORY_IMAGES_CHANGED_EVENT, () => this.render());
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
             if (evt.key !== 'Enter' && evt.key !== ' ') return;
-            const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
+            const toggle = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
             if (!toggle) return;
             evt.preventDefault();
             this.toggleGroup(toggle.dataset.groupId ?? '');
@@ -511,7 +512,7 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl, 'pointercancel', () => this.endResize());
         // Double-click a resize handle to fit its column to what it holds.
         this.registerDomEvent(this.rootEl, 'dblclick', (evt: MouseEvent) => {
-            const handle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__resize') : null;
+            const handle = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__resize') : null;
             const property = handle?.dataset.property as BasesPropertyId | undefined;
             if (!property || !this.isFittable(property)) return;
             evt.preventDefault();
@@ -533,17 +534,17 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl.doc, 'scroll', () => this.peek?.hide(), { capture: true });
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
-            if (evt.target instanceof Element && evt.target.closest('.ert-time-reference-row')) {
+            if (evt.targetNode?.instanceOf(Element) && evt.targetNode.closest('.ert-time-reference-row')) {
                 if (this.hoveredPath !== null) {
                     this.hoveredPath = null;
                     this.plugin.highlightSceneOnTimeline(null);
                     this.markLinkedRow(null, null, false);
                 }
-                const reference = this.referenceAt(evt.target);
+                const reference = this.referenceAt(evt.targetNode);
                 hoverTimeReference(reference ? { path: reference.path, key: reference.key } : null);
                 return;
             }
-            const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene, .ert-timetable__row.is-sketch') : null;
+            const row = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__row.is-scene, .ert-timetable__row.is-sketch') : null;
             const path = row?.dataset.path ?? null;
             hoverTimeReference(null);
             if (path === this.hoveredPath && (!row || this.linkedRow === row)) return;
@@ -577,10 +578,11 @@ export class TimetableView extends BasesView {
      */
     private hoverPeek(target: EventTarget | null, shift: boolean): void {
         const held = shift && !isTypingInField(this.rootEl.doc);
-        const control = target instanceof Element ? target.closest<HTMLElement>('.ert-timetable__text-control[data-peek]') : null;
+        const element = elementOf(target);
+        const control = element?.closest<HTMLElement>('.ert-timetable__text-control[data-peek]') ?? null;
         this.peekControl = control;
         this.peek?.showText(control, control ? this.controlText(control, held) : '');
-        const cell = target instanceof Element ? target.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') : null;
+        const cell = element?.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') ?? null;
         const path = cell?.closest<HTMLElement>('tr')?.dataset.path;
         const column = cell?.dataset.column;
         this.peekKey = cell && path && column ? { path, column } : null;
@@ -646,7 +648,7 @@ export class TimetableView extends BasesView {
     }
 
     private startResize(evt: PointerEvent): void {
-        const handle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__resize') : null;
+        const handle = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__resize') : null;
         const property = handle?.dataset.property as BasesPropertyId | undefined;
         const table = handle?.closest<HTMLElement>('.ert-timetable__table');
         const col = property ? table?.querySelector<HTMLElement>(`col[data-property="${CSS.escape(property)}"]`) : null;
@@ -1075,7 +1077,7 @@ export class TimetableView extends BasesView {
     private clearSelectionOnEscape(evt: KeyboardEvent): boolean {
         if (this.selected.size === 0) return true;
         if (!this.rootEl.closest('.workspace-leaf')?.hasClass('mod-active')) return true;
-        if (evt.target instanceof Element && evt.target.closest('input[type="text"], textarea, select, .cm-editor')) return true;
+        if (evt.targetNode?.instanceOf(Element) && evt.targetNode.closest('input[type="text"], textarea, select, .cm-editor')) return true;
         this.selected.clear();
         this.render();
         return false;
@@ -1087,13 +1089,13 @@ export class TimetableView extends BasesView {
     }
 
     private handleContextMenu(evt: MouseEvent): void {
-        const header = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__prop-head[data-property]') : null;
+        const header = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__prop-head[data-property]') : null;
         if (header?.dataset.property) {
             evt.preventDefault();
             this.showColumnMenu(evt, header.dataset.property as BasesPropertyId);
             return;
         }
-        const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row') : null;
+        const row = evt.targetNode?.instanceOf(Element) ? evt.targetNode.closest<HTMLElement>('.ert-timetable__row') : null;
         const file = row?.dataset.path ? this.plugin.app.vault.getFileByPath(row.dataset.path) : null;
         if (!row || !file) return;
         evt.preventDefault();
@@ -1119,13 +1121,14 @@ export class TimetableView extends BasesView {
     }
 
     private referenceAt(target: EventTarget | null): TimeReference | undefined {
-        const row = target instanceof Element ? target.closest<HTMLElement>('.ert-time-reference-row[data-reference-key]') : null;
+        const row = elementOf(target)?.closest<HTMLElement>('.ert-time-reference-row[data-reference-key]') ?? null;
         const item = this.rowItems.get(row?.dataset.sourcePath ?? '');
         return item ? readTimeReferences(item.frontmatter?.[TIME_REFERENCES_KEY], item.row.path).references.find(ref => ref.key === row?.dataset.referenceKey) : undefined;
     }
 
     private handleClick(evt: MouseEvent): void {
-        const target = evt.target instanceof Element ? evt.target : null;
+        const node = evt.targetNode;
+        const target = node?.instanceOf(Element) ? node : null;
         if (!target) return;
         const referenceToggle = target.closest<HTMLElement>('.ert-time-reference-toggle');
         if (referenceToggle) {
@@ -2027,7 +2030,7 @@ export class TimetableView extends BasesView {
             if (showGroupHeaders) {
                 this.renderGroupHeader(body, group, collapsed, columnCount, groupBook, isProgress);
                 const heading = body.lastElementChild;
-                if (heading instanceof HTMLElement && group.act !== undefined) {
+                if (heading?.instanceOf(HTMLElement) && group.act !== undefined) {
                     this.attachSketchActDrop(heading, group.act, groupBook, state);
                     this.attachSceneActDrop(heading, group.act, groupBook, state);
                 }
@@ -2625,7 +2628,7 @@ export class TimetableView extends BasesView {
             heading.createSpan({ cls: 'ert-outline-documents__drop-hint', text: t('ui.timetable.outlineDropOrBrowse') });
             tray.setAttr('role', 'group'); tray.setAttr('tabindex', '0');
             setAccessibleLabel(tray, t('ui.timetable.outlineDropOrBrowse'));
-            this.panelEvents?.registerDomEvent(tray, 'click', evt => { if (!(evt.target instanceof Element) || !evt.target.closest('button')) picker(); });
+            this.panelEvents?.registerDomEvent(tray, 'click', (evt: MouseEvent) => { if (!evt.targetNode?.instanceOf(Element) || !evt.targetNode.closest('button')) picker(); });
             this.panelEvents?.registerDomEvent(tray, 'keydown', (evt: KeyboardEvent) => { if (evt.target === tray && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); picker(); } });
             this.attachOutlineDocumentDrop(tray, bookId, paths);
         }
@@ -2711,7 +2714,7 @@ export class TimetableView extends BasesView {
             bar.addClass('is-drag-over');
         });
         this.panelEvents?.registerDomEvent(bar, 'dragleave', (event: DragEvent) => {
-            if (!(event.relatedTarget instanceof Node) || !bar.contains(event.relatedTarget)) clear();
+            if (movesOutOf(bar, event)) clear();
         });
         this.panelEvents?.registerDomEvent(bar, 'drop', (event: DragEvent) => {
             if (this.draggedScene || this.draggedSketch) return;
@@ -2892,7 +2895,7 @@ export class TimetableView extends BasesView {
             row.addClass('ert-outline-text-drop');
         });
         this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
-            if (!(event.relatedTarget instanceof Node) || !row.contains(event.relatedTarget)) clear();
+            if (movesOutOf(row, event)) clear();
         });
         this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
             const dragged = this.draggedSelection();
@@ -3351,7 +3354,7 @@ export class TimetableView extends BasesView {
             row.addClass('ert-timetable__drop-before');
         });
         this.panelEvents?.registerDomEvent(row, 'dragleave', (evt: DragEvent) => {
-            if (!(evt.relatedTarget instanceof Node) || !row.contains(evt.relatedTarget)) row.removeClass('ert-timetable__drop-before');
+            if (movesOutOf(row, evt)) row.removeClass('ert-timetable__drop-before');
         });
         this.panelEvents?.registerDomEvent(row, 'drop', evt => {
             const source = this.draggedScene;
@@ -3411,7 +3414,7 @@ export class TimetableView extends BasesView {
             row.addClass(after ? 'ert-timetable__drop-after' : 'ert-timetable__drop-before');
         });
         this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
-            if (!(event.relatedTarget instanceof Node) || !row.contains(event.relatedTarget)) clear();
+            if (movesOutOf(row, event)) clear();
         });
         this.panelEvents?.registerDomEvent(row, 'drop', event => {
             const source = this.draggedSketch;
@@ -3442,7 +3445,7 @@ export class TimetableView extends BasesView {
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
         });
         this.panelEvents?.registerDomEvent(heading, 'dragleave', (event: DragEvent) => {
-            if (!(event.relatedTarget instanceof Node) || !heading.contains(event.relatedTarget)) heading.removeClass('ert-timetable__drop-after');
+            if (movesOutOf(heading, event)) heading.removeClass('ert-timetable__drop-after');
         });
         this.panelEvents?.registerDomEvent(heading, 'drop', event => {
             const source = this.draggedSketch;
@@ -3465,7 +3468,7 @@ export class TimetableView extends BasesView {
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
         });
         this.panelEvents?.registerDomEvent(target, 'dragleave', (event: DragEvent) => {
-            if (!(event.relatedTarget instanceof Node) || !target.contains(event.relatedTarget)) target.removeClass('ert-timetable__drop-after');
+            if (movesOutOf(target, event)) target.removeClass('ert-timetable__drop-after');
         });
         this.panelEvents?.registerDomEvent(target, 'drop', event => {
             const source = this.draggedScene;

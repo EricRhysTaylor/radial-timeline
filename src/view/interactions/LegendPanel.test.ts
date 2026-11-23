@@ -3,7 +3,15 @@ import { Component, type Workspace } from 'obsidian';
 import { wireLegendTrigger } from './LegendPanel';
 
 /** Just enough of an element for the trigger wiring: classes, hover, containment. */
-class NodeStub extends EventTarget {}
+class NodeStub extends EventTarget {
+    // Obsidian's cross-window check, as the main window sees it.
+    instanceOf(type: typeof NodeStub): boolean { return this instanceof type; }
+}
+/** A node of a popout window: its own window's Node, never the main window's. */
+class PopoutNodeStub extends EventTarget {
+    instanceOf(type: { name: string }): boolean { return type.name === 'NodeStub'; }
+    contains(node: unknown): boolean { return node === this; }
+}
 class ElementStub extends NodeStub {
     classes = new Set<string>();
     attributes = new Map<string, string>();
@@ -41,9 +49,11 @@ function page() {
     const workspace = new WorkspaceStub();
     const element = () => new ElementStub(doc);
     /** A press as it reaches the document's capture listeners, with its real target. */
-    const pressOn = (target: ElementStub) => {
+    const pressOn = (target: EventTarget) => {
         const event = new Event('pointerdown');
+        // Obsidian's targetNode is the event's target, typed as a Node.
         Object.defineProperty(event, 'target', { value: target });
+        Object.defineProperty(event, 'targetNode', { value: target });
         doc.dispatchEvent(event);
     };
     const key = () => {
@@ -138,6 +148,15 @@ describe('key panel trigger', () => {
         expect(elsewhere.open()).toBe(true);
         elsewhere.pressOn(elsewhere.element());
         expect(elsewhere.open()).toBe(false);
+    });
+
+    it('stays pinned on a press inside it in a popout window', () => {
+        const k = setup();
+        k.click();
+        const popoutRow = new PopoutNodeStub();
+        k.panel.children.push(popoutRow as unknown as ElementStub);
+        k.pressOn(popoutRow);
+        expect(k.open()).toBe(true);
     });
 
     it('closes one pinned key when another key\'s button is pressed', () => {

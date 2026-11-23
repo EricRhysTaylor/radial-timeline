@@ -34,7 +34,7 @@ export async function revealHighlight(app: App, file: TFile, highlight: OpenMatc
   const view = app.workspace.getActiveViewOfType(MarkdownView);
   if (!view || view.file?.path !== file.path || view.getMode() !== 'source' || !highlight.matches.length) return;
   const host = view.contentEl.querySelector('.cm-editor');
-  const cm = host instanceof HTMLElement ? EditorView.findFromDOM(host) : null;
+  const cm = host?.instanceOf(HTMLElement) ? EditorView.findFromDOM(host) : null;
   if (!cm) return;
   const win = cm.dom.ownerDocument.defaultView;
   if (!win) return;

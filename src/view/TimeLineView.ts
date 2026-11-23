@@ -325,7 +325,8 @@ export class RadialTimelineView extends ItemView {
         if (!this.overlaysEl || !this.overlaysEl.isConnected) {
             const overlays = container.createDiv({ cls: 'ert-timeline-overlays' });
             this.renderScope.registerDomEvent(overlays, 'click', (evt: MouseEvent) => {
-                const target = evt.target instanceof Element ? evt.target : null;
+                const node = evt.targetNode;
+                const target = node?.instanceOf(Element) ? node : null;
                 const close = target?.closest<HTMLElement>('[data-overlay]');
                 if (close?.dataset.overlay === 'lens') currentTimelineLens()?.turnOff();
                 if (close?.dataset.overlay === 'coloring') currentTimelineColoring()?.turnOff();
@@ -1686,7 +1687,7 @@ export class RadialTimelineView extends ItemView {
         target.empty();
         setIcon(target, 'metronome');
         const icon = target.querySelector('svg');
-        if (icon instanceof SVGSVGElement) {
+        if (icon?.instanceOf(SVGSVGElement)) {
             icon.classList.add('ert-timeline-session__icon');
             icon.setAttribute('aria-hidden', 'true');
             return;
@@ -3192,14 +3193,16 @@ export class RadialTimelineView extends ItemView {
             acceptPoint: event => ['chronologue', 'narrative', 'progress'].includes(this.currentMode) || !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
                 .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell')),
             rejectPoint: event => {
-                const elements = [...(event.target instanceof Element ? [event.target] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)];
+                const node = event.targetNode;
+                const elements = [...(node?.instanceOf(Element) ? [node] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)];
                 if (this.currentMode === 'chronologue' && elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))) return t('ui.timetable.noteDropChronologueUnavailable');
                 if (['narrative', 'progress'].includes(this.currentMode) && !elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group[data-item-type="Scene"]')) && elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))) return t('ui.timetable.timelineDropChooseScene');
                 return undefined;
             },
             timelinePoint: event => {
                 if (!['narrative', 'progress'].includes(this.currentMode)) return undefined;
-                const group = [...(event.target instanceof Element ? [event.target] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)]
+                const node = event.targetNode;
+                const group = [...(node?.instanceOf(Element) ? [node] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)]
                     .map(element => element.closest('.rt-scene-group[data-item-type="Scene"]'))
                     .find(element => element && this.contentEl.contains(element));
                 const svg = group?.closest('svg');

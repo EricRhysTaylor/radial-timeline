@@ -19,6 +19,7 @@
 import { type ButtonComponent, type ExtraButtonComponent } from 'obsidian';
 import { setAccessibleLabel, setTooltip, withTooltip } from './domTooltip';
 import { splitIntoBalancedLinesOptimal } from './text';
+import { elementOf } from './eventTargets';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -116,8 +117,9 @@ function getTooltipOffset(target: Element, rtOnly = false): { x: number; y: numb
     return { x: offsetX, y: offsetY };
 }
 
-function resolveTooltipTarget(start: EventTarget | null, rtOnly = false): Element | null {
-    if (!(start instanceof Element)) return null;
+function resolveTooltipTarget(eventTarget: EventTarget | null, rtOnly = false): Element | null {
+    const start = elementOf(eventTarget);
+    if (!start) return null;
     const selector = rtOnly
         ? `[${RT_TOOLTIP_ATTR}]`
         : `[${RT_TOOLTIP_ATTR}], [${TOOLTIP_ATTR}], .rt-tooltip-target`;

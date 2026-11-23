@@ -2010,15 +2010,15 @@ export function renderAiSection(params: {
         accessTierSetting.settingEl.toggleClass('ert-settings-visible', true);
 
         const modelStrategyDesc = modelOverrideSetting.settingEl.querySelector('.ert-ai-strategy-row__desc');
-        if (modelStrategyDesc instanceof HTMLElement) {
+        if (modelStrategyDesc?.instanceOf(HTMLElement)) {
             modelStrategyDesc.textContent = isOllama ? LOCAL_MODEL_STRATEGY_COPY : t('ui.aiSection.modelStrategyCopy');
         }
         const accessTierDesc = accessTierSetting.settingEl.querySelector('.ert-ai-strategy-row__desc');
-        if (accessTierDesc instanceof HTMLElement) {
+        if (accessTierDesc?.instanceOf(HTMLElement)) {
             accessTierDesc.textContent = isOllama ? LOCAL_OVERRIDE_COPY : ACCESS_TIER_COPY;
         }
         const accessTierName = accessTierSetting.settingEl.querySelector('.setting-item-name');
-        if (accessTierName instanceof HTMLElement) {
+        if (accessTierName?.instanceOf(HTMLElement)) {
             accessTierName.textContent = isOllama ? t('ui.aiSection.setupName') : t('settings.ai.accessTier.name');
         }
 

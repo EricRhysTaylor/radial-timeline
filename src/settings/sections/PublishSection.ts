@@ -2131,7 +2131,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     if (canScroll && current.scrollHeight > current.clientHeight) return current;
                     current = current.parentElement;
                 }
-                return el.ownerDocument.scrollingElement instanceof HTMLElement ? el.ownerDocument.scrollingElement : null;
+                const scrolling = el.ownerDocument.scrollingElement;
+                return scrolling?.instanceOf(HTMLElement) ? scrolling : null;
             };
             const restoreSectionAnchor = (
                 sectionKey: string,

@@ -60,7 +60,7 @@ class FormattingKey extends Component {
         // Pressing a button would take the focus, and with it the selection, from the note.
         this.registerDomEvent(button, 'mousedown', event => event.preventDefault());
         this.registerDomEvent(panel, 'mousedown', event => event.preventDefault());
-        this.registerDomEvent(panel, 'click', event => this.handleClick(event));
+        this.registerDomEvent(panel, 'click', (event: MouseEvent) => this.handleClick(event));
     }
 
     onunload(): void {
@@ -188,8 +188,9 @@ class FormattingKey extends Component {
         }
     }
 
-    private handleClick(event: Event): void {
-        const target = event.target instanceof Element ? event.target.closest<HTMLElement>('button') : null;
+    private handleClick(event: MouseEvent): void {
+        const node = event.targetNode;
+        const target = node?.instanceOf(Element) ? node.closest<HTMLElement>('button') : null;
         if (!target) return;
         const { workspace } = this.plugin.app;
         // Commands act on the active note, which may not be the one whose key this is. A note

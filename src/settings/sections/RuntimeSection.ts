@@ -63,11 +63,11 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
     const findScrollContainer = (): HTMLElement | null => {
         const modalContent = containerEl.closest('.modal')?.querySelector('.modal-content');
-        if (modalContent instanceof HTMLElement) return modalContent;
+        if (modalContent?.instanceOf(HTMLElement)) return modalContent;
         const tabContent = containerEl.closest('.vertical-tab-content');
-        if (tabContent instanceof HTMLElement) return tabContent;
+        if (tabContent?.instanceOf(HTMLElement)) return tabContent;
         const tabWrapper = containerEl.closest('.ert-settings-tab-content');
-        if (tabWrapper instanceof HTMLElement) return tabWrapper;
+        if (tabWrapper?.instanceOf(HTMLElement)) return tabWrapper;
         return null;
     };
 

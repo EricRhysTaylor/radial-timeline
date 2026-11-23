@@ -84,7 +84,7 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
     setIcon(target.createSpan(), 'file-plus-2');
     target.createSpan({ text: t('ui.timetable.captureSketchDrop') });
     const clear = () => { capture = null; target.removeClass('is-visible'); options?.onClear?.(); };
-    const overRow = (event: DragEvent): boolean => !!rowSelector && event.target instanceof Element && !!event.target.closest(rowSelector);
+    const overRow = (event: DragEvent): boolean => !!rowSelector && !!event.targetNode?.instanceOf(Element) && !!event.targetNode.closest(rowSelector);
     owner.registerDomEvent(doc, 'pointerdown', (event: PointerEvent) => {
         pressedSelection = null;
         const origin = event.target as Node | null;

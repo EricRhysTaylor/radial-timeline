@@ -18,6 +18,10 @@ export const ENFORCED_OBSIDIAN_RULES = [
   'obsidianmd/ui/sentence-case',
   '@typescript-eslint/no-unnecessary-type-assertion',
   '@typescript-eslint/no-floating-promises',
+  // Community-store scan warnings, cleared for 8.2.1: popout-window-safe DOM checks and file narrowing.
+  'obsidianmd/prefer-instanceof',
+  'obsidianmd/prefer-active-doc',
+  'obsidianmd/no-tfile-tfolder-cast',
 ];
 
 // Rules that take options; everything else is plain 'error'.

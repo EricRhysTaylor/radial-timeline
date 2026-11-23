@@ -125,12 +125,13 @@ export class CanvasCards {
         registerCanvasTextDrop(this.events, view, plugin);
         this.events.registerDomEvent(view.containerEl.win, STORY_IMAGES_CHANGED_EVENT, () => this.schedule());
         this.events.registerDomEvent(view.containerEl.win, SUBPLOT_COLORS_CHANGED_EVENT, () => this.invalidateColors());
-        this.events.registerDomEvent(view.containerEl, 'click', event => {
-            if (!this.hasBookCards || !(event.target instanceof Element)) return;
+        this.events.registerDomEvent(view.containerEl, 'click', (event: MouseEvent) => {
+            const target = event.targetNode;
+            if (!this.hasBookCards || !target?.instanceOf(Element)) return;
             const nodes = (this.view as CanvasView).canvas?.nodes;
             if (!(nodes instanceof Map)) return;
             for (const node of nodes.values()) {
-                if (!node.nodeEl?.contains(event.target)) continue;
+                if (!node.nodeEl?.contains(target)) continue;
                 const data = node.getData?.();
                 const path = data?.type === 'file' ? data.file : undefined;
                 const color = path ? this.plugin.highlightSceneOnTimeline(path) : null;

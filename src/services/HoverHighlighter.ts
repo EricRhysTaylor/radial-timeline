@@ -2,6 +2,7 @@ import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { SceneHighlighter } from './SceneHighlighter';
 import { bindToAllDocuments } from '../utils/documents';
+import { elementOf } from '../utils/eventTargets';
 import { leafForTabHeader } from '../utils/obsidianInternals';
 import { publishCurrentNote } from '../timetable/timetableRegistry';
 
@@ -53,7 +54,7 @@ export class HoverHighlighter {
 
     /** The scene note an explorer row or tab header stands for. */
     private scenePathUnder(target: EventTarget | null): string | null {
-        const element = target instanceof Element ? target : null;
+        const element = elementOf(target);
         if (!element) return null;
         let path: string | null = null;
         const explorerRow = element.closest('.nav-file-title');

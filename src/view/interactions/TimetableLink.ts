@@ -12,6 +12,7 @@
 import { getIcon } from 'obsidian';
 import { markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
 import { formatNumber } from '../../utils/svg';
+import { elementOf } from '../../utils/eventTargets';
 import { sceneCellColor } from '../../utils/sceneCellColor';
 
 type TimetableLinkView = {
@@ -20,8 +21,8 @@ type TimetableLinkView = {
     };
 };
 
-function scenePathOf(target: EventTarget | null): string | null {
-    const group = target instanceof Element ? target.closest('.rt-scene-group[data-path]') : null;
+function scenePathOf(target: Element | null): string | null {
+    const group = target?.closest('.rt-scene-group[data-path]');
     const encoded = group?.getAttribute('data-path');
     if (!encoded) return null;
     try {
@@ -35,10 +36,11 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
     let current: string | null = null;
     let currentColor: string | null = null;
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
-        const path = scenePathOf(event.target);
+        const target = elementOf(event.target);
+        const path = scenePathOf(target);
         if (!path) return;
         // The same scene in another ring is another cell, with its own color.
-        const group = event.target instanceof Element ? event.target.closest('.rt-scene-group[data-path]') : null;
+        const group = target?.closest('.rt-scene-group[data-path]') ?? null;
         const color = group ? sceneCellColor(group) : null;
         if (path === current && color === currentColor) return;
         current = path;
@@ -50,7 +52,7 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         if (current === null) return;
-        if (scenePathOf((event as PointerEvent).relatedTarget) === current) return;
+        if (scenePathOf(elementOf((event as PointerEvent).relatedTarget)) === current) return;
         current = null;
         currentColor = null;
         markTimetableRows(null, null, false, 'timeline');
@@ -64,7 +66,7 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
 /** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */
 export function linkActLabelsToTimetable(view: TimetableLinkView, svg: SVGSVGElement): void {
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (event: Event) => {
-        const label = event.target instanceof Element ? event.target.closest('.rt-act-label[data-act]') : null;
+        const label = elementOf(event.target)?.closest('.rt-act-label[data-act]') ?? null;
         const index = Number(label?.getAttribute('data-act'));
         if (!label || !Number.isInteger(index)) return;
         revealTimetableSegment(index);

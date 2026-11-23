@@ -490,7 +490,7 @@ export class InquiryBriefingArticle extends Component {
         const interactive = !!anchorId;
         const el = doc.win.createEl(interactive ? 'a' : 'span');
         el.className = 'ert-briefing-scene-ref';
-        if (interactive && el instanceof HTMLAnchorElement) {
+        if (interactive && el.instanceOf(HTMLAnchorElement)) {
             el.href = '#';
             this.registerDomEvent(el, 'click', (event) => {
                 event.preventDefault();

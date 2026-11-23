@@ -1253,7 +1253,8 @@ export class WritingSessionService {
             if (!vault) return;
 
             const byId = new Map<string, WritingSessionRecord>();
-            let existing = vault.getAbstractFileByPath(PORTABLE_LOG_PATH) as TFile | null;
+            const found = vault.getAbstractFileByPath(PORTABLE_LOG_PATH);
+            let existing = found instanceof TFile ? found : null;
             if (existing) {
                 const read = parsePortableSessionLog(await vault.read(existing));
                 if (read.kind === 'unreadable') {

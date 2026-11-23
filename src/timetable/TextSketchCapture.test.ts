@@ -7,11 +7,19 @@ import { registerTextSketchCapture } from './TextSketchCapture';
 const ROW = '[data-row]';
 class FakeElement {
     constructor(private readonly row: boolean) { }
+    // Obsidian's cross-window check, as the main window sees it.
+    instanceOf(type: typeof FakeElement): boolean { return this instanceof type; }
     closest(selector: string): FakeElement | null { return selector === ROW && this.row ? this : null; }
 }
+/** A row of a popout window: its own window's Element, never the main window's. */
+class PopoutRow {
+    instanceOf(type: { name: string }): boolean { return type.name === 'FakeElement'; }
+    closest(selector: string): PopoutRow | null { return selector === ROW ? this : null; }
+}
 
+// Obsidian's targetNode is the event's target, typed as a Node.
 function dragEvent(target: unknown) {
-    return { target, preventDefault: vi.fn(), stopPropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } };
+    return { target, targetNode: target, preventDefault: vi.fn(), stopPropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } };
 }
 
 function setup(options?: Parameters<typeof registerTextSketchCapture>[4]) {
@@ -54,6 +62,14 @@ describe('dropping selected text', () => {
         expect(drop.stopPropagation).not.toHaveBeenCalled();
         expect(open).not.toHaveBeenCalled();
         expect(dragged()).toEqual({ text: 'A dropped line', source });
+    });
+    it('stands aside over an Outline row in a popout window too', () => {
+        const { banner, fire, startDrag } = setup();
+        startDrag();
+        const over = dragEvent(new PopoutRow());
+        fire('host:dragover', over);
+        expect(over.preventDefault).not.toHaveBeenCalled();
+        expect(banner.addClass).not.toHaveBeenCalled();
     });
     it('hides the banner when the pointer moves onto a row', () => {
         const { banner, fire, startDrag } = setup();

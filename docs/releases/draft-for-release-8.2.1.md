@@ -15,3 +15,4 @@ Fixes for Book from Community, Canvas subplot branches, Community sharing, impor
 - **Scenes sent to Community:** a scene that arrives held, or waiting for review, says so when you send it and in its entry in Settings, with the reason a person gave and the next step.
 - **Imported templates, Check again:** a template you have given `\rtPart`, `\rtChapter` and `\rtSceneSep` now prints chapters and parts in its test PDF and in every export.
 - **Property audit:** an AI Synopsis that Radial Timeline kept as written now passes the audit's length check.
+- **Pop-out windows:** clicks, drags, hovers and tooltips on the timeline, Timetable, Outline, Canvas cards, Inquiry and the timeline key work in a pop-out window as they do in the main window, and writing or scrolling a scene there keeps a writing session going.

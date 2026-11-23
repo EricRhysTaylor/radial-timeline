@@ -1,5 +1,6 @@
 import type { InquiryCanonicalQuestionTier } from '../../types/settings';
 import { addTooltipData } from '../../utils/tooltip';
+import { movesOutOf } from '../../utils/eventTargets';
 import { polarToCartesian } from '../utils/inquiryGeometry';
 import type { InquiryZone } from '../state';
 import { ZONE_LAYOUT } from '../zoneLayout';
@@ -499,8 +500,7 @@ export class InquiryGlyph {
         // SAFE: InquiryGlyph is a plain class without Component lifecycle
         group.addEventListener('pointerout', event => {
             if (!this.zoneInteractionsEnabled) return;
-            const related = event.relatedTarget;
-            if (related instanceof Node && group.contains(related)) return;
+            if (!movesOutOf(group, event)) return;
             state.hovered = false;
             this.updateZoneControlScale(state, group);
         });

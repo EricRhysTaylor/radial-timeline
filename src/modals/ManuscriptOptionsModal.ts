@@ -524,7 +524,9 @@ export class ManuscriptOptionsModal extends Modal {
     constructor(
         app: App,
         plugin: RadialTimelinePlugin,
-        onSubmit: (result: ManuscriptModalResult) => Promise<ManuscriptExportOutcome>
+        onSubmit: (result: ManuscriptModalResult) => Promise<ManuscriptExportOutcome>,
+        /** A Markdown note to export, chosen from a note's menu; it opens as the source. */
+        private readonly initialFilePath?: string
     ) {
         super(app);
         this.plugin = plugin;
@@ -546,7 +548,8 @@ export class ManuscriptOptionsModal extends Modal {
         clearFontAvailabilityCache();
         const { contentEl, modalEl } = this;
         contentEl.empty();
-        const lastSource = this.savedManuscripts.find(record => record.id === this.plugin.settings.lastUsedManuscriptSourceId);
+        const lastSource = this.initialFilePath ? undefined
+            : this.savedManuscripts.find(record => record.id === this.plugin.settings.lastUsedManuscriptSourceId);
         if (lastSource) this.restoreSavedSourceState(lastSource);
         const sourceFolder = this.getSourceBook()?.sourceFolder || "";
         this.openScenePathsSnapshot = new Set(
@@ -602,6 +605,7 @@ export class ManuscriptOptionsModal extends Modal {
         await this.loadSubplots();
         await this.loadScenesForOrder();
         await this.restoreLastUsedTemplate();
+        if (this.initialFilePath) await this.chooseSource('file', this.initialFilePath);
     }
 
     onClose(): void {

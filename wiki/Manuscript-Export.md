@@ -1,4 +1,4 @@
-**Manuscript export** opens the export panel for a Radial Timeline book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
+**Export to PDF, Word, Markdown** opens the export panel for a Radial Timeline book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
 
 ![A saved folder manuscript with title, author, reviewed note selection, and a rendered PDF proof beside the export controls](images/release-7-5-publishing-proof.png)
 
@@ -18,7 +18,9 @@ The panel supports ordering, selection range, output presets, and publishing-ori
 
 ## Exporting a Manuscript
 
-**Command Palette → Manuscript export**
+**Command Palette → Radial Timeline: Export to PDF, Word, Markdown**
+
+To export one note, open its **⋯** menu, right-click it in the file list, or right-click inside the note, and choose **RT Export to PDF, Word, Markdown**. The panel opens with that note as the source.
 
 The export panel lets you:
 - Select the output format (Novel, Screenplay, Podcast Script)

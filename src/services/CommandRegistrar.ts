@@ -4,7 +4,7 @@ import { addMarkdownContents, contentsDepth } from '../publishing/documentConten
  * Encapsulates all command+ribbon registration.
  */
 
-import { App, Notice, type TFile } from 'obsidian';
+import { App, Notice, TFile, type Menu } from 'obsidian';
 import { promises as fs } from 'fs'; // SAFE: local template and proof artifact fingerprints.
 import { randomUUID } from 'crypto'; // SAFE: unique local proof job folders.
 import { hashProofInput, getManuscriptProofConfigurationKey, type ManuscriptProofReceipt, type ManuscriptProofDependency } from '../publishing/manuscriptProof';
@@ -79,8 +79,9 @@ export class CommandRegistrar {
         registerFormattingKey(this.plugin);
     }
 
-    public openManuscriptExportModal(): void {
-        new ManuscriptOptionsModal(this.app, this.plugin, (result) => this.handleManuscriptExport(result)).open();
+    /** Opens the exporter; a note path opens it with that note as the source. */
+    public openManuscriptExportModal(filePath?: string): void {
+        new ManuscriptOptionsModal(this.app, this.plugin, (result) => this.handleManuscriptExport(result), filePath).open();
     }
 
     private registerRibbon(): void {
@@ -242,6 +243,21 @@ export class CommandRegistrar {
                 this.openManuscriptExportModal();
             }
         });
+        // Every Markdown note's menus (its ⋯ menu, the file list, a right-click
+        // in the note) offer the exporter with that note as the source, in the
+        // Radial Timeline section. "RT" says whose exporter it is: other plugins
+        // add export items too. The palette adds the plugin name on its own.
+        const addExportItem = (menu: Menu, file: TFile) => menu.addItem(item => item
+            .setTitle(`RT ${t('commands.manuscriptExport')}`)
+            .setSection('radial-timeline')
+            .setIcon('rt-logo')
+            .onClick(() => this.openManuscriptExportModal(file.path)));
+        this.plugin.registerEvent(this.app.workspace.on('file-menu', (menu, file) => {
+            if (file instanceof TFile && file.extension === 'md') addExportItem(menu, file);
+        }));
+        this.plugin.registerEvent(this.app.workspace.on('editor-menu', (menu, _editor, info) => {
+            if (info.file?.extension === 'md') addExportItem(menu, info.file);
+        }));
 
         this.plugin.addCommand({
             id: 'planetary-time-settings',

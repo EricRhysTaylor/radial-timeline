@@ -232,11 +232,11 @@ Add a `Chapter:` value to the first scene of each chapter. See [The `Chapter:` F
 
 ### Step 5 — Assign Signature to the Novel format
 
-Open the export panel (Command Palette → **Manuscript export**). In the template dropdown for Novel, choose **Signature**. The plugin remembers your last selection for next time.
+Open the export panel (Command Palette → **Export to PDF, Word, Markdown**). In the template dropdown for Novel, choose **Signature**. The plugin remembers your last selection for next time.
 
 ### Step 6 — Export
 
-Command Palette → **Manuscript export** → choose your options → **Export**.
+Command Palette → **Export to PDF, Word, Markdown** → choose your options → **Export**.
 
 The exporter:
 1. Walks the timeline in narrative order.

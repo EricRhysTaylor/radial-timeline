@@ -13,6 +13,12 @@ export const steps = [
         summary: output => /\[release\] On (\S+)\./.exec(output)?.[1] ?? '',
     },
     {
+        id: 'clean-tree',
+        label: 'Nothing else uncommitted',
+        command: 'node scripts/check-release-clean-tree.mjs',
+        summary: output => (/Nothing uncommitted/.test(output) ? 'clean' : ''),
+    },
+    {
         id: 'draft-releases',
         label: 'Stranded draft releases',
         command: 'node scripts/check-unpublished-releases.mjs',

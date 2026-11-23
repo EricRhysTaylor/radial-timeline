@@ -191,7 +191,7 @@ validating workflow changes on main before a tag exists.
 
 - `release-script.mjs` — orchestrator (draft, notes sync, dispatch, publish).
 - `.github/workflows/release-build.yml` — build + attest + upload.
-- `scripts/release-checks.mjs` — the checks npm runs before every `npm run release` (branch, stranded drafts, Obsidian review, lint baseline, PDF layouts).
+- `scripts/release-checks.mjs` — the checks npm runs before every `npm run release` (branch, nothing else uncommitted, stranded drafts, Obsidian review, lint baseline, PDF layouts). "Nothing else uncommitted" (`scripts/check-release-clean-tree.mjs`) stops the release when any file besides a `docs/releases/draft-for-release-*.md` is uncommitted, because the release stages everything (`git add .`, and the audit's `git add -A`) and would ship another session's work. Commit those files or `git stash push -- <files>` first (Eric, 2026-11-23).
 - `scripts/check-release-notes.mjs` — version and screenshot gate for the notes draft (phase 1).
 - `scripts/release-preflight.mjs` — pre-release audit gates.
 - `scripts/verify.mjs` — build, standards and tests (phase 2).

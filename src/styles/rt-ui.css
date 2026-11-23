@@ -1720,6 +1720,20 @@
   outline-offset: 3px;
 }
 
+/* Sharing history under a book: who paused what, and when, newest first (2026-11-22).
+   Lined up with the disclosure above it. */
+.ert-ui.ert-scope--settings .ert-community-history {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--ert-gap-xs) var(--size-4-4);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ert-ui.ert-scope--settings .ert-community-history > li {
+  padding: var(--size-2-1) 0;
+}
+
 .ert-ui.ert-scope--settings .ert-communityPreview {
   align-items: center;
   text-align: center;

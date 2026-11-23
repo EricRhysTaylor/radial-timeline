@@ -36,8 +36,9 @@ still runs in two phases:
    the tagged commit contains the final notes.
 2. Runs `release:prep` (audits + review readiness + eyeball checklist) and
    `verify` locally as gates.
-3. Dispatches `.github/workflows/release-build.yml` and watches it live
-   (`gh run watch`). The workflow:
+3. Dispatches `.github/workflows/release-build.yml` and waits for it
+   (`gh run watch`, logged; the terminal shows the run link and one line
+   when it ends). The workflow:
    - checks out the version tag,
    - `npm ci`, then `RT_RELEASE_BUILD=1 node esbuild.config.mjs production`
      (release builds always output to `./release`, even in CI; embedded
@@ -52,7 +53,34 @@ still runs in two phases:
    - runs `scripts/check-shipped-assets.mjs` and spot-checks that the
      embedded asset keys are present in the built `main.js`,
    - uploads the three assets to the release with `--clobber`.
-4. Prompts to publish the draft.
+4. Publishes the draft (answering y to "Finish and PUBLISH" in step 1 is
+   the decision; there is no later prompt) and checks the three public
+   download links.
+
+## What a run prints
+
+Owner's request, 2026-11-23: a release prints one line per step, the step
+name, PASS or FAIL and its counts, and nothing else.
+
+```
+[4/5] Obsidian lint baseline ... PASS (8.2s) 0 findings (baseline 0)
+```
+
+- Every step's full output goes to a gitignored folder under `.gate-logs/`,
+  named on the runner's first line. Nested runners (the pre-push gates
+  during a push, `release:prep`, `verify`) write into that run's folder.
+- A failing step prints its last 40 lines and its log path.
+- A question waiting for an answer starts with `▶ YOUR ANSWER NEEDED`;
+  the end of phase 1 starts with `▶ ACTION REQUIRED`.
+- The compliance and CSS drift ratchets print counts and write their full
+  listings to `.gate-logs/compliance-report.txt` and
+  `.gate-logs/css-drift-report.txt`. They list offenders in the terminal
+  only when a rule's count rises above its baseline, the files changed on
+  the branch first. Pass `--verbose` to either check, or to any runner, to
+  see everything.
+- Vitest hides console output from passing tests (`silent: 'passed-only'`
+  in `vitest.config.ts`); a failing test still prints its output.
+- One runner for all of this: `scripts/lib/step-runner.mjs`.
 
 ## Release notes
 
@@ -163,8 +191,11 @@ validating workflow changes on main before a tag exists.
 
 - `release-script.mjs` — orchestrator (draft, notes sync, dispatch, publish).
 - `.github/workflows/release-build.yml` — build + attest + upload.
+- `scripts/release-checks.mjs` — the checks npm runs before every `npm run release` (branch, stranded drafts, Obsidian review, lint baseline, PDF layouts).
 - `scripts/check-release-notes.mjs` — version and screenshot gate for the notes draft (phase 1).
 - `scripts/release-preflight.mjs` — pre-release audit gates.
+- `scripts/verify.mjs` — build, standards and tests (phase 2).
+- `scripts/lib/step-runner.mjs` — the one-line-per-step runner and log folders.
 - `scripts/release-eyeball-check.mjs` — human review checklist of touched
   surfaces since the last tag.
 - `scripts/check-obsidian-review-readiness.mjs` — directory-listing

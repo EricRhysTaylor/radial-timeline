@@ -3,33 +3,44 @@
 import { execSync } from "child_process";
 import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
 import readline from "readline";
+import { color, createSequence, openLogDir, rel, runStep, summaries } from "./scripts/lib/step-runner.mjs";
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-function question(prompt) {
+// Every step prints one line; its full output goes to this run's log folder.
+// Steps that print their own compact table (a push that runs the pre-push
+// gates, the preflight and verify runners) write to the terminal directly.
+const LOG_DIR = openLogDir('release');
+const sequence = createSequence();
+
+// Questions must stand out from the step lines around them.
+function ask(prompt) {
     return new Promise((resolve) => {
-        rl.question(prompt, resolve);
+        rl.question(`\n${color('bold', color('yellow', '▶ YOUR ANSWER NEEDED'))}\n  ${color('bold', prompt)} `, (answer) => resolve(answer.trim()));
     });
 }
 
-function runCommand(command, description, silent = false, allowFail = false) {
-    if (!silent) console.log(`\n🔄 ${description}...`);
-    try {
-        const output = execSync(command, { encoding: 'utf8', stdio: silent ? 'pipe' : 'inherit' });
-        if (!silent) console.log(`✅ ${description} completed`);
-        return output;
-    } catch (error) {
-        if (!allowFail) {
-            console.error(`❌ Failed: ${description}`);
-            console.error(error.message);
-            process.exit(1);
-        }
-        if (!silent) console.warn(`⚠️  ${description} failed but continuing: ${error.message}`);
-        return null;
+function slug(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+}
+
+/** Run one release step. Stops the release on failure unless `allowFail`. */
+async function step(label, command, { inherit = false, allowFail = false, summary } = {}) {
+    const result = await runStep({ id: slug(label), label, command, inherit, allowFail, summary }, { logDir: LOG_DIR, sequence });
+    if (!result.ok && !allowFail) {
+        console.error(color('red', `\nRelease stopped at "${label}". Nothing after this step ran.`));
+        console.error(`Logs: ${rel(LOG_DIR)}`);
+        process.exit(result.code || 1);
     }
+    return result;
+}
+
+/** A read-only lookup: stdout only, never printed. */
+function read(command) {
+    return execSync(command, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 }
 
 function updateManifestAndVersions(targetVersion) {
@@ -48,7 +59,7 @@ function updateManifestAndVersions(targetVersion) {
         const versions = JSON.parse(readFileSync(versionsPath, 'utf8'));
         versions[targetVersion] = minAppVersion;
         writeFileSync(versionsPath, JSON.stringify(versions, null, '\t'));
-        console.log(`✅ Synced manifest.json and versions.json to ${targetVersion}`);
+        console.log(`Manifest and versions.json ... ${color('green', 'PASS')} synced to ${targetVersion}`);
     } catch (err) {
         console.error('❌ Failed to update manifest/versions:', err.message);
         process.exit(1);
@@ -83,8 +94,7 @@ function fetchReleaseInfo(tag) {
     if (!tag) return null;
     try {
         // Only fetch minimal info to check existence and draft status
-        const json = execSync(`gh release view ${tag} --json name,isDraft,tagName`, { encoding: 'utf8' });
-        return JSON.parse(json);
+        return JSON.parse(read(`gh release view ${tag} --json name,isDraft,tagName`));
     } catch (error) {
         return null; // Release doesn't exist
     }
@@ -100,8 +110,6 @@ function readExistingReleaseBundle() {
 }
 
 function updateBundleWithLocalEntry(version, body) {
-    console.log(`\n🔄 Updating release notes bundle locally for ${version}...`);
-
     const newEntry = {
         version: version,
         title: version,
@@ -154,16 +162,15 @@ function updateBundleWithLocalEntry(version, body) {
 
     try {
         writeFileSync(EMBEDDED_RELEASE_NOTES_PATH, JSON.stringify(bundle, null, 2));
-        console.log(`✅ Release notes bundle updated with ${version}`);
+        console.log(`Release notes bundle ... ${color('green', 'PASS')} entry for ${version} added`);
     } catch (err) {
-        console.error(`⚠️  Failed to update release notes bundle: ${err.message}`);
+        console.error(`Release notes bundle ... ${color('yellow', 'NOT UPDATED')} ${err.message}`);
     }
 }
 
 function getLastReleaseTag() {
     try {
-        const ghOutput = execSync('gh release list --limit 1 --json tagName', { encoding: 'utf8' });
-        const releases = JSON.parse(ghOutput);
+        const releases = JSON.parse(read('gh release list --limit 1 --json tagName'));
         if (releases && releases.length > 0) {
             return releases[0].tagName;
         }
@@ -172,8 +179,7 @@ function getLastReleaseTag() {
     }
 
     try {
-        const output = execSync('git tag --sort=-version:refname | head -1', { encoding: 'utf8' });
-        return output.trim() || null;
+        return read('git tag --sort=-version:refname | head -1').trim() || null;
     } catch {
         return null;
     }
@@ -317,33 +323,34 @@ function generateChangelog(fromTag, toRef = 'HEAD') {
 
 // CI build: dispatch the release-build workflow (build + attestation + asset
 // upload happen on GitHub-hosted runners so assets carry provenance).
-function runReleaseWorkflowAndWait(version) {
-    runCommand(
-        `gh workflow run release-build.yml --ref main -f version=${version}`,
-        "Dispatching release build workflow on GitHub"
+async function runReleaseWorkflowAndWait(version) {
+    await step(
+        "Dispatching the release build on GitHub",
+        `gh workflow run release-build.yml --ref main -f version=${version}`
     );
 
-    console.log('\n⏳ Waiting for workflow run to register...');
     let runId = null;
     for (let attempt = 0; attempt < 10 && !runId; attempt++) {
         execSync('sleep 3');
         try {
-            const json = execSync(
-                'gh run list --workflow=release-build.yml --limit 1 --json databaseId,status,createdAt',
-                { encoding: 'utf8' }
-            );
-            const runs = JSON.parse(json);
+            const runs = JSON.parse(read('gh run list --workflow=release-build.yml --limit 1 --json databaseId,status,createdAt'));
             if (runs.length > 0 && runs[0].status !== 'completed') {
                 runId = runs[0].databaseId;
             }
         } catch { /* retry */ }
     }
     if (!runId) {
-        console.error('❌ Could not find the dispatched workflow run. Check: gh run list --workflow=release-build.yml');
+        console.error(color('red', 'Could not find the dispatched workflow run. Check: gh run list --workflow=release-build.yml'));
         process.exit(1);
     }
 
-    runCommand(`gh run watch ${runId} --exit-status`, `Building, attesting, and uploading assets in CI (run ${runId})`);
+    // `gh run watch` redraws the job list every few seconds; that goes to the
+    // log, and the terminal gets one line when the run ends.
+    console.log(color('dim', `  CI run: https://github.com/EricRhysTaylor/radial-timeline/actions/runs/${runId}`));
+    await step(
+        "Building, attesting and uploading assets in CI",
+        `gh run watch ${runId} --exit-status --interval 15`
+    );
 }
 
 async function performBuildAndUpload(version, isDraft = false) {
@@ -352,49 +359,50 @@ async function performBuildAndUpload(version, isDraft = false) {
     try {
         const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
         if (manifest.version !== version) {
-            console.log(`\n⚠️  Manifest version mismatch: Found ${manifest.version}, expected ${version}`);
-            console.log(`🔄 Syncing manifest.json and versions.json to ${version}...`);
+            console.log(color('yellow', `Manifest says ${manifest.version}, expected ${version}; syncing.`));
             updateManifestAndVersions(version);
         }
     } catch (e) {
-        console.warn(`⚠️  Could not verify manifest version: ${e.message}`);
+        console.warn(color('yellow', `Could not verify the manifest version: ${e.message}`));
     }
 
     // 1. Sync release notes from GitHub to ensure local bundle is current
-    console.log('\n🔄 Syncing release notes from GitHub...');
-    try {
-        execSync('npm run sync-release-notes', { stdio: 'inherit' });
-    } catch (e) {
-        console.error('❌ Failed to sync release notes. Aborting build; the release is NOT published.');
-        process.exit(1);
-    }
+    await step("Syncing release notes from GitHub", "node sync-release-notes.mjs", {
+        summary: output => {
+            const entries = /Entries: (\d+)/.exec(output)?.[1];
+            const latest = /Latest: (.+)/.exec(output)?.[1];
+            return entries ? `${entries} entries, latest ${latest}` : '';
+        },
+    });
 
     // 2. Commit the synced notes (otherwise git status is dirty)
     try {
-        runCommand('git add src/data/releaseNotesBundle.json', 'Staging synced release notes');
+        await step('Staging synced release notes', 'git add src/data/releaseNotesBundle.json');
         // We only commit if there are changes
-        const status = execSync('git status --porcelain', { encoding: 'utf8' });
+        const status = read('git status --porcelain');
         if (status.includes('src/data/releaseNotesBundle.json')) {
-            runCommand(`git commit -m "docs: sync release notes for ${version}"`, 'Committing release notes');
-            
-            // OPTIONAL: Move tag to this new commit so the tag includes the notes
-            // This is "history rewriting" but ensures the tag is "perfect"
-            console.log(`\n📍 Updating tag ${version} to include release notes...`);
-            runCommand(`git tag -f ${version}`, `Moving tag ${version} to HEAD`);
-            runCommand(`git push origin ${version} --force`, `Pushing tag ${version}`);
+            await step('Committing release notes', `git commit -m "docs: sync release notes for ${version}"`);
+
+            // Move the tag to this new commit so the tag includes the notes.
+            // This is "history rewriting" but ensures the tag is "perfect".
+            // The push runs the pre-push gates on this new commit.
+            await step(`Moving tag ${version} to HEAD`, `git tag -f ${version}`);
+            await step(`Pushing tag ${version} (runs the pre-push gates)`, `git push origin ${version} --force`, { inherit: true });
+        } else {
+            console.log(color('dim', 'Release notes already current; no commit needed.'));
         }
     } catch (e) {
-        console.warn('⚠️  Could not commit synced notes or move tag. Proceeding anyway.');
+        console.warn(color('yellow', 'Could not commit synced notes or move tag. Proceeding anyway.'));
     }
 
-    // 3. Release preflight + verify
-    runCommand("npm run release:prep", "Running release preflight");
-    runCommand("npm run verify", "Verifying release (build + checks)");
+    // 3. Release preflight + verify. Both print their own one-line-per-check table.
+    await step("Release preflight", "npm run --silent release:prep", { inherit: true });
+    await step("Verify (build, standards, tests)", "npm run --silent verify", { inherit: true });
 
     // 4. Build, attest, and upload in CI. GitHub-hosted runners build the
     // assets from the pushed tag and sign a provenance attestation for each,
     // so the scorecard can verify the assets came from this repo's source.
-    runReleaseWorkflowAndWait(version);
+    await runReleaseWorkflowAndWait(version);
 
     // 5. Publish (if it was a draft). Answering "Finish release" is the
     // decision; there is no second publish prompt. A draft left behind here
@@ -402,16 +410,17 @@ async function performBuildAndUpload(version, isDraft = false) {
     // every Obsidian install/update 404s until the release is public (7.3.0
     // sat that way on 2026-09-23). Any failure below exits non-zero, loudly.
     if (isDraft) {
-        runCommand(`gh release edit ${version} --draft=false --latest`, "Publishing release");
+        await step("Publishing release", `gh release edit ${version} --draft=false --latest`);
         await verifyPublishedAssets(version);
-        console.log(`\n🎉 Release ${version} published successfully!`);
-        console.log(`📦 https://github.com/EricRhysTaylor/radial-timeline/releases/tag/${version}`);
-        queueDirectoryScan();
+        console.log(color('green', `\nRelease ${version} is published.`));
+        console.log(`https://github.com/EricRhysTaylor/radial-timeline/releases/tag/${version}`);
+        await queueDirectoryScan();
     } else {
         await verifyPublishedAssets(version);
-        console.log(`\n✅ Assets updated for existing release ${version}.`);
-        queueDirectoryScan();
+        console.log(color('green', `\nAssets updated for existing release ${version}.`));
+        await queueDirectoryScan();
     }
+    console.log(color('dim', `Logs: ${rel(LOG_DIR)}`));
 }
 
 // What Obsidian actually fetches: the three assets from the public download
@@ -420,7 +429,7 @@ async function performBuildAndUpload(version, isDraft = false) {
 const RELEASE_ASSETS = ['manifest.json', 'main.js', 'styles.css'];
 
 async function verifyPublishedAssets(version) {
-    console.log(`\n🔄 Verifying the public download links for ${version}...`);
+    process.stdout.write(`Public download links for ${version} ... `);
     const base = `https://github.com/EricRhysTaylor/radial-timeline/releases/download/${version}`;
     let failures = [];
     for (let attempt = 1; attempt <= 6; attempt++) {
@@ -434,12 +443,13 @@ async function verifyPublishedAssets(version) {
             }
         }
         if (!failures.length) {
-            console.log(`✅ All three assets download (200): ${RELEASE_ASSETS.join(', ')}`);
+            console.log(`${color('green', 'PASS')} ${RELEASE_ASSETS.length}/${RELEASE_ASSETS.length} assets download`);
             return;
         }
         if (attempt < 6) await new Promise(r => setTimeout(r, 10000));
     }
-    console.error(`\n❌ Release ${version} is NOT downloadable: ${failures.join('; ')}`);
+    console.log(color('red', 'FAIL'));
+    console.error(color('red', `\nRelease ${version} is NOT downloadable: ${failures.join('; ')}`));
     console.error(`   Obsidian users cannot install or update until this is fixed.`);
     console.error(`   Check: gh release view ${version} (is it still a draft? are all three assets attached?)`);
     process.exit(1);
@@ -452,18 +462,18 @@ async function verifyPublishedAssets(version) {
 const DIRECTORY_CHECK_RELEASE_URL =
     'https://community.obsidian.md/account/plugins/radial-timeline/check-release';
 
-function queueDirectoryScan() {
-    runCommand(`open "${DIRECTORY_CHECK_RELEASE_URL}"`, "Opening the directory's check-release page to queue the review scan", false, true);
-    console.log("   (If the page asks you to log in, log in and reload it — the scan queues on page load.)");
+async function queueDirectoryScan() {
+    await step("Opening the directory's check-release page (queues the review scan)", `open "${DIRECTORY_CHECK_RELEASE_URL}"`, { allowFail: true });
+    console.log("  If the page asks you to log in, log in and reload it; the scan queues on page load.");
 }
 
 async function main() {
-    console.log("🚀 Obsidian Plugin Release Process\n");
+    console.log(`\n${color('bold', 'Radial Timeline release')} ${color('dim', `· logs: ${rel(LOG_DIR)}`)}`);
 
     try {
-        const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+        const branch = read('git rev-parse --abbrev-ref HEAD').trim();
         if (branch !== 'main') {
-            console.error(`❌ Releases must be cut from 'main'. Current: '${branch}'`);
+            console.error(color('red', `Releases must be cut from 'main'. Current: '${branch}'`));
             process.exit(1);
         }
     } catch (e) { /* ignore */ }
@@ -471,24 +481,22 @@ async function main() {
     // Read current version
     const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
     const currentVersion = packageJson.version;
-    console.log(`📦 Current local version: ${currentVersion}`);
 
     // Check if there is already a release/draft for this version
     const existingRelease = fetchReleaseInfo(currentVersion);
-    
+
     if (existingRelease) {
         if (existingRelease.isDraft) {
-            console.log(`\n⚠️  Found existing DRAFT release for ${currentVersion} on GitHub.`);
-            console.log(`   This means you probably edited the notes and are ready to finish.`);
-            const choice = await question(`\n❓ Finish release ${currentVersion}? (Sync notes -> Build -> Upload -> Publish) (y/N): `);
+            console.log(`A DRAFT release for ${currentVersion} is on GitHub: you edited its notes and are ready to finish.`);
+            const choice = await ask(`Finish and PUBLISH release ${currentVersion}? This syncs the notes, builds, uploads and publishes; there is no later prompt. (y/N):`);
             if (choice.toLowerCase() === 'y') {
                 await performBuildAndUpload(currentVersion, true);
                 rl.close();
                 return;
             }
         } else {
-            console.log(`\n⚠️  Found existing PUBLISHED release for ${currentVersion} on GitHub.`);
-            const choice = await question(`\n❓ Repair/Update assets for ${currentVersion}? (Sync notes -> Build -> Upload) (y/N): `);
+            console.log(`Release ${currentVersion} is already published on GitHub.`);
+            const choice = await ask(`Repair or update the assets for ${currentVersion}? This syncs the notes, builds and uploads. (y/N):`);
             if (choice.toLowerCase() === 'y') {
                 await performBuildAndUpload(currentVersion, false);
                 rl.close();
@@ -498,21 +506,20 @@ async function main() {
     }
 
     // --- NEW RELEASE FLOW ---
-    
+
     const lastTag = getLastReleaseTag();
-    console.log(`🏷️  Last release tag: ${lastTag || 'None found'}`);
 
     // Get new version from user
-    const newVersion = await question(`✨ Enter new version number: `);
+    const newVersion = await ask(`New version number (package.json has ${currentVersion}; last release tag ${lastTag || 'none'}):`);
 
     if (!newVersion) {
-        console.log("❌ Invalid version.");
+        console.log("No version entered; nothing changed.");
         rl.close();
         return;
     }
 
     if (newVersion === currentVersion) {
-        console.log("ℹ️  Version matches current. Use the repair options above if needed.");
+        console.log("That is the current version; nothing changed. Use the repair option above if needed.");
         rl.close();
         return;
     }
@@ -522,68 +529,59 @@ async function main() {
     // first; release-preflight repeats the same check when the draft is
     // finished. A major release (x.0.0) ships only after the translation pass
     // (docs/engineering/standards/i18n.md).
-    if (/^\d+\.0\.0$/.test(newVersion)) {
-        runCommand("npm run release:i18n -- --full-coverage", `Checking full translation coverage for major release ${newVersion}`);
-    } else {
-        runCommand("npm run release:i18n", "Checking i18n release alignment");
-    }
+    const isMajor = /^\d+\.0\.0$/.test(newVersion);
+    await step(
+        isMajor ? `Translations (full coverage for ${newVersion})` : 'Translations',
+        isMajor ? 'node scripts/check-i18n-release.mjs --full-coverage' : 'node scripts/check-i18n-release.mjs',
+        { summary: summaries.i18n }
+    );
 
     // Notes gate, before the tag goes public: the version must match what
     // changed (new features make a minor release), and a minor or major
     // release shows 1 to 5 screenshots (docs/engineering/standards/release-process.md).
-    runCommand(`node scripts/check-release-notes.mjs ${newVersion}`, `Checking release notes for ${newVersion}`);
+    await step(`Release notes for ${newVersion}`, `node scripts/check-release-notes.mjs ${newVersion}`, {
+        summary: output => /\((\w+)\): notes pass/.exec(output)?.[1] ?? '',
+    });
 
-    // Generate changelog
-    console.log(`\n📝 Generating changelog...`);
     const autoChangelog = generateChangelog(lastTag);
     const localDraftBody = readLocalReleaseDraft(newVersion);
     const releaseNotesBody = localDraftBody ?? `## What's Changed\n\n${autoChangelog}`;
-    if (localDraftBody) {
-        console.log(`✅ Using local release notes draft: docs/releases/draft-for-release-${newVersion}.md`);
-    }
-    
-    // Create Draft Release Logic
-    console.log(`\n⚙️  Step 1: Creating Draft Release`);
-    
+    console.log(color('dim', localDraftBody
+        ? `  Notes: docs/releases/draft-for-release-${newVersion}.md`
+        : `  Notes: generated from the commits since ${lastTag || 'the first commit'}`));
+
+    // Step 1: create the draft release.
     // 1. Bump version locally
-    runCommand(`npm version ${newVersion} --no-git-tag-version`, "Bumping version");
-    
+    await step(`Bumping version to ${newVersion}`, `npm version ${newVersion} --no-git-tag-version`);
+
     // 2. Update bundle with preliminary auto-notes (so we have something)
     updateBundleWithLocalEntry(newVersion, releaseNotesBody);
 
     // 3. Commit bump
-    runCommand(`git add .`, "Staging version bump");
-    runCommand(`git commit -m "Release version ${newVersion}"`, "Committing version bump");
-    
+    await step('Staging version bump', 'git add .');
+    await step('Committing version bump', `git commit -m "Release version ${newVersion}"`);
+
     // 4. Create Draft on GitHub (Text Only)
     // We create the tag now so we can attach the release to it
-    runCommand(`git tag ${newVersion}`, `Creating tag ${newVersion}`);
-    runCommand(`git push origin main`, "Pushing code");
-    runCommand(`git push origin ${newVersion}`, "Pushing tag");
+    await step(`Creating tag ${newVersion}`, `git tag ${newVersion}`);
+    await step('Pushing main (runs the pre-push gates)', 'git push origin main', { inherit: true });
+    // Same commit the gates just passed on the main push; don't run them twice.
+    await step('Pushing tag', `RT_SKIP_PREPUSH_GATES=1 git push origin ${newVersion}`);
 
     const notesFile = '.release-notes-temp.md';
     writeFileSync(notesFile, releaseNotesBody);
-
-    const cmd = `gh release create ${newVersion} --title "${newVersion}" --notes-file "${notesFile}" --draft`;
-    runCommand(cmd, "Creating Draft Release on GitHub");
-    
+    await step('Creating the draft release on GitHub', `gh release create ${newVersion} --title "${newVersion}" --notes-file "${notesFile}" --draft`);
     unlinkSync(notesFile);
 
-    console.log(`\n🎉 Draft Release Created!`);
-    console.log(`👉 Action Required:`);
-    console.log(`   1. Browser is opening... Edit the release notes on GitHub.`);
-    console.log(`   2. Add your wiki links, fix typos, make it perfect.`);
-    console.log(`   3. SAVE the draft (Do NOT publish yet).`);
-    console.log(`   4. Return here and run: npm run release`);
-    console.log(`      (It will detect the draft and run the 'Finish' steps.`);
-    console.log(`       Answering y to "Finish release" publishes it — there is no later prompt.)`);
-    console.log(`   ⚠️  Obsidian already sees ${newVersion} on main; installs fail until you finish. Do it now.`);
+    const opened = await step('Opening the draft in your browser', `gh release view ${newVersion} --web`, { allowFail: true });
 
-    try {
-        runCommand(`gh release view ${newVersion} --web`, "Opening GitHub", true);
-    } catch (e) {
-        console.log(`   Link: https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/${newVersion}`);
-    }
+    console.log(`\n${color('bold', color('yellow', '▶ ACTION REQUIRED: finish the draft now'))}`);
+    console.log(`  Obsidian already sees ${newVersion} on main; installs fail until the release is published.`);
+    console.log(`  1. Edit the release notes on GitHub${opened.ok ? ' (opened in your browser)' : `: https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/${newVersion}`}.`);
+    console.log('  2. Add wiki links and fix typos, then SAVE the draft. Do not publish it there.');
+    console.log('  3. Come back and run: npm run release');
+    console.log('     Answering y to "Finish and PUBLISH" publishes it; there is no later prompt.');
+    console.log(color('dim', `Logs: ${rel(LOG_DIR)}`));
 
     rl.close();
 }

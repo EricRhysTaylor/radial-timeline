@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-import { execSync } from 'node:child_process';
+// Release preflight (`npm run release:prep`), run by the release script while
+// finishing a draft. One line per check; full output in the log folder named
+// on the first line. `--verbose` streams every step's output as well.
 import { readFileSync } from 'node:fs';
-
-function run(command, description) {
-  console.log(`\n[release-preflight] ${description}...`);
-  execSync(command, { cwd: process.cwd(), stdio: 'inherit' });
-}
+import process from 'node:process';
+import { formatCount, isMain, runSteps, summaries } from './lib/step-runner.mjs';
 
 function isFriday(date = new Date()) {
   return date.getDay() === 5;
@@ -23,35 +22,70 @@ function isBiweeklyDeepAuditDue(reference = new Date()) {
 const now = new Date();
 const primaryAudit = isFriday(now) ? 'auditFriday' : 'auditDaily';
 
-// First, and fail-closed: this is the only check that hands our generated
-// LaTeX to XeLaTeX and confirms a PDF comes out, using the fonts the plugin
-// actually ships. Everything else in the suite asserts on strings, which is
-// how GH #34 reached a user — the emitted .tex looked right and would not
-// compile. Requires Pandoc/XeLaTeX/Poppler; a missing toolchain stops the
-// release rather than skipping.
-// Cheap and fail-closed: a stranded draft release (tag + assets uploaded,
-// never published) is invisible to Obsidian — 7.1.1 sat that way for 12
-// days while users stayed on 7.1.0.
-run('node scripts/check-unpublished-releases.mjs', 'Checking for stranded draft releases');
-
-run('npm run publish:pdf-smoke', 'Compiling bundled PDF layouts against packaged fonts');
-
-run(`npm run ${primaryAudit}`, `Running ${primaryAudit}`);
 // The release script bumps package.json before this runs, so its version is the
 // one being released. Point releases may show new strings in English; a major
 // release (x.0.0) ships only after the translation pass (docs/engineering/standards/i18n.md).
 const releaseVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
-if (/^\d+\.0\.0$/.test(releaseVersion)) {
-  run('npm run release:i18n -- --full-coverage', `Checking i18n release alignment, full coverage for major release ${releaseVersion}`);
-} else {
-  run('npm run release:i18n', 'Checking i18n release alignment');
-}
-run('npm run review:obsidian', 'Running Obsidian review readiness');
-run('npm run release:eyeball', 'Printing eyeball checklist');
+const isMajor = /^\d+\.0\.0$/.test(releaseVersion);
 
-if (isBiweeklyDeepAuditDue(now)) {
-  console.log('\n[release-preflight] Biweekly Deep Audit is due or overdue.');
-  console.log('[release-preflight] Optional follow-up: npm run auditDeep');
-}
+export const steps = [
+  // Cheap and fail-closed: a stranded draft release (tag + assets uploaded,
+  // never published) is invisible to Obsidian — 7.1.1 sat that way for 12
+  // days while users stayed on 7.1.0.
+  {
+    id: 'draft-releases',
+    label: 'Stranded draft releases',
+    command: 'node scripts/check-unpublished-releases.mjs',
+    summary: summaries.draftReleases,
+  },
+  // Fail-closed: this is the only check that hands our generated LaTeX to
+  // XeLaTeX and confirms a PDF comes out, using the fonts the plugin actually
+  // ships. Everything else in the suite asserts on strings, which is how GH #34
+  // reached a user — the emitted .tex looked right and would not compile.
+  // Requires Pandoc/XeLaTeX/Poppler; a missing toolchain stops the release
+  // rather than skipping.
+  {
+    id: 'pdf-smoke',
+    label: 'Bundled PDF layouts',
+    command: 'npm run --silent publish:pdf-smoke',
+    summary: summaries.pdfLayouts,
+  },
+  {
+    id: primaryAudit,
+    label: isFriday(now) ? 'Friday Release Gate audit' : 'Daily Control Tower audit',
+    command: `npm run --silent ${primaryAudit}`,
+    summary: output => {
+      const report = /\[audit\] Saved report: (\S+)/.exec(output)?.[1];
+      const ship = /- Ship Readiness: (.+)/.exec(output)?.[1];
+      return [ship, report ? `report: ${report}` : ''].filter(Boolean).join(' · ');
+    },
+  },
+  {
+    id: 'i18n',
+    label: isMajor ? `Translations (full coverage for ${releaseVersion})` : 'Translations',
+    command: isMajor ? 'node scripts/check-i18n-release.mjs --full-coverage' : 'node scripts/check-i18n-release.mjs',
+    summary: summaries.i18n,
+  },
+  {
+    id: 'obsidian-review',
+    label: 'Obsidian review readiness',
+    command: 'node scripts/check-obsidian-review-readiness.mjs',
+  },
+  {
+    id: 'eyeball',
+    label: 'Eyeball checklist',
+    command: 'node scripts/release-eyeball-check.mjs',
+    summary: output => {
+      const files = output.split('Touched files:')[1]?.split('\n\n')[0]?.split('\n').filter(line => line.startsWith('- ') && !line.includes('None detected')).length ?? 0;
+      return `${formatCount(files)} touched files; checklist in the log`;
+    },
+  },
+];
 
-console.log('\n[release-preflight] Complete.');
+if (isMain(import.meta.url)) {
+  const result = await runSteps('Release preflight', 'release-preflight', steps);
+  if (result.ok && isBiweeklyDeepAuditDue(now)) {
+    console.log('Biweekly Deep Audit is due or overdue: npm run auditDeep');
+  }
+  process.exitCode = result.code;
+}

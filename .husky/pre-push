@@ -27,4 +27,4 @@ if [ "$RT_SKIP_PREPUSH_GATES" = "1" ]; then
   exit 0
 fi
 
-npm run gates
+npm run --silent gates

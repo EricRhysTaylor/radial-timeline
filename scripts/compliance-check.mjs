@@ -2,6 +2,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { changedFiles, writeFullReport } from './lib/step-runner.mjs';
 
 const projectRoot = process.cwd();
 const SRC_DIR = path.join(projectRoot, 'src');
@@ -496,8 +497,100 @@ function runChecks(filePath, text) {
   return issues;
 }
 
+function issueLines(issue) {
+  const lines = [`- ${issue.file}:${issue.line}:${issue.column} — ${issue.message}`];
+  if (issue.snippet) lines.push(`  ${issue.snippet}`);
+  if (issue.suggestion) lines.push(`  ↳ Suggestion: ${issue.suggestion}`);
+  return lines;
+}
+
+function printIssue(issue, write) {
+  for (const line of issueLines(issue)) write(line);
+}
+
+function countById(list) {
+  return list.reduce((acc, issue) => {
+    const id = issue.id || 'unknown';
+    acc[id] = (acc[id] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+async function reportMaintenance(errors, warnings) {
+  const verbose = cliArgs.has('--verbose');
+  let baseline = null;
+  try {
+    const data = JSON.parse(await fs.readFile(BASELINE_PATH, 'utf8'));
+    if (data && typeof data === 'object') baseline = data;
+  } catch {}
+
+  const errorCountById = countById(errors);
+  const baselineById = baseline?.errorCountById ?? {};
+  const allIds = new Set([...Object.keys(errorCountById), ...Object.keys(baselineById)]);
+  const breakdown = [...allIds].sort().map((id) => {
+    const cur = errorCountById[id] || 0;
+    const base = baselineById[id] || 0;
+    return { id, cur, base, delta: cur - base };
+  });
+  const baselineTotal = baseline?.totalErrors ?? 0;
+  const delta = errors.length - baselineTotal;
+  const signed = (n) => `${n >= 0 ? '+' : ''}${n}`;
+
+  const reportPath = writeFullReport('compliance-report.txt', [
+    `Compliance report (${new Date().toISOString()})`,
+    `Errors: ${errors.length} (baseline ${baselineTotal}, ${signed(delta)}). Warnings: ${warnings.length}.`,
+    '',
+    'By rule (current / baseline, delta):',
+    ...breakdown.map(b => `  - ${b.id}: ${b.cur} / ${b.base} (${signed(b.delta)})`),
+    '',
+    'Errors:',
+    ...errors.flatMap(issueLines),
+    '',
+    'Warnings:',
+    ...warnings.flatMap(issueLines),
+  ]);
+
+  if (verbose) {
+    for (const issue of [...errors, ...warnings]) printIssue(issue, console.log);
+    console.log('');
+  }
+
+  if (!baseline) {
+    console.error('[compliance] FAIL: no baseline found. Run: npm run check-compliance -- --update-baseline');
+    process.exit(1);
+  }
+
+  const regressions = breakdown.filter((b) => b.delta > 0);
+  if (regressions.length) {
+    const changed = changedFiles();
+    console.error('[compliance] FAIL: these rules have more offenders than the baseline allows.');
+    for (const r of regressions) {
+      const offenders = errors.filter(issue => issue.id === r.id);
+      const likelyNew = offenders.filter(issue => changed.has(issue.file));
+      const shown = likelyNew.length ? likelyNew : offenders;
+      const sample = offenders[0];
+      console.error(`\n${r.id}: ${r.cur} now, baseline ${r.base} (+${r.delta}). ${sample?.message ?? ''}`);
+      if (sample?.suggestion) console.error(`  Fix: ${sample.suggestion}`);
+      console.error(likelyNew.length
+        ? `  In files changed on this branch (${likelyNew.length}):`
+        : `  None are in files changed on this branch; all ${offenders.length}:`);
+      for (const issue of shown.slice(0, 30)) console.error(`  - ${issue.file}:${issue.line}  ${issue.snippet}`);
+      if (shown.length > 30) console.error(`  …and ${shown.length - 30} more in ${reportPath}`);
+    }
+    console.error('\nFix the new offenders, or (if intentional) run: npm run check-compliance -- --update-baseline');
+    console.error(`[compliance] ${errors.length} errors (baseline ${baselineTotal}), ${warnings.length} warnings · full list: ${reportPath}`);
+    process.exit(1);
+  }
+
+  console.log(`[compliance] ${errors.length} errors (baseline ${baselineTotal}), ${warnings.length} warnings · full list: ${reportPath}`);
+  if (delta < 0) {
+    console.log(`[compliance] ${-delta} below the baseline; lock it in with: npm run check-compliance -- --update-baseline`);
+  }
+  process.exit(0);
+}
+
 (async function main() {
-  const files = [...await collectFiles(SRC_DIR), ...ROOT_FILES.filter(async p => {
+  const files =[...await collectFiles(SRC_DIR), ...ROOT_FILES.filter(async p => {
     try { await fs.access(p); return true; } catch { return false; }
   })];
   const issues = [];
@@ -569,7 +662,7 @@ function runChecks(filePath, text) {
     issues.push({ file: 'manifest.json', line: 1, column: 1, message: `Failed to parse/validate manifest/package.json: ${e?.message || e}`, snippet: '', severity: 'error', id: 'manifest-parse-fail', suggestion: '' });
   }
 
-  if (issues.length === 0) {
+  if (issues.length === 0 && !MAINTENANCE_MODE) {
     console.log('✅ Obsidian compliance checks passed.');
     console.log('📖 See docs/engineering/standards/code-standards.md for full guidelines.');
     process.exit(0);
@@ -583,25 +676,24 @@ function runChecks(filePath, text) {
   const errors = issues.filter(i => i.severity !== 'warn');
   const warnings = issues.filter(i => i.severity === 'warn');
 
+  // Maintenance mode is the ratchet the gates, verify and the release run. It
+  // prints counts, not the ~100 known offenders: the full listing goes to a
+  // gitignored file, and the terminal shows offenders only for a rule whose
+  // count went up (or every offender with --verbose).
+  if (MAINTENANCE_MODE && !WRITE_BASELINE) {
+    await reportMaintenance(errors, warnings);
+    return;
+  }
+
   if (warnings.length) {
     console.warn('⚠️  Warnings:\n');
-    for (const issue of warnings) {
-      console.warn(`- ${issue.file}:${issue.line}:${issue.column} — ${issue.message}`);
-      if (issue.snippet) console.warn(`  ${issue.snippet}`);
-      if (issue.suggestion) console.warn(`  ↳ Suggestion: ${issue.suggestion}`);
-    }
+    for (const issue of warnings) printIssue(issue, console.warn);
     console.warn('');
   }
 
-  // Error summary by rule id (used for baseline ratchet)
-  const errorCountById = errors.reduce((acc, issue) => {
-    const id = issue.id || 'unknown';
-    acc[id] = (acc[id] || 0) + 1;
-    return acc;
-  }, {});
+  const errorCountById = countById(errors);
   const totalErrors = errors.length;
 
-  // Baseline handling (maintenance mode / baseline write)
   if (WRITE_BASELINE) {
     try {
       await fs.writeFile(
@@ -616,66 +708,10 @@ function runChecks(filePath, text) {
     }
   }
 
-  let baseline = null;
-  if (MAINTENANCE_MODE) {
-    try {
-      const raw = await fs.readFile(BASELINE_PATH, 'utf8');
-      const data = JSON.parse(raw);
-      if (data && typeof data === 'object') baseline = data;
-    } catch {}
-  }
-
-  if (warnings.length) {
-    console.warn('⚠️  Warnings (non-blocking):\n');
-    // Already printed above; re-printing would duplicate. Skip.
-  }
-
   if (errors.length) {
     console.error('❌ Errors:\n');
-    for (const issue of errors) {
-      console.error(`- ${issue.file}:${issue.line}:${issue.column} — ${issue.message}`);
-      if (issue.snippet) console.error(`  ${issue.snippet}`);
-      if (issue.suggestion) console.error(`  ↳ Suggestion: ${issue.suggestion}`);
-    }
+    for (const issue of errors) printIssue(issue, console.error);
     console.error('\n📖 See docs/engineering/standards/code-standards.md for detailed guidelines and best practices.');
-  }
-
-  if (MAINTENANCE_MODE) {
-    const baselineTotal = baseline?.totalErrors ?? 0;
-    const baselineById = baseline?.errorCountById ?? {};
-    console.log('\nCompliance error summary:');
-    console.log(`- current total: ${totalErrors}`);
-    console.log(`- baseline total: ${baselineTotal}`);
-    console.log(`- delta: ${totalErrors - baselineTotal >= 0 ? '+' : ''}${totalErrors - baselineTotal}`);
-    const allIds = new Set([...Object.keys(errorCountById), ...Object.keys(baselineById)]);
-    const breakdown = [...allIds].sort().map((id) => {
-      const cur = errorCountById[id] || 0;
-      const base = baselineById[id] || 0;
-      return { id, cur, base, delta: cur - base };
-    });
-    if (breakdown.length) {
-      console.log('- breakdown (rule: current / baseline, delta):');
-      for (const b of breakdown) {
-        console.log(`  - ${b.id}: ${b.cur} / ${b.base} (${b.delta >= 0 ? '+' : ''}${b.delta})`);
-      }
-    }
-
-    if (!baseline) {
-      console.error('\n❌ No compliance baseline found. Run: npm run check-compliance -- --update-baseline');
-      process.exit(1);
-    }
-
-    // Fail if any rule regressed above its baseline.
-    const regressions = breakdown.filter((b) => b.delta > 0);
-    if (regressions.length) {
-      console.error('\n❌ Compliance regression vs baseline:');
-      for (const r of regressions) console.error(`  - ${r.id}: +${r.delta} (now ${r.cur}, baseline ${r.base})`);
-      console.error('\nFix the new offenders, or (if intentional) run: npm run check-compliance -- --update-baseline');
-      process.exit(1);
-    }
-
-    console.log('\n✅ Compliance maintenance gate passed (no regressions vs baseline).');
-    process.exit(0);
   }
 
   if (errors.length) {

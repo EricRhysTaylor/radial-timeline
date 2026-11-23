@@ -2,13 +2,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import process from 'process';
-import { spawn } from 'child_process';
-import { performance } from 'perf_hooks';
+import {
+    color,
+    duration,
+    openLogDir,
+    rel,
+    runCommand as runLogged,
+    stripAnsi,
+    summaries,
+    tail,
+} from './lib/step-runner.mjs';
 
 const ROOT = process.cwd();
-const LOG_ROOT = path.join(ROOT, '.gate-logs');
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const LOG_DIR = path.join(LOG_ROOT, timestamp);
 const verbose = process.argv.includes('--verbose');
 const continueOnFail = process.argv.includes('--continue');
 
@@ -19,33 +24,6 @@ function argValue(name) {
 
 const profileArg = argValue('--profile');
 const resultsFileArg = argValue('--results-file');
-
-/** Keep the newest `keep` timestamped run directories; the gate logs were never pruned and reached 260 MB. */
-async function pruneOldRuns(keep) {
-    let entries;
-    try {
-        entries = await fs.readdir(LOG_ROOT, { withFileTypes: true });
-    } catch {
-        return;
-    }
-    const runs = entries
-        .filter(entry => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}T/.test(entry.name))
-        .map(entry => entry.name)
-        .sort();
-    for (const name of runs.slice(0, Math.max(0, runs.length - keep))) {
-        await fs.rm(path.join(LOG_ROOT, name), { recursive: true, force: true });
-    }
-}
-
-const colors = {
-    bold: '\x1b[1m',
-    dim: '\x1b[2m',
-    green: '\x1b[32m',
-    red: '\x1b[31m',
-    yellow: '\x1b[33m',
-    cyan: '\x1b[36m',
-    reset: '\x1b[0m',
-};
 
 const steps = [
     // Provider model and price watching is the daily Cloud AI Model Onboarding
@@ -95,6 +73,7 @@ const steps = [
         id: 'lint-obsidian-enforced',
         label: 'Obsidian lint baseline',
         command: 'npm run lint:obsidian -- --quiet',
+        summary: summaries.obsidianLintBaseline,
     },
     {
         id: 'lint-obsidian',
@@ -106,18 +85,22 @@ const steps = [
         id: 'css-drift',
         label: 'CSS drift',
         command: 'npm run css-drift -- --maintenance',
-        report: summarizeCssDrift,
+        summary: summaries.cssDrift,
+        // The gate fails on its own when a count rises; a pass has nothing to add.
+        report: async () => [],
     },
     {
         id: 'unused-css',
         label: 'Unused CSS ratchet',
         command: 'node scripts/audit/unused-css.mjs --check',
-        report: summarizeUnusedCss,
+        summary: unusedCssCount,
+        report: async () => [],
     },
     {
         id: 'compliance',
         label: 'Compliance',
         command: 'node scripts/compliance-check.mjs --maintenance',
+        summary: summaries.compliance,
         report: summarizeCompliance,
     },
     {
@@ -129,6 +112,7 @@ const steps = [
         id: 'tests',
         label: 'Unit tests',
         command: 'npm run test:quiet',
+        summary: summaries.vitest,
     },
     // Steps below are profile-scoped extras (release/deep only). They are NOT
     // part of the default `npm run gates` set that every backup runs.
@@ -136,6 +120,7 @@ const steps = [
         id: 'i18n-release',
         label: 'i18n release readiness',
         command: 'node scripts/check-i18n-release.mjs',
+        summary: summaries.i18n,
     },
     {
         id: 'fallback-gate',
@@ -157,6 +142,7 @@ const steps = [
         id: 'obsidian-version',
         label: 'Obsidian version watch',
         command: 'node scripts/check-obsidian-version.mjs',
+        summary: summaries.obsidianVersion,
     },
 ];
 
@@ -190,23 +176,6 @@ function selectSteps() {
 
 const activeSteps = selectSteps();
 
-function color(name, text) {
-    return `${colors[name] ?? ''}${text}${colors.reset}`;
-}
-
-function rel(filePath) {
-    return path.relative(ROOT, filePath);
-}
-
-function duration(ms) {
-    if (ms < 1000) return `${Math.round(ms)}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function stripAnsi(value) {
-    return value.replace(/\x1b\[[0-9;]*m/g, '');
-}
-
 function unique(values) {
     return [...new Set(values.filter(Boolean))];
 }
@@ -227,11 +196,6 @@ function extractNotices(output) {
         .filter(line => line && patterns.some(pattern => pattern.test(line)))
         .filter(line => !line.startsWith('✓ '))
     ).slice(0, 6);
-}
-
-function tail(output, count = 40) {
-    const lines = stripAnsi(output).trim().split(/\r?\n/).filter(Boolean);
-    return lines.slice(-count).join('\n');
 }
 
 async function readJson(filePath) {
@@ -275,60 +239,14 @@ async function summarizeApiFeatures() {
     return unique(items);
 }
 
-async function summarizeCssDrift(output) {
-    const clean = stripAnsi(output);
-    const deltaMatch = clean.match(/- delta:\s*([+-]\d+)/);
-    const delta = deltaMatch ? Number(deltaMatch[1]) : 0;
-    if (Number.isFinite(delta) && delta > 0) {
-        return [`CSS drift: warning count increased by ${delta}. See the CSS drift log.`];
-    }
-    return [];
-}
-
-async function summarizeUnusedCss(output) {
-    const clean = stripAnsi(output);
-    const m = clean.match(/HARD UNUSED \(non-core\): (\d+)/);
-    return m ? [`Unused CSS: ${m[1]} producer-less classes remain (ratchet holds them from growing).`] : [];
+function unusedCssCount(output) {
+    const m = stripAnsi(output).match(/HARD UNUSED \(non-core\): (\d+)/);
+    return m ? `${m[1]} unused classes (held by the ratchet)` : '';
 }
 
 async function summarizeCompliance(output) {
-    const clean = stripAnsi(output);
-    const deltaMatch = clean.match(/- delta:\s*([+-]\d+)/i);
-    const delta = deltaMatch ? Number(deltaMatch[1]) : 0;
-    if (Number.isFinite(delta) && delta !== 0) {
-        return [`Compliance: delta ${deltaMatch[1]}. See the compliance log.`];
-    }
-    return [];
-}
-
-function runCommand(command, logFile) {
-    return new Promise(resolve => {
-        const started = performance.now();
-        const child = spawn(command, {
-            cwd: ROOT,
-            env: process.env,
-            shell: true,
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        const chunks = [];
-        child.stdout.on('data', chunk => {
-            chunks.push(chunk);
-            if (verbose) process.stdout.write(chunk);
-        });
-        child.stderr.on('data', chunk => {
-            chunks.push(chunk);
-            if (verbose) process.stderr.write(chunk);
-        });
-        child.on('close', async code => {
-            const output = Buffer.concat(chunks).toString('utf8');
-            await fs.writeFile(logFile, output, 'utf8');
-            resolve({
-                code,
-                output,
-                elapsedMs: performance.now() - started,
-            });
-        });
-    });
+    const m = stripAnsi(output).match(/\[compliance\] (\d+) below the baseline/);
+    return m ? [`Compliance: ${m[1]} below the baseline; lock it in with npm run check-compliance -- --update-baseline.`] : [];
 }
 
 async function writeResults(results, actionItems, notices, ok) {
@@ -346,23 +264,31 @@ async function writeResults(results, actionItems, notices, ok) {
     await fs.writeFile(target, JSON.stringify(payload, null, 2), 'utf8');
 }
 
+function stepSummary(step, output) {
+    if (!step.summary) return '';
+    try {
+        return step.summary(stripAnsi(output)) || '';
+    } catch {
+        return '';
+    }
+}
+
 async function main() {
-    await fs.mkdir(LOG_DIR, { recursive: true });
-    await pruneOldRuns(40);
+    const logDir = openLogDir('gates');
     const notices = [];
     const actionItems = [];
     const results = [];
     let firstFailure = null;
 
-    console.log(color('bold', `Radial Timeline gates${profileArg ? ` [${profileArg}]` : ''}`));
-    console.log(`${color('dim', 'Logs:')} ${rel(LOG_DIR)}`);
+    console.log(`${color('bold', `Radial Timeline gates${profileArg ? ` [${profileArg}]` : ''}`)} ${color('dim', `· logs: ${rel(logDir)}`)}`);
 
     for (let index = 0; index < activeSteps.length; index++) {
         const step = activeSteps[index];
-        const logFile = path.join(LOG_DIR, `${String(index + 1).padStart(2, '0')}-${step.id}.log`);
+        const logFile = path.join(logDir, `${String(index + 1).padStart(2, '0')}-${step.id}.log`);
         process.stdout.write(`[${index + 1}/${activeSteps.length}] ${step.label} ... `);
-        const result = await runCommand(step.command, logFile);
+        const result = await runLogged(step.command, { logFile, logDir, verbose });
         const logPath = rel(logFile);
+        const summary = stepSummary(step, result.output);
         const outputNotices = step.report
             ? []
             : extractNotices(result.output).map(line => `${step.label}: ${line}`);
@@ -383,15 +309,15 @@ async function main() {
         });
 
         if (!ok) {
-            console.log(`${color('red', 'FAIL')} (${duration(result.elapsedMs)})`);
+            console.log(`${color('red', 'FAIL')} (${duration(result.elapsedMs)})${summary ? ` ${summary}` : ''}`);
             console.log(`${color('red', 'Gate failed:')} ${step.label}`);
-            console.log(`${color('dim', 'Log:')} ${logPath}`);
             const failureTail = tail(result.output);
             if (failureTail) {
                 console.log('');
-                console.log(color('bold', 'Failure Tail'));
                 console.log(failureTail);
+                console.log('');
             }
+            console.log(`${color('dim', 'Log:')} ${logPath}`);
             if (!firstFailure) firstFailure = step.label;
             process.exitCode = result.code || 1;
             if (!continueOnFail) {
@@ -406,7 +332,7 @@ async function main() {
 
         const noticeCount = outputNotices.length + reportItems.length;
         const suffix = noticeCount > 0 ? ` ${color('yellow', `(${noticeCount} notice${noticeCount === 1 ? '' : 's'})`)}` : '';
-        console.log(`${color('green', 'PASS')} (${duration(result.elapsedMs)})${suffix}`);
+        console.log(`${color('green', 'PASS')} (${duration(result.elapsedMs)})${summary ? ` ${summary}` : ''}${suffix}`);
     }
 
     printSummary(actionItems, notices);
@@ -414,19 +340,19 @@ async function main() {
     if (firstFailure) {
         console.log(color('red', `Gates completed with failures (first: ${firstFailure}).`));
     } else {
-        console.log(color('green', 'All gates passed.'));
+        console.log(color('green', `All ${activeSteps.length} gates passed.`));
     }
 }
 
+// Printed only when there is something to read: a clean run ends on the
+// "All gates passed" line.
 function printSummary(actionItems, notices) {
     const actions = unique(actionItems).slice(0, 12);
     const noticeLines = unique(notices).filter(line => !actions.some(action => line.includes(action))).slice(0, 12);
 
-    console.log('');
-    console.log(color('bold', 'Action Items'));
-    if (actions.length === 0) {
-        console.log('- None.');
-    } else {
+    if (actions.length > 0) {
+        console.log('');
+        console.log(color('bold', 'Action Items'));
         actions.forEach(item => console.log(`- ${item}`));
     }
 

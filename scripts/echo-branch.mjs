@@ -19,9 +19,14 @@ if (!quiet) {
   console.log(`[info] Current git branch: ${branch}`);
 }
 
+// The release script refuses any branch but main; stop here too, before the
+// slower release checks run.
 if (mode === 'release' && branch !== PRIMARY_BRANCH) {
-  console.log(`[warn] You are about to run a release while on '${branch}'. Releases must be cut from '${PRIMARY_BRANCH}'.`);
+  console.log(`[release] Releases must be cut from '${PRIMARY_BRANCH}'; you are on '${branch}'.`);
   console.log(`[hint] Run: git switch ${PRIMARY_BRANCH} && git pull`);
+  process.exitCode = 1;
+} else if (mode === 'release') {
+  console.log(`[release] On ${branch}.`);
 }
 
 if (mode === 'backup' && !quiet) {

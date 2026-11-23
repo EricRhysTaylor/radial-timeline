@@ -1,86 +1,54 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+// Verify (`npm run verify`), run by the release script while finishing a
+// draft: build, standards and tests, one line each. Full output in the log
+// folder named on the first line. `--verbose` streams every step's output.
+import process from 'node:process';
+import { isMain, runSteps, summaries } from './lib/step-runner.mjs';
 
-const steps = [
+export const steps = [
   {
-    name: "Build",
-    commands: [
-      {
-        cmd: "npm",
-        args: ["run", "build"],
-        display: "npm run build",
-      },
-    ],
-    summary: "npm run build",
+    id: 'build',
+    label: 'Build',
+    command: 'npm run --silent build',
   },
   {
-    name: "CSS drift",
-    commands: [
-      {
-        cmd: "npm",
-        args: ["run", "css-drift", "--", "--maintenance"],
-        display: "npm run css-drift -- --maintenance",
-      },
-    ],
-    summary: "npm run css-drift -- --maintenance",
+    id: 'css-drift',
+    label: 'CSS drift',
+    command: 'node scripts/css-drift-check.mjs --maintenance',
+    summary: summaries.cssDrift,
   },
   {
-    name: "Standards",
-    commands: [
-      {
-        cmd: "node",
-        args: ["scripts/check-obsidian-version.mjs"],
-        display: "node scripts/check-obsidian-version.mjs",
-      },
-      {
-        cmd: "node",
-        args: ["scripts/compliance-check.mjs", "--maintenance"],
-        display: "node scripts/compliance-check.mjs --maintenance",
-      },
-      {
-        cmd: "node",
-        args: ["code-quality-check.mjs", "--all"],
-        display: "node code-quality-check.mjs --all",
-      },
-      {
-        cmd: "node",
-        args: ["check-css-duplicates.mjs"],
-        display: "node check-css-duplicates.mjs",
-      },
-    ],
-    summary: "standards (4 checks)",
+    id: 'obsidian-version',
+    label: 'Obsidian version',
+    command: 'node scripts/check-obsidian-version.mjs',
+    summary: summaries.obsidianVersion,
   },
   {
-    name: "Tests",
-    commands: [
-      {
-        cmd: "npm",
-        args: ["test"],
-        display: "npm test",
-      },
-    ],
-    summary: "npm test",
+    id: 'compliance',
+    label: 'Compliance',
+    command: 'node scripts/compliance-check.mjs --maintenance',
+    summary: summaries.compliance,
+  },
+  {
+    id: 'code-quality',
+    label: 'Code quality',
+    command: 'node code-quality-check.mjs --all',
+  },
+  {
+    id: 'css-duplicates',
+    label: 'CSS duplicates',
+    command: 'node check-css-duplicates.mjs --quiet',
+  },
+  {
+    id: 'tests',
+    label: 'Unit tests',
+    // `test` (not test:quiet) so npm's pretest hook embeds the plugin assets first.
+    command: 'npm run --silent test -- --reporter=dot',
+    summary: summaries.vitest,
   },
 ];
 
-function banner(label, command) {
-  console.log(`\n=== ${label} ===`);
-  console.log(`> ${command}\n`);
-}
-
-for (const step of steps) {
-  banner(step.name, step.summary);
-  const showCommandLines = step.commands.length > 1;
-  for (const command of step.commands) {
-    if (showCommandLines) {
-      console.log(`> ${command.display}\n`);
-    }
-    const result = spawnSync(command.cmd, command.args, { stdio: "inherit" });
-    if (result.status !== 0) {
-      const code = result.status ?? 1;
-      console.error(`\n[verify] Failed: ${step.name}`);
-      console.error(`[verify] Re-run: ${command.display}`);
-      process.exit(code);
-    }
-  }
+if (isMain(import.meta.url)) {
+  const result = await runSteps('Verify', 'verify', steps);
+  process.exitCode = result.code;
 }

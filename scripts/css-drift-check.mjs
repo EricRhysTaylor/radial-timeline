@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { changedFiles, writeFullReport } from "./lib/step-runner.mjs";
 
 const ROOT = process.cwd();
 
@@ -64,6 +65,7 @@ const MIGRATION_MODE = MODE === "migration";
 const MAINTENANCE_MODE = MODE === "maintenance";
 const LOOSE_MODE = MODE !== "strict";
 const WRITE_BASELINE = args.has("--write-baseline") || args.has("--update-baseline");
+const VERBOSE = args.has("--verbose");
 const BASELINE_PATH = path.join(ROOT, "scripts/css-drift-baseline.json");
 const BASELINE_KEY = MAINTENANCE_MODE ? "maintenance" : MIGRATION_MODE ? "migration" : null;
 
@@ -431,34 +433,35 @@ for (const file of FILES.filter(exists)) {
   }
 }
 
-function print(items, label) {
-  if (!items.length) return;
-  console.log(`\n${label} (${items.length})`);
-  for (const it of items.slice(0, 50)) {
-    const line = it.line ? `:${it.line}` : "";
-    console.log(`- ${it.file}${line}: ${it.msg}`);
-    if (it.sample) console.log(`  ${it.sample}`);
-  }
-  if (items.length > 50) console.log(`…and ${items.length - 50} more`);
+// A selector match can span the comment and declarations before the selector;
+// the last line is the selector itself.
+function sampleLine(sample) {
+  if (!sample) return "";
+  const lines = String(sample).split("\n").map((line) => line.trim()).filter(Boolean);
+  return lines[lines.length - 1] ?? "";
 }
 
-function printFailTop(items, limit = 20) {
+function itemLines(it) {
+  const line = it.line ? `:${it.line}` : "";
+  const lines = [`- ${path.relative(ROOT, it.file)}${line}: ${it.msg}`];
+  const sample = sampleLine(it.sample);
+  if (sample) lines.push(`  ${sample}`);
+  return lines;
+}
+
+function print(items, label, limit = 50) {
   if (!items.length) return;
-  const sorted = [...items].sort((a, b) => {
+  console.log(`\n${label} (${items.length})`);
+  for (const it of items.slice(0, limit)) itemLines(it).forEach((line) => console.log(line));
+  if (items.length > limit) console.log(`…and ${items.length - limit} more`);
+}
+
+function sortByLocation(items) {
+  return [...items].sort((a, b) => {
     if (a.file === b.file) return (a.line || 0) - (b.line || 0);
     return a.file.localeCompare(b.file);
   });
-  console.log(`\nTop FAIL offenders (${Math.min(limit, sorted.length)})`);
-  for (const it of sorted.slice(0, limit)) {
-    const line = it.line ? `:${it.line}` : "";
-    console.log(`- ${it.file}${line}: ${it.msg}`);
-    if (it.sample) console.log(`  ${it.sample}`);
-  }
 }
-
-print(WARN, "CSS drift warnings");
-print(FAIL, "CSS drift failures");
-printFailTop(FAIL, 20);
 
 const warnSummary = WARN.reduce(
   (acc, it) => {
@@ -472,7 +475,9 @@ const warnSummary = WARN.reduce(
 
 const baselineStore = loadBaselineStore();
 const baselineInfo = BASELINE_KEY ? resolveBaseline(baselineStore) : { baseline: null, source: "unused" };
-console.log(`\nBaseline: ${describeBaseline(BASELINE_PATH, BASELINE_KEY, baselineInfo.source)}`);
+const baselineLabel = describeBaseline(path.relative(ROOT, BASELINE_PATH), BASELINE_KEY, baselineInfo.source);
+const summaryLines = [];
+const regressedRules = new Set();
 
 if (WRITE_BASELINE) {
   if (!BASELINE_KEY) {
@@ -507,16 +512,17 @@ if (LOOSE_MODE && !WRITE_BASELINE) {
     const delta = currentTotal - baselineTotal;
     const keys = ["raw-hex", "spacing-px", "shadow-rgba", "rt-legacy"];
     const summaryLabel = MAINTENANCE_MODE ? "Maintenance WARN summary:" : "Migration WARN summary:";
-    console.log(`\n${summaryLabel}`);
-    console.log(`- current WARN total: ${currentTotal}`);
-    console.log(`- baseline WARN total: ${baselineTotal}`);
-    console.log(`- delta: ${delta >= 0 ? "+" : ""}${delta}`);
-    console.log("- breakdown deltas:");
+    summaryLines.push(summaryLabel);
+    summaryLines.push(`- current WARN total: ${currentTotal}`);
+    summaryLines.push(`- baseline WARN total: ${baselineTotal}`);
+    summaryLines.push(`- delta: ${delta >= 0 ? "+" : ""}${delta}`);
+    summaryLines.push("- breakdown deltas:");
     for (const key of keys) {
       const currentCount = warnSummary.byRule[key] ?? 0;
       const baselineCount = baseline.warningsByRule?.[key] ?? 0;
       const ruleDelta = currentCount - baselineCount;
-      console.log(`  - ${key}: ${currentCount} (baseline ${baselineCount}, delta ${ruleDelta >= 0 ? "+" : ""}${ruleDelta})`);
+      if (ruleDelta > 0) regressedRules.add(key);
+      summaryLines.push(`  - ${key}: ${currentCount} (baseline ${baselineCount}, delta ${ruleDelta >= 0 ? "+" : ""}${ruleDelta})`);
     }
   }
 
@@ -555,9 +561,45 @@ if (LOOSE_MODE && !WRITE_BASELINE) {
   }
 }
 
+// The full listing (every warning and failure) goes to a gitignored file. The
+// terminal shows counts, plus the offenders only when something fails: a hard
+// FAIL rule, or a WARN rule whose count went above its baseline. --verbose
+// prints everything.
+const sortedFails = sortByLocation(FAIL);
+const reportPath = writeFullReport("css-drift-report.txt", [
+  `CSS drift report (${new Date().toISOString()}) · mode: ${MODE} · baseline: ${baselineLabel}`,
+  "",
+  ...summaryLines,
+  "",
+  `Failures (${FAIL.length}):`,
+  ...sortedFails.flatMap(itemLines),
+  "",
+  `Warnings (${WARN.length}):`,
+  ...WARN.flatMap(itemLines),
+]);
+
+if (VERBOSE) {
+  print(WARN, "CSS drift warnings", WARN.length);
+  print(sortedFails, "CSS drift failures", FAIL.length);
+  if (summaryLines.length) console.log(`\n${summaryLines.join("\n")}`);
+} else if (FAIL.length) {
+  print(sortedFails, "CSS drift failures", 20);
+  const changed = regressedRules.size ? changedFiles() : new Set();
+  for (const rule of regressedRules) {
+    const all = WARN.filter((it) => it.rule === rule);
+    const likelyNew = all.filter((it) => changed.has(path.relative(ROOT, it.file)));
+    if (likelyNew.length) print(likelyNew, `${rule} warnings in files changed on this branch`, 30);
+    else print(all, `${rule} warnings (none are in files changed on this branch)`, 30);
+  }
+  if (summaryLines.length) console.log(`\n${summaryLines.join("\n")}`);
+}
+
+const baselineTotalLabel = baselineInfo.baseline ? ` (baseline ${baselineInfo.baseline.totalWarnings ?? 0})` : "";
+const countLine = `[css-drift] ${WARN.length} warnings${baselineTotalLabel}, ${FAIL.length} failures · full list: ${reportPath}`;
+
 if (FAIL.length) {
-  console.error("\n❌ CSS drift gate failed.");
+  console.error(`\n❌ CSS drift gate failed.\n${countLine}`);
   process.exit(1);
 } else {
-  console.log("\n✅ CSS drift gate passed.");
+  console.log(countLine);
 }

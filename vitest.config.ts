@@ -13,7 +13,14 @@ export default defineConfig({
     
     // TypeScript support
     globals: true,
-    
+
+    // Many tests drive error paths on purpose, and the code under test logs
+    // those errors (Community Share notices, search fallbacks, export
+    // failures). Printing them for passing tests buried real failures under
+    // ~120 console blocks per run. Console output still prints in full for a
+    // failing test, which is the only time it helps.
+    silent: 'passed-only',
+
     // Coverage configuration
     coverage: {
       provider: 'v8',

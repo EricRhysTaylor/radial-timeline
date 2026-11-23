@@ -7052,6 +7052,7 @@ export const en = {
             folderParentMissing: 'Create the folder {{parent}} first, or choose a folder inside one that exists.',
             folderAppeared: '{{folder}} appeared in the vault before the notes were written. Choose another name.',
             folderChanged: '{{folder}} is no longer the folder this book was being written into, so it stays as it is. Choose a folder for the book, then Create book.',
+            folderGoneCommunityHasBook: 'Community now edits this book from this vault. Put its scene notes back in {{folder}}, then choose Continue. To edit the book on Community instead, choose Disconnect this book from the vault under Recovery on its Share page.',
             folderNowOverlaps: '{{folder}} now overlaps the book {{book}} in Book Manager. Change that book’s source folder, or remove it from Book Manager, then choose Continue.',
             registerFailed: 'The notes are written and Community has the book. Choose Continue to add it to Book Manager.',
             progressWriting: 'Writing scene notes: {{done}} of {{total}}',

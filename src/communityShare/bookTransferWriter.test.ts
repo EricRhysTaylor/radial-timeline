@@ -120,6 +120,7 @@ function world(folders: string[] = ['Books']): World {
             w.log.push('register');
             w.registered.push(record);
         },
+        registered: record => w.registered.some(book => book.bookId === record.bookId),
         now: () => '2026-11-21T12:00:00Z',
     };
     return w;
@@ -341,18 +342,85 @@ describe('a folder deleted while the run was stopped, and one of the author\'s o
         expect(w.records.size).toBe(0);
     });
 
-    it('the same once every note was written, before Community was told', async () => {
-        const w = world();
+    /** Every note written, done sent, and neither its answer nor the state check came back. */
+    const writtenAndAnswerLost = async (w: World): Promise<string> => {
         w.server.done = async () => { throw new Error('offline'); };
         w.server.state = async () => { throw new Error('offline'); };
         expect(await runBookTransfer(w.deps, start())).toMatchObject({ kind: 'stopped' });
-        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        const record = w.records.get(TRANSFER_ID)!;
+        expect(record.phase).toBe('written');
         replaceFolder(w);
         w.server.done = async () => undefined;
+        return record.bookId;
+    };
+
+    it('the same once every note was written, when Community says the transfer is still open', async () => {
+        const w = world();
+        await writtenAndAnswerLost(w);
+        w.server.state = async () => ({ state: 'open', expiresAt: 'x' });
         const outcome = await runBookTransfer(w.deps, start({ notes: undefined }));
         expect(outcome).toMatchObject({ kind: 'stopped', folderGone: true });
         expect(w.log.filter(step => step.startsWith('done'))).toHaveLength(1);
         expect(w.registered).toEqual([]);
+        expect(w.records.size).toBe(0);
+    });
+
+    it.each<[string, () => Promise<BookTransferState>]>([
+        ['cancelled', async () => ({ state: 'cancelled', cancelReason: 'cancelled_by_author', expiresAt: 'x' })],
+        ['expired', async () => ({ state: 'expired', expiresAt: 'x' })],
+        ['done for another book', async () => ({ state: 'done', pluginBookKey: 'another-book', expiresAt: 'x' })],
+        ['no longer held', async () => { throw new CommunityShareError('transfer_not_found', 'Community has no such transfer.'); }],
+    ])('the same once every note was written, when Community says the transfer ended (%s)', async (_case, state) => {
+        const w = world();
+        await writtenAndAnswerLost(w);
+        w.server.state = state;
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'stopped', folderGone: true });
+        expect(w.registered).toEqual([]);
+        expect(w.records.size).toBe(0);
+    });
+
+    it('Community took the book but its answer was lost: the record and its book id stay, and the author is told what to do', async () => {
+        const w = world();
+        const bookId = await writtenAndAnswerLost(w);
+        w.server.state = async () => ({ state: 'done', pluginBookKey: bookId, expiresAt: 'x' });
+        const outcome = await runBookTransfer(w.deps, start({ notes: undefined }));
+        expect(outcome).toEqual({
+            kind: 'stopped',
+            message: `Community now edits this book from this vault. Put its scene notes back in ${FOLDER}, then choose Continue. To edit the book on Community instead, choose Disconnect this book from the vault under Recovery on its Share page.`,
+        });
+        expect(w.records.get(TRANSFER_ID)).toMatchObject({ phase: 'written', bookId });
+        expect(w.registered).toEqual([]);
+        // The author's own folder is left as it is.
+        expect([...w.files.keys()].filter(insideFolder)).toEqual([`${FOLDER}/My own chapter.md`]);
+
+        // The notes put back, Continue registers the book under the id Community holds.
+        w.files.delete(`${FOLDER}/My own chapter.md`);
+        for (const planned of NOTES) w.files.set(`${FOLDER}/${planned.fileName}`, planned.content);
+        w.server.done = async () => { throw new CommunityShareError('transfer_done', 'Already done.'); };
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'done', bookId });
+        expect(w.registered).toEqual([expect.objectContaining({ bookId })]);
+        expect(w.records.size).toBe(0);
+    });
+
+    it.each<[string, () => Promise<BookTransferState>, string]>([
+        ['not answered', async () => { throw new Error('offline'); }, 'Community has not confirmed yet. Choose Continue to ask again.'],
+        ['done for a book it does not name', async () => ({ state: 'done', expiresAt: 'x' }), 'The Community website sent an unexpected answer for this book. Try again.'],
+    ])('Community %s: the record stays as it was', async (_case, state, message) => {
+        const w = world();
+        const bookId = await writtenAndAnswerLost(w);
+        w.server.state = state;
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toEqual({ kind: 'stopped', message });
+        expect(w.records.get(TRANSFER_ID)).toMatchObject({ phase: 'written', bookId });
+        expect(w.registered).toEqual([]);
+    });
+
+    it('a book Book Manager already holds: the record that was left goes, without asking Community', async () => {
+        const w = world();
+        const bookId = await writtenAndAnswerLost(w);
+        w.registered.push({ ...w.records.get(TRANSFER_ID)! });
+        const asked = w.log.filter(step => step === 'state').length;
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'done', bookId });
+        expect(w.log.filter(step => step === 'state').length).toBe(asked);
         expect(w.records.size).toBe(0);
     });
 
@@ -488,6 +556,38 @@ describe('the check on disk', () => {
         const outcome = await runBookTransfer(w.deps, start());
         expect(outcome).toEqual({ kind: 'stopped', message: `Two notes in ${FOLDER} hold the scene ID scn_0a1b2c3d. Give the copy its own ID, then choose Continue.` });
         expect(w.log.some(step => step.startsWith('done'))).toBe(false);
+    });
+
+    it.each<[string, (w: World) => void]>([
+        ['before Community was told', w => { w.registerProblem = 'Books/The Lighthouse now overlaps the book Books in Book Manager.'; }],
+        ['after Community\'s answer was lost', w => {
+            w.server.done = async () => { throw new Error('offline'); };
+            w.server.state = async () => { throw new Error('offline'); };
+        }],
+        ['after Book Manager could not take the book', w => { w.deps.register = async () => { throw new Error('Settings could not be saved.'); }; }],
+    ])('a copy that arrived after the first check, %s, stops Continue before Community is told or the book registered', async (_case, stopFirstRun) => {
+        const w = world();
+        const register = w.deps.register;
+        stopFirstRun(w);
+        expect(await runBookTransfer(w.deps, start())).toMatchObject({ kind: 'stopped' });
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        const told = w.log.filter(step => step.startsWith('done')).length;
+
+        w.registerProblem = null;
+        w.deps.register = register;
+        w.server.done = async () => undefined;
+        w.server.state = async () => ({ state: 'open', expiresAt: 'x' });
+        w.files.set(`${FOLDER}/02 Night Watch copy.md`, NOTES[1].content);
+        expect(await runBookTransfer(w.deps, start({ notes: undefined })))
+            .toEqual({ kind: 'stopped', message: `Two notes in ${FOLDER} hold the scene ID scn_0a1b2c3e. Give the copy its own ID, then choose Continue.` });
+        expect(w.log.filter(step => step.startsWith('done')).length).toBe(told);
+        expect(w.registered).toEqual([]);
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+
+        // The copy given its own ID, Continue finishes.
+        w.files.set(`${FOLDER}/02 Night Watch copy.md`, NOTES[1].content.replace('scn_0a1b2c3e', 'scn_0a1b2c99'));
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'done' });
+        expect(w.registered).toHaveLength(1);
     });
 });
 

@@ -21,6 +21,11 @@
  *   `state`, so a lost answer is settled by Community, never assumed.
  * - The book is registered in Book Manager only after Community confirms.
  *   Registered earlier, a background book-list send would make a second card.
+ * - Once every note is written, the record holds the book id Community may
+ *   already know the book by. It goes only on Community's answer (open,
+ *   ended) or once Book Manager holds the book, never on a folder change alone.
+ * - The folder is checked for two notes with one scene id on every run,
+ *   Continue included, before Community is told.
  * - Cancelled, expired or no longer on Community after writing: the notes stay, the record is kept as
  *   `cancelled` until the author has been told, and the folder is not a book.
  *
@@ -90,6 +95,8 @@ export interface BookTransferDeps {
     registerProblem(record: CommunityBookTransferRecord): string | null;
     /** Book Manager, Keep timeline updated, the active book. Called only after Community confirms, and safe to call twice. */
     register(record: CommunityBookTransferRecord): Promise<void>;
+    /** Whether Book Manager already holds the record's book, under its book id. */
+    registered(record: CommunityBookTransferRecord): boolean;
     now(): string;
 }
 
@@ -168,13 +175,9 @@ async function runOnce(
     if (record?.folderCreated) {
         // The folder may have been deleted while the run was stopped, and a
         // folder of the author's own made at the same path. Nothing goes into
-        // it, and it never becomes this book: the record goes, and the author
-        // picks a folder again.
+        // it, and it never becomes this book.
         const disk = await recordedNotesOnDisk(vault, record, start.notes);
-        if (!disk.ours) {
-            await store.remove(transferId);
-            return { kind: 'stopped', message: t('ui.bookFromCommunity.folderChanged', { folder: record.folder }), folderGone: true };
-        }
+        if (!disk.ours) return folderNoLongerTheBooks(deps, transferId, record);
         if (record.phase === 'written' && disk.missing) {
             return { kind: 'stopped', message: t('ui.bookFromCommunity.checkMissing', { note: fileName(disk.missing) }) };
         }
@@ -211,7 +214,49 @@ async function runOnce(
         await store.put(transferId, record);
     }
 
+    // On the first run and on every Continue: a copy of a note (a sync
+    // service, the author) may have come into the folder since the last check.
+    const duplicate = await duplicateSceneId(vault, record);
+    if (duplicate) return { kind: 'stopped', message: duplicate };
+
     return tellCommunity(deps, transferId, record, start.notes, onProgress);
+}
+
+/**
+ * The record's folder is no longer the one this run made. While notes are
+ * still being written, Community has not been told: the record goes, and the
+ * author picks a folder again. Once they are all written, Community may
+ * already have the book under the record's book id, so the record stays
+ * until Community answers: it goes when the transfer is still open or has
+ * ended there, or when Book Manager already holds the book. Done for this
+ * book, or no answer, keeps it, with the author's next step.
+ */
+async function folderNoLongerTheBooks(
+    deps: BookTransferDeps,
+    transferId: string,
+    record: CommunityBookTransferRecord
+): Promise<BookTransferOutcome> {
+    if (record.phase === 'written') {
+        if (deps.registered(record)) {
+            // Book Manager took the book after Community confirmed; only the record was left.
+            await deps.store.remove(transferId);
+            return { kind: 'done', bookId: record.bookId, title: record.title, folder: record.folder };
+        }
+        let state: BookTransferState | null;
+        try {
+            state = await deps.server.state(transferId);
+        } catch (error) {
+            if (!isBookTransferNotFound(error)) return { kind: 'stopped', message: t('ui.bookFromCommunity.answerLost') };
+            state = null;
+        }
+        if (state?.state !== 'open') {
+            const ended = endedOnCommunity(state, record);
+            if (ended === false) return { kind: 'stopped', message: t('ui.bookFromCommunity.folderGoneCommunityHasBook', { folder: record.folder }) };
+            if (ended === 'unsure') return { kind: 'stopped', message: t('ui.communityShareClient.bookTransferUnexpected') };
+        }
+    }
+    await deps.store.remove(transferId);
+    return { kind: 'stopped', message: t('ui.bookFromCommunity.folderChanged', { folder: record.folder }), folderGone: true };
 }
 
 async function writeNotes(
@@ -320,7 +365,7 @@ async function holdsPlannedNote(vault: BookTransferVault, folder: string, planne
     return false;
 }
 
-/** Every scene's note, read from disk: present, carrying its own id, and the only note in the folder with it. */
+/** Every scene's note, read from disk: present and carrying its own id. */
 async function checkNotes(vault: BookTransferVault, record: CommunityBookTransferRecord, notes: readonly PlannedSceneNote[]): Promise<string | null> {
     for (const note of notes) {
         const path = record.notes[note.sceneId];
@@ -336,7 +381,12 @@ async function checkNotes(vault: BookTransferVault, record: CommunityBookTransfe
             return t('ui.bookFromCommunity.checkMissing', { note: path ? fileName(path) : note.fileName });
         }
     }
-    const wanted = new Set(notes.map(note => note.sceneId));
+    return null;
+}
+
+/** Two notes in the record's folder holding one of the book's scene ids, said in the author's words, or null. */
+async function duplicateSceneId(vault: BookTransferVault, record: CommunityBookTransferRecord): Promise<string | null> {
+    const wanted = new Set(Object.keys(record.notes));
     const seen = new Set<string>();
     for (const path of await vault.notesIn(record.folder)) {
         let content: string;
@@ -533,6 +583,7 @@ export function obsidianBookTransferDeps(plugin: RadialTimelinePlugin): BookTran
             return overlap ? t('ui.bookFromCommunity.folderNowOverlaps', { folder: record.folder, book: overlap.title }) : null;
         },
         register: record => registerTransferredBook(plugin, record),
+        registered: record => (plugin.settings.books ?? []).some(book => book.id === record.bookId), // SAFE: a vault with no books holds none
         now: () => new Date().toISOString(),
     };
 }

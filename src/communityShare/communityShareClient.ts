@@ -1081,7 +1081,8 @@ async function postCommunityProjects(plugin: RadialTimelinePlugin, shareAsNewBoo
             projects: books.map((book, index) => ({
                 book_key: book.id,
                 title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140), // SAFE: the author's public label wins over the private title; the literal is the last-resort label for an unnamed book
-                logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined,
+                // The logline (publicDescription) is not sent: the server
+                // never stores it, so it stays in the vault.
                 // Book Manager array order — the website renders books in this order.
                 order_index: index,
                 zero_target_date: targetDate(book.stageTargetDates?.Zero),

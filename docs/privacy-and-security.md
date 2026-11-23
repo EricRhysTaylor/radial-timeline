@@ -131,7 +131,7 @@ External requests occur in these areas:
   While Settings → Community is open, it asks at most once a minute whether
   the author chose **Add to my vault** for a book on the website, sending the
   connection id and secret and nothing else. Only when the author opens that
-  book (its **Book from Community** card, or the website's
+  book (its **Book from Community** entry in Settings → Community, or the website's
   `obsidian://radial-timeline-transfer?id=<transfer id>` link) does the plugin
   download it: the author's own timeline for that book (scene titles,
   positions, acts and act count, subplots, status, stage, synopsis, cast,
@@ -166,13 +166,18 @@ optional and author-triggered.
 Community Share is shipped. It is opt-in and inert until the author connects
 this vault to the website and selects a sharing level: nothing publishes on
 install, and Level 1 (Private) publishes nothing. One thing does cross the
-wire from the moment a vault is connected, at every level: each Book Manager
-book syncs to the website as a **private project shell** (its public label,
-or its working title when no label is set, plus logline, stage target dates,
-and order). Shells are visible only to the author on My Share and become
-public only by an explicit switch on the website; the plugin never changes
-that. The list syncs when Obsidian opens, after you change a book's settings,
-and every six hours while the vault stays open. Full behavior and the per-level field breakdown live in the
+wire from the moment a vault is connected, at every level above Private while
+sharing is not paused: the Book Manager list (up to 50 books), which the
+website keeps as **private book listings** on My Share. Each book sends its
+Book Manager id, its public label (or its working title when no label is
+set), its order and its four stage target dates; the active book also sends
+whether Zero-draft mode is on. The logline stays in the vault. Listings are
+visible only to the author on My Share and become public only by an explicit
+switch on the website; the plugin never changes that. The list is sent right
+after Connect, when Obsidian opens, every six hours while the vault stays
+open, after a change to a book's target dates or to Zero-draft mode, with the
+Community mailbox sync, and before a timeline's first send. The Private level
+and **Pause sharing** stop it. Full behavior and the per-level field breakdown live in the
 [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 wiki page.
 
@@ -180,7 +185,7 @@ Posture:
 
 - **Opt-in at the source.** Connecting alone publishes nothing; the author
   must also pick a level and press **Begin sharing**. Connecting does store
-  the private project shells described above.
+  the private book listings described above.
 - **Never published at any level:** manuscript text, scene/note/vault paths,
   file or folder names, raw writing-session rows, exact session timestamps,
   and API/license keys or plugin secrets.

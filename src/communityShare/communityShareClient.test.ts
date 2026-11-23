@@ -897,7 +897,6 @@ describe('Community Share activation client', () => {
         expect(body.projects[0]).toEqual({
             book_key: 'book-1',
             title: 'Public Title',
-            logline: 'A public logline.',
             order_index: 0,
             // Each book carries its OWN targets; malformed/missing dates go as
             // null (clears server value), never as garbage.
@@ -910,6 +909,9 @@ describe('Community Share activation client', () => {
         });
         // A book with a public label sends the label, never its working title.
         expect(JSON.stringify(body)).not.toContain('Private Draft Title');
+        // The logline stays in the vault: the book list never carries it.
+        expect(JSON.stringify(body)).not.toContain('A public logline.');
+        expect(body.projects[0]).not.toHaveProperty('logline');
         // A book with no public label sends its working title: the contract's
         // share-surfaces amendment stores every book as a PRIVATE shell that only
         // the author can see on My Share until they switch it on there. See

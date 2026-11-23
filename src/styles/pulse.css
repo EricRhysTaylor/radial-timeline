@@ -917,10 +917,6 @@
   justify-content: flex-end;
 }
 
-.ert-manuscript-modal .ert-layout-templates-card {
-  padding: 10px 16px;
-}
-
 .ert-manuscript-modal .ert-template-dropdown-row {
   display: flex;
   align-items: center;

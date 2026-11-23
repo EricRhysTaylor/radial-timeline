@@ -422,7 +422,6 @@ export class ManuscriptOptionsModal extends Modal {
     private splitSingleInputEl?: HTMLInputElement;
     private splitPartsRadioInputEl?: HTMLInputElement;
     private cancelButton?: ButtonComponent;
-    private templateCard?: HTMLElement;
     private exportTemplateDropdown?: HTMLSelectElement;
     private saveTemplateButton?: ButtonComponent;
     private reloadTemplateButton?: ButtonComponent;
@@ -962,9 +961,15 @@ export class ManuscriptOptionsModal extends Modal {
         card.createEl('h4', { cls: 'ert-section-title', text: t('manuscriptModal.sourceHeading') });
         if (this.savedSourceStorageError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.savedSourceStorageError });
         if (this.plugin.isSettingsPersistenceBlocked()) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.manuscriptOptionsModal.settingsUnreadable') });
+        // The saved selection row heads the panel it saves, as the format preset
+        // row heads How to format it. It shows only when it has something to offer.
+        const saveStrip = card.createDiv({ cls: 'ert-export-save-row' });
+        const saveLabel = saveStrip.createDiv({ cls: 'ert-export-save-row__label' });
+        setIcon(saveLabel.createSpan({ cls: 'ert-export-save-row__icon' }), 'bookmark');
+        saveLabel.createSpan({ text: t('ui.manuscriptOptionsModal.savedManuscriptLabel') });
+        const dropEmptyStrip = () => { if (saveStrip.childElementCount <= 1) saveStrip.remove(); };
         if (this.savedManuscripts.length) {
-            const savedRow = card.createDiv({ cls: 'ert-row ert-manuscript-source-field' });
-            savedRow.createSpan({ text: t('ui.manuscriptOptionsModal.savedManuscriptLabel') });
+            const savedRow = saveStrip.createDiv({ cls: 'ert-export-save-row__picker' });
             new DropdownComponent(savedRow).addOption('', t('ui.manuscriptOptionsModal.unsavedManuscript'))
                 .addOptions(Object.fromEntries(this.savedManuscripts.map(record => [record.id, record.name])))
                 .setValue(this.savedSourceId || '').onChange(id => {
@@ -996,10 +1001,10 @@ export class ManuscriptOptionsModal extends Modal {
             button.buttonEl.toggleClass('is-active', this.source?.kind === kind);
         }
         const source = this.source;
-        if (!source) { card.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.chooseSourcePrompt') }); return; }
+        if (!source) { card.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.chooseSourcePrompt') }); dropEmptyStrip(); return; }
         const sourceDetails = card.createDiv({ cls: 'ert-stack ert-manuscript-source-details' });
         if (this.savedSourceId || this.savedSourceNotice) {
-            this.savedSourceNoticeEl = sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.savedSourceNotice });
+            this.savedSourceNoticeEl = saveStrip.createDiv({ cls: 'ert-section-desc', text: this.savedSourceNotice });
             this.savedSourceNoticeEl.toggleClass('ert-hidden', !this.savedSourceNotice);
         }
         if (source.kind === 'book') {
@@ -1019,7 +1024,7 @@ export class ManuscriptOptionsModal extends Modal {
         location.createDiv({ cls: 'ert-section-desc', text: source.kind === 'book'
             ? this.getSourceBook()?.sourceFolder || t('ui.manuscriptOptionsModal.noSourceFolder')
             : source.path });
-        if (source.kind === 'book') return;
+        if (source.kind === 'book') { dropEmptyStrip(); return; }
         sourceDetails.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.plainSourceNote') });
         for (const field of ['title', 'author'] as const) {
             const label = sourceDetails.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
@@ -1083,7 +1088,7 @@ export class ManuscriptOptionsModal extends Modal {
                 .setDisabled(this.sourceReviewed || source.paths.length === 0)
                 .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
         }
-        const saveGroup = withAccessibleLabel(sourceDetails.createDiv({ cls: 'ert-manuscript-source-save', attr: { role: 'group' } }), t('ui.manuscriptOptionsModal.savedManuscriptNameAria'));
+        const saveGroup = withAccessibleLabel(saveStrip.createDiv({ cls: 'ert-manuscript-source-save', attr: { role: 'group' } }), t('ui.manuscriptOptionsModal.savedManuscriptNameAria'));
         const nameRow = saveGroup.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
         nameRow.createSpan({ text: t('ui.manuscriptOptionsModal.saveAs') });
         const nameInput = withAccessibleLabel(nameRow.createEl('input', { cls: 'ert-input', attr: { type: 'text' } }), t('ui.manuscriptOptionsModal.savedManuscriptNameAria'));
@@ -1162,9 +1167,17 @@ export class ManuscriptOptionsModal extends Modal {
         this.sourceCard = container.createDiv({ cls: 'ert-panel ert-stack' });
         this.renderSourceCard();
 
-        // WHO IS IT FOR — built-in presets, one per purpose
-        this.purposeCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
-        this.createSectionHeading(this.purposeCard, t('ui.manuscriptOptionsModal.whoIsItFor'), 'users');
+        // HOW TO FORMAT IT — one group for every formatting panel, headed by the
+        // format preset row that saves them, as the saved selection row heads
+        // What to export.
+        const formatGroup = container.createDiv({ cls: 'ert-panel ert-stack ert-export-group' });
+        formatGroup.createEl('h4', { cls: 'ert-section-title', text: t('ui.manuscriptOptionsModal.formatGroupHeading') });
+        const presetStrip = formatGroup.createDiv({ cls: 'ert-export-save-row' });
+        const presetLabel = presetStrip.createDiv({ cls: 'ert-export-save-row__label' });
+        setIcon(presetLabel.createSpan({ cls: 'ert-export-save-row__icon' }), 'bookmark');
+        presetLabel.createSpan({ text: t('ui.manuscriptOptionsModal.formatPresetLabel') });
+        // Built-in starting points, one per purpose (manuscripts only).
+        this.purposeCard = presetStrip.createDiv({ cls: 'ert-export-save-row__purposes' });
         const purposeRow = this.purposeCard.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-pill-row--single' });
         for (const purpose of EXPORT_PURPOSES) {
             const pill = purposeRow.createEl('button', { text: purpose.label, attr: { 'data-ert-toggle': '' } });
@@ -1174,9 +1187,59 @@ export class ManuscriptOptionsModal extends Modal {
             this.purposePills.push({ el: pill, purpose });
         }
         this.purposeNoteEl = this.purposeCard.createDiv({ cls: 'ert-sub-card-note' });
+        // The author's own presets, and saving the settings below as one.
+        const presetTopRow = presetStrip.createDiv({ cls: 'ert-export-preset-toprow' });
+        const dropdownRow = presetTopRow.createDiv({ cls: 'ert-template-dropdown-row' });
+        const templateSetting = new DropdownComponent(dropdownRow.createDiv({ cls: 'ert-manuscript-input-container' }));
+        templateSetting.selectEl.addClass('ert-input', 'ert-input--lg');
+        this.exportTemplateDropdown = templateSetting.selectEl;
+        templateSetting.onChange((value) => {
+            if (!value) {
+                this.selectedExportProfileId = null;
+                this.selectedExportProfile = this.defaultExportProfile;
+                this.selectedLayoutId = this.resolveLayoutIdForProfile(this.selectedExportProfile);
+                this.syncExportUi();
+                this.updateTemplateActionButtonState();
+                this.updateExportProfileSummary();
+                void this.rememberLastUsedTemplate(null);
+                return;
+            }
+            void this.applyTemplateById(value);
+        });
+        const templateActions = presetTopRow.createDiv({ cls: 'ert-template-actions' });
+        // Re-selecting the same option in a <select> fires no change event, so
+        // discarding edits needs its own control.
+        this.reloadTemplateButton = new ButtonComponent(templateActions)
+            .setButtonText(t('ui.manuscriptOptionsModal.reloadPreset'))
+            .onClick(() => {
+                const selectedId = this.getCurrentTemplateSelection();
+                if (!selectedId) return;
+                void this.applyTemplateById(selectedId);
+            });
+        this.saveTemplateButton = new ButtonComponent(templateActions)
+            .setButtonText(t('ui.manuscriptOptionsModal.createPreset'))
+            .onClick(() => {
+                void this.saveOrUpdateTemplate();
+            });
+        this.deleteTemplateButton = new ButtonComponent(templateActions)
+            .setButtonText(t('ui.manuscriptOptionsModal.deletePreset'))
+            .setDestructive()
+            .setDisabled(true)
+            .onClick(() => {
+                const selectedId = this.getCurrentTemplateSelection();
+                if (!selectedId) return;
+                const template = this.getTemplateList().find(item => item.id === selectedId);
+                if (!template) return;
+                new DeletePublishingItemModal(this.app, template.name, () => {
+                    void this.deleteTemplate(selectedId);
+                }).open();
+            });
+        const presetSummaryStack = presetStrip.createDiv({ cls: 'ert-export-preset-summary-stack' });
+        this.templateSummaryEl = presetSummaryStack.createDiv({ cls: 'ert-sub-card-note ert-export-preset-summary' });
+        this.templateHintEl = presetSummaryStack.createDiv({ cls: 'ert-sub-card-note ert-export-preset-hint' });
 
         // A) OUTPUT
-        const outputCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        const outputCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(outputCard, t('ui.manuscriptOptionsModal.output'), 'file-output');
         const outputGrid = outputCard.createDiv({ cls: 'ert-manuscript-output-grid' });
         this.outputGridEl = outputGrid;
@@ -1198,7 +1261,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.documentTypeDescEl = outputGrid.createDiv({ cls: 'ert-sub-card-note ert-manuscript-output-desc' });
 
         // B) PRESETS
-        this.manuscriptOptionsCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.manuscriptOptionsCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         const manuscriptPresetGrid = this.manuscriptOptionsCard.createDiv({ cls: 'ert-manuscript-preset-grid' });
         this.manuscriptPresetGridEl = manuscriptPresetGrid;
 
@@ -1227,7 +1290,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.templateWarningEl = presetCol.createDiv({ cls: 'ert-manuscript-template-warning ert-manuscript-preset-status' });
         this.layoutContainerEl = manuscriptPresetGrid.createDiv({ cls: 'ert-manuscript-layout-picker ert-manuscript-preset-col ert-manuscript-preset-col--layout' });
 
-        this.outlineOptionsCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.outlineOptionsCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.outlineOptionsCard, t('manuscriptModal.outlinePresetHeading'), 'layout-list');
         const outlinePresetRow = this.outlineOptionsCard.createDiv({ cls: 'ert-manuscript-input-container' });
         this.outlinePresetDropdown = new DropdownComponent(outlinePresetRow)
@@ -1256,7 +1319,7 @@ export class ManuscriptOptionsModal extends Modal {
         });
 
         // C) SPLIT OUTPUT
-        this.splitCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.splitCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.splitCard, t('ui.manuscriptOptionsModal.splitOutput'), 'split');
         const splitModeRow = this.splitCard.createDiv({ cls: 'ert-manuscript-split-grid' });
         const splitModeGroup = `ert-manuscript-split-${Date.now()}`;
@@ -1306,7 +1369,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.splitPreviewEl = this.splitPartsContainerEl.createDiv({ cls: 'ert-manuscript-split-preview' });
 
         // D) SCOPE
-        this.scopeCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.scopeCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.scopeCard, t('ui.manuscriptOptionsModal.scope'), 'filter');
 
         this.filterCard = this.scopeCard.createDiv({ cls: 'ert-manuscript-scope-row' });
@@ -1337,7 +1400,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.loadingEl = this.scopeCard.createDiv({ cls: 'ert-manuscript-loading', text: t('manuscriptModal.rangeLoading') });
 
         // E) ORDERING
-        this.orderingCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.orderingCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.orderingCard, t('manuscriptModal.orderHeading'), 'arrow-down-up');
         const orderRow = this.orderingCard.createDiv({ cls: 'ert-manuscript-pill-row' });
         this.createOrderPill(orderRow, t('manuscriptModal.orderNarrative'), 'narrative');
@@ -1354,7 +1417,7 @@ export class ManuscriptOptionsModal extends Modal {
         });
 
         // F) MANUSCRIPT OPTIONS
-        this.manuscriptRulesCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.manuscriptRulesCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.manuscriptRulesCard, t('manuscriptModal.tocHeading'), 'list-checks');
 
         this.tocCard = this.manuscriptRulesCard.createDiv({ cls: 'ert-manuscript-rule-block' });
@@ -1385,7 +1448,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.syncTocPills();
 
         // G) MANUSCRIPT OPTIONS
-        this.publishingCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.publishingCard = formatGroup.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         const publishingHeading = this.createSectionHeading(this.publishingCard, t('ui.manuscriptOptionsModal.manuscriptOptions'), 'settings');
         this.publishingHeadingTextEl = publishingHeading.querySelector('.ert-sub-card-head-text') || undefined;
         const publishingBody = this.publishingCard.createDiv({ cls: 'ert-manuscript-advanced-body' });
@@ -1530,58 +1593,8 @@ export class ManuscriptOptionsModal extends Modal {
         const protectedNote = this.exportCleanupCard.createDiv({ cls: 'ert-sub-card-note' });
         this.appendInlineCodeText(protectedNote, t('ui.manuscriptOptionsModal.protectedNote'));
 
-        // H) EXPORT TEMPLATES
-        this.templateCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card ert-layout-templates-card' });
-        this.createSectionHeading(this.templateCard, t('ui.manuscriptOptionsModal.savedPresets'), 'bookmark');
-        const presetTopRow = this.templateCard.createDiv({ cls: 'ert-export-preset-toprow' });
-        const presetSummaryStack = presetTopRow.createDiv({ cls: 'ert-export-preset-summary-stack' });
-        this.templateSummaryEl = presetSummaryStack.createDiv({ cls: 'ert-sub-card-note ert-export-preset-summary' });
-        this.templateHintEl = presetSummaryStack.createDiv({ cls: 'ert-sub-card-note ert-export-preset-hint' });
-        const dropdownRow = presetTopRow.createDiv({ cls: 'ert-template-dropdown-row' });
-        const templateSetting = new DropdownComponent(dropdownRow.createDiv({ cls: 'ert-manuscript-input-container' }));
-        templateSetting.selectEl.addClass('ert-input', 'ert-input--lg');
-        this.exportTemplateDropdown = templateSetting.selectEl;
-        templateSetting.onChange((value) => {
-            if (!value) {
-                this.selectedExportProfileId = null;
-                this.selectedExportProfile = this.defaultExportProfile;
-                this.selectedLayoutId = this.resolveLayoutIdForProfile(this.selectedExportProfile);
-                this.syncExportUi();
-                this.updateTemplateActionButtonState();
-                this.updateExportProfileSummary();
-                void this.rememberLastUsedTemplate(null);
-                return;
-            }
-            void this.applyTemplateById(value);
-        });
-        const templateActions = this.templateCard.createDiv({ cls: 'ert-template-actions' });
-        // Re-selecting the same option in a <select> fires no change event, so
-        // discarding edits needs its own control.
-        this.reloadTemplateButton = new ButtonComponent(templateActions)
-            .setButtonText(t('ui.manuscriptOptionsModal.reloadPreset'))
-            .onClick(() => {
-                const selectedId = this.getCurrentTemplateSelection();
-                if (!selectedId) return;
-                void this.applyTemplateById(selectedId);
-            });
-        this.saveTemplateButton = new ButtonComponent(templateActions)
-            .setButtonText(t('ui.manuscriptOptionsModal.createPreset'))
-            .onClick(() => {
-                void this.saveOrUpdateTemplate();
-            });
-        this.deleteTemplateButton = new ButtonComponent(templateActions)
-            .setButtonText(t('ui.manuscriptOptionsModal.deletePreset'))
-            .setDestructive()
-            .setDisabled(true)
-            .onClick(() => {
-                const selectedId = this.getCurrentTemplateSelection();
-                if (!selectedId) return;
-                const template = this.getTemplateList().find(item => item.id === selectedId);
-                if (!template) return;
-                new DeletePublishingItemModal(this.app, template.name, () => {
-                    void this.deleteTemplate(selectedId);
-                }).open();
-            });
+        // The format preset controls were built at the top of the group; fill
+        // the dropdown now that every panel it reads exists.
         this.refreshTemplateDropdown();
 
         this.renderDestination(container);

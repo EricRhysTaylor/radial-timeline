@@ -10104,6 +10104,57 @@
   grid-column: 2;
 }
 
+/* A save row heads the group it saves: the saved selection in What to
+   export, the format preset in How to format it. Both look the same, so the
+   two kinds of saving read as one idea applied to two groups. */
+.ert-ui.ert-scope--modal .ert-export-save-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-md);
+  border: 1px dashed color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  border-radius: var(--ert-control-radius);
+  background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row__label {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row__icon {
+  display: inline-flex;
+  color: var(--text-accent);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row__icon svg {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row .ert-manuscript-source-save {
+  padding-top: 0;
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row__picker select {
+  width: 100%;
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row .ert-export-preset-toprow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row .ert-template-actions {
+  margin-top: 0;
+}
+
 .ert-ui.ert-scope--modal .ert-manuscript-output-grid--format-only {
   grid-template-columns: minmax(0, 1fr);
 }

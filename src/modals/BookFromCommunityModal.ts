@@ -346,6 +346,14 @@ export class BookFromCommunityModal extends ErtModal {
             }
             if (outcome.kind === 'stopped') this.stopped = outcome.message;
             this.options.onChanged?.();
+            // The record went with its folder: the book is chosen a folder
+            // again from the preview, read now if Continue had no need of it.
+            if (outcome.kind === 'stopped' && outcome.folderGone && !this.plan) {
+                this.loading = true;
+                this.render();
+                await this.load();
+                return;
+            }
         } catch (error) {
             // Plugin data or the vault failed mid-step. The record holds what was done; Continue picks up from it.
             console.error('Book from Community stopped:', error);

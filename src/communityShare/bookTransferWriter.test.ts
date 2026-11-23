@@ -47,6 +47,8 @@ interface World {
         state: () => Promise<BookTransferState>;
     };
     registered: CommunityBookTransferRecord[];
+    /** What Book Manager says against the folder becoming a book (a book added since the preview overlaps it). */
+    registerProblem: string | null;
     /** Make the next plugin-data save throw, as if the app closed there. */
     closeAppOnPut?: (record: CommunityBookTransferRecord) => boolean;
 }
@@ -59,6 +61,7 @@ function world(folders: string[] = ['Books']): World {
         log: [],
         creates: new Map(),
         registered: [],
+        registerProblem: null,
         server: {
             done: async () => undefined,
             state: async () => ({ state: 'open', expiresAt: '2026-11-22T12:00:00Z' }),
@@ -112,6 +115,7 @@ function world(folders: string[] = ['Books']): World {
                 w.records.delete(transferId);
             },
         },
+        registerProblem: () => w.registerProblem,
         register: async record => {
             w.log.push('register');
             w.registered.push(record);
@@ -307,6 +311,115 @@ describe('the folder', () => {
         expect(outcome).toMatchObject({ kind: 'stopped', folderGone: true });
         expect(w.records.size).toBe(0);
         expect(w.files.size).toBe(0);
+    });
+});
+
+describe('a folder deleted while the run was stopped, and one of the author\'s own made at its path', () => {
+    const stopAfterFirstNote = async (w: World): Promise<void> => {
+        w.closeAppOnPut = record => Object.keys(record.notes).length === 2;
+        await expect(runBookTransfer(w.deps, start())).rejects.toThrow('The app closed.');
+    };
+    const replaceFolder = (w: World): void => {
+        for (const path of [...w.files.keys()]) if (insideFolder(path)) w.files.delete(path);
+        w.files.set(`${FOLDER}/My own chapter.md`, '---\nClass: Scene\n---\nThe author\'s own words.');
+    };
+
+    it('Continue adds nothing to it, never makes it a book, and the record goes', async () => {
+        const w = world();
+        await stopAfterFirstNote(w);
+        replaceFolder(w);
+        const creates = w.log.filter(step => step.startsWith('create ')).length;
+        const outcome = await runBookTransfer(w.deps, start());
+        expect(outcome).toEqual({
+            kind: 'stopped', folderGone: true,
+            message: `${FOLDER} is no longer the folder this book was being written into, so it stays as it is. Choose a folder for the book, then Create book.`,
+        });
+        expect(w.log.filter(step => step.startsWith('create ')).length).toBe(creates);
+        expect([...w.files.keys()].filter(insideFolder)).toEqual([`${FOLDER}/My own chapter.md`]);
+        expect(w.log.some(step => step.startsWith('done'))).toBe(false);
+        expect(w.registered).toEqual([]);
+        expect(w.records.size).toBe(0);
+    });
+
+    it('the same once every note was written, before Community was told', async () => {
+        const w = world();
+        w.server.done = async () => { throw new Error('offline'); };
+        w.server.state = async () => { throw new Error('offline'); };
+        expect(await runBookTransfer(w.deps, start())).toMatchObject({ kind: 'stopped' });
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        replaceFolder(w);
+        w.server.done = async () => undefined;
+        const outcome = await runBookTransfer(w.deps, start({ notes: undefined }));
+        expect(outcome).toMatchObject({ kind: 'stopped', folderGone: true });
+        expect(w.log.filter(step => step.startsWith('done'))).toHaveLength(1);
+        expect(w.registered).toEqual([]);
+        expect(w.records.size).toBe(0);
+    });
+
+    it('a folder made but deleted before any note was written: the record goes', async () => {
+        const w = world();
+        w.closeAppOnPut = record => record.folderCreated && Object.keys(record.notes).length === 1;
+        await expect(runBookTransfer(w.deps, start())).rejects.toThrow('The app closed.');
+        expect(w.records.get(TRANSFER_ID)).toMatchObject({ folderCreated: true, notes: {} });
+        w.folders.delete(FOLDER);
+        w.files.clear();
+        expect(await runBookTransfer(w.deps, start())).toMatchObject({ kind: 'stopped', folderGone: true });
+        expect(w.records.size).toBe(0);
+        expect(w.files.size).toBe(0);
+    });
+
+    it('one written note gone after writing finished: restore it, the folder is still the book\'s', async () => {
+        const w = world();
+        w.server.done = async () => { throw new Error('offline'); };
+        w.server.state = async () => { throw new Error('offline'); };
+        await runBookTransfer(w.deps, start());
+        w.files.delete(`${FOLDER}/02 Night Watch.md`);
+        w.server.done = async () => undefined;
+        expect(await runBookTransfer(w.deps, start({ notes: undefined })))
+            .toEqual({ kind: 'stopped', message: '02 Night Watch.md is missing or its ID line changed. Restore it, then choose Continue.' });
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        expect(w.registered).toEqual([]);
+    });
+});
+
+describe('a folder Book Manager cannot take as a book yet', () => {
+    const overlap = 'Books/The Lighthouse now overlaps the book Books in Book Manager. Change that book’s source folder, or remove it from Book Manager, then choose Continue.';
+
+    it('a book added since the preview overlaps the folder: Community is not told, and Continue finishes once it is put right', async () => {
+        const w = world();
+        w.registerProblem = overlap;
+        expect(await runBookTransfer(w.deps, start())).toEqual({ kind: 'stopped', message: overlap });
+        // Community still edits the book: nothing was sent to move it.
+        expect(w.log.some(step => step.startsWith('done'))).toBe(false);
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        w.registerProblem = null;
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'done' });
+        expect(w.registered).toHaveLength(1);
+    });
+
+    it('Book Manager failing after Community confirmed keeps the record, and Continue registers', async () => {
+        const w = world();
+        const register = w.deps.register;
+        w.deps.register = async () => { throw new Error('Settings could not be saved.'); };
+        expect(await runBookTransfer(w.deps, start()))
+            .toEqual({ kind: 'stopped', message: 'The notes are written and Community has the book. Choose Continue to add it to Book Manager.' });
+        expect(w.records.get(TRANSFER_ID)?.phase).toBe('written');
+        w.deps.register = register;
+        let bookId = '';
+        w.server.done = async (_ids, key) => { bookId = key; throw new CommunityShareError('transfer_done', 'Already done.'); };
+        w.server.state = async () => ({ state: 'done', pluginBookKey: bookId, expiresAt: 'x' });
+        expect(await runBookTransfer(w.deps, start({ notes: undefined }))).toMatchObject({ kind: 'done' });
+        expect(w.registered).toHaveLength(1);
+        expect(w.records.size).toBe(0);
+    });
+
+    it('in Obsidian: a book overlapping the folder, other than this one, is named', () => {
+        const record = { bookId: 'book-new', folder: 'Books/The Lighthouse' } as CommunityBookTransferRecord;
+        const plugin = (books: Array<{ id: string; title: string; sourceFolder: string }>) => ({ app: { vault: {} }, settings: { books } });
+        expect(obsidianBookTransferDeps(plugin([{ id: 'b1', title: 'Collected', sourceFolder: 'Books' }]) as never).registerProblem(record))
+            .toBe('Books/The Lighthouse now overlaps the book Collected in Book Manager. Change that book’s source folder, or remove it from Book Manager, then choose Continue.');
+        expect(obsidianBookTransferDeps(plugin([{ id: 'book-new', title: 'The Lighthouse', sourceFolder: 'Books/The Lighthouse' }]) as never).registerProblem(record)).toBeNull();
+        expect(obsidianBookTransferDeps(plugin([{ id: 'b2', title: 'Elsewhere', sourceFolder: 'Other' }]) as never).registerProblem(record)).toBeNull();
     });
 });
 

@@ -33,7 +33,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { addBookToManager } from '../onboarding/addBook';
 import type { CommunityBookTransferRecord } from '../types/settings';
-import { createBookId } from '../utils/books';
+import { createBookId, getOverlappingBook } from '../utils/books';
 import { frontmatterValues, readFrontmatterText } from '../utils/frontmatterText';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { readSceneId } from '../utils/sceneIds';
@@ -82,6 +82,12 @@ export interface BookTransferDeps {
     vault: BookTransferVault;
     server: BookTransferServer;
     store: BookTransferStore;
+    /**
+     * Why the record's folder cannot become a book in Book Manager right now,
+     * in the author's words, or null when it can. Asked before Community is
+     * told, because telling it moves the book's editing location to the vault.
+     */
+    registerProblem(record: CommunityBookTransferRecord): string | null;
     /** Book Manager, Keep timeline updated, the active book. Called only after Community confirms, and safe to call twice. */
     register(record: CommunityBookTransferRecord): Promise<void>;
     now(): string;
@@ -158,6 +164,21 @@ async function runOnce(
     const { transferId } = start;
     let record = store.get(transferId);
     if (record?.phase === 'cancelled') return { kind: 'cancelled', title: record.title, folder: record.folder };
+
+    if (record?.folderCreated) {
+        // The folder may have been deleted while the run was stopped, and a
+        // folder of the author's own made at the same path. Nothing goes into
+        // it, and it never becomes this book: the record goes, and the author
+        // picks a folder again.
+        const disk = await recordedNotesOnDisk(vault, record, start.notes);
+        if (!disk.ours) {
+            await store.remove(transferId);
+            return { kind: 'stopped', message: t('ui.bookFromCommunity.folderChanged', { folder: record.folder }), folderGone: true };
+        }
+        if (record.phase === 'written' && disk.missing) {
+            return { kind: 'stopped', message: t('ui.bookFromCommunity.checkMissing', { note: fileName(disk.missing) }) };
+        }
+    }
 
     if (!record) {
         const folder = normalizePath(start.folder);
@@ -254,6 +275,51 @@ async function writeNotes(
     return { kind: 'written', record };
 }
 
+/**
+ * Whether the record's folder is still the one this run made, and the first
+ * note the record lists that is gone or lost its ID line. The folder is this
+ * run's own while a note the record lists is there with its scene ID. Before
+ * the record lists any note, it is this run's own while it is empty, or holds
+ * a planned note exactly as planned (written just before the app closed,
+ * before the record could say so).
+ */
+async function recordedNotesOnDisk(
+    vault: BookTransferVault,
+    record: CommunityBookTransferRecord,
+    planned: readonly PlannedSceneNote[] | undefined
+): Promise<{ ours: boolean; missing: string | null }> {
+    const written = Object.entries(record.notes);
+    if (written.length === 0) return { ours: await holdsPlannedNote(vault, record.folder, planned), missing: null };
+    let present = 0;
+    let missing: string | null = null;
+    for (const [sceneId, path] of written) {
+        let content: string | null = null;
+        try {
+            content = await vault.read(path);
+        } catch {
+            content = null;
+        }
+        if (content !== null && sceneIdOnDisk(content) === sceneId) present++;
+        else missing ??= path;
+    }
+    return { ours: present > 0, missing };
+}
+
+async function holdsPlannedNote(vault: BookTransferVault, folder: string, planned: readonly PlannedSceneNote[] | undefined): Promise<boolean> {
+    if (!await vault.exists(folder)) return false;
+    if (await vault.isEmptyFolder(folder)) return true;
+    for (const note of planned ?? []) { // SAFE: without the plan, only an empty folder is known to be this run's
+        const path = transferNotePath(folder, note.fileName);
+        if (!await vault.exists(path)) continue;
+        try {
+            if (await vault.read(path) === note.content) return true;
+        } catch {
+            // Unreadable: not known to be this run's.
+        }
+    }
+    return false;
+}
+
 /** Every scene's note, read from disk: present, carrying its own id, and the only note in the folder with it. */
 async function checkNotes(vault: BookTransferVault, record: CommunityBookTransferRecord, notes: readonly PlannedSceneNote[]): Promise<string | null> {
     for (const note of notes) {
@@ -294,6 +360,11 @@ async function tellCommunity(
     notes: readonly PlannedSceneNote[] | undefined,
     onProgress: (progress: BookTransferProgress) => void
 ): Promise<BookTransferOutcome> {
+    // A book added in Book Manager since the preview may now overlap the
+    // folder. Said before Community is told, so its editing location stays
+    // on Community until the folder can be registered.
+    const blocked = deps.registerProblem(record);
+    if (blocked) return { kind: 'stopped', message: blocked };
     onProgress({ step: 'telling' });
     // The document's order when it is at hand; the record keeps the same order otherwise.
     const sceneIds = notes ? notes.map(note => note.sceneId) : Object.keys(record.notes);
@@ -324,7 +395,14 @@ async function tellCommunity(
         }
     }
 
-    await deps.register(record);
+    try {
+        await deps.register(record);
+    } catch (error) {
+        // Community has the book; the record stays `written`, and Continue
+        // asks again (done for this book) and registers.
+        console.error('Book from Community: Book Manager could not take the book yet:', error);
+        return { kind: 'stopped', message: deps.registerProblem(record) ?? t('ui.bookFromCommunity.registerFailed') };
+    }
     await deps.store.remove(transferId);
     return { kind: 'done', bookId: record.bookId, title: record.title, folder: record.folder };
 }
@@ -450,6 +528,10 @@ export function obsidianBookTransferDeps(plugin: RadialTimelinePlugin): BookTran
             state: transferId => fetchBookTransferState(plugin, transferId),
         },
         store: transferStore(plugin),
+        registerProblem: record => {
+            const overlap = getOverlappingBook(plugin.settings.books, record.folder, record.bookId);
+            return overlap ? t('ui.bookFromCommunity.folderNowOverlaps', { folder: record.folder, book: overlap.title }) : null;
+        },
         register: record => registerTransferredBook(plugin, record),
         now: () => new Date().toISOString(),
     };

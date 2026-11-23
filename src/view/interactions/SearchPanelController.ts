@@ -49,7 +49,8 @@ export class SearchPanelController {
     private readonly indexHint: HTMLElement;
     private readonly indexIndicator: HTMLElement;
     private localStatus?: LocalModelStatus;
-    private statusTimer?: number;
+    /** Ends what runs while the panel is open: its status check and its press-outside listener. */
+    private stopWhileOpen: (() => void) | null = null;
     private readonly statusText: HTMLElement;
     private readonly cancelButton: HTMLButtonElement;
     private cancelRequested = false;
@@ -153,7 +154,7 @@ export class SearchPanelController {
 
         shell.appendChild(this.panel);
 
-        this.bindEvents(doc);
+        this.bindEvents();
         this.syncFromState();
     }
 
@@ -204,7 +205,7 @@ export class SearchPanelController {
         return indicator;
     }
 
-    private bindEvents(doc: Document): void {
+    private bindEvents(): void {
         for (const row of this.scopeRows) {
             this.host.registerDomEvent(row.checkbox, 'change', () => this.commitOptions());
         }
@@ -248,13 +249,6 @@ export class SearchPanelController {
             this.input.focus();
         });
 
-        const onDocumentPointerDown = (ev: Event) => {
-            const target = ev.target as Node | null;
-            if (target && this.shell.contains(target)) return;
-            this.collapse();
-        };
-        this.host.registerDomEvent(doc, 'pointerdown', onDocumentPointerDown);
-
         this.host.register(() => {
             this.collapse();
             this.statusProbeId += 1;
@@ -282,7 +276,23 @@ export class SearchPanelController {
         this.syncFromState();
         this.applyEdgeAnchor();
         void this.refreshLocalModelStatus();
-        this.statusTimer = this.panel.ownerDocument.win.setInterval(() => { void this.refreshLocalModelStatus(); }, 5000);
+        // The open panel works in the window the search is in now: a timeline
+        // moved to another window takes its search with it.
+        const doc = this.shell.ownerDocument;
+        const win = doc.win;
+        const statusTimer = win.setInterval(() => { void this.refreshLocalModelStatus(); }, 5000);
+        // A press outside the search closes the panel.
+        const onPressOutside = (ev: PointerEvent) => {
+            const target = ev.target as Node | null;
+            if (target && this.shell.contains(target)) return;
+            this.collapse();
+        };
+        // SAFE: bound only while the panel is open, on the window it is in now; collapse() (also run on unload) removes it.
+        doc.addEventListener('pointerdown', onPressOutside);
+        this.stopWhileOpen = () => {
+            win.clearInterval(statusTimer);
+            doc.removeEventListener('pointerdown', onPressOutside);
+        };
     }
 
     /** Keep availability separate from saved search intent: probes never change modes or start searches. */
@@ -349,8 +359,8 @@ export class SearchPanelController {
     collapse(): void {
         if (!this.expanded) return;
         this.expanded = false;
-        this.panel.ownerDocument.win.clearInterval(this.statusTimer);
-        this.statusTimer = undefined;
+        this.stopWhileOpen?.();
+        this.stopWhileOpen = null;
         this.statusProbeId += 1;
         this.panel.hidden = true;
         this.shell.classList.remove('is-expanded');

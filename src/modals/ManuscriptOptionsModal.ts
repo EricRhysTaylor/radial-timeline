@@ -72,6 +72,7 @@ import type {
     SavedManuscriptSource,
 } from '../types';
 import { getMainPlotName } from '../utils/mainPlot';
+import { listenOnOwnerWindow } from '../utils/pressListeners';
 
 const OPEN_SCENES_FILTER = '__open_scenes__';
 
@@ -3737,10 +3738,15 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateRangeFromDrag(this.activeHandle, position);
         };
 
+        // A handle drag follows the pointer on the modal's own window (a popout's included).
+        let endPress: (() => void) | null = null;
+        const stopPress = () => {
+            endPress?.();
+            endPress = null;
+        };
         const onPointerUp = () => {
             this.activeHandle = null;
-            window.removeEventListener('pointermove', onPointerMove);
-            window.removeEventListener('pointerup', onPointerUp);
+            stopPress();
         };
 
         const attach = (handle: HTMLElement, handleType: 'start' | 'end') => {
@@ -3751,8 +3757,8 @@ export class ManuscriptOptionsModal extends Modal {
             handle.onpointerdown = (evt: PointerEvent) => {
                 const effectiveHandle = handleType;
                 this.activeHandle = effectiveHandle;
-                window.addEventListener('pointermove', onPointerMove);
-                window.addEventListener('pointerup', onPointerUp, { once: true });
+                stopPress();
+                endPress = listenOnOwnerWindow(handle, { pointermove: onPointerMove, pointerup: onPointerUp, pointercancel: onPointerUp });
                 evt.preventDefault();
                 evt.stopPropagation(); // Prevent track from also receiving this event
             };
@@ -3772,10 +3778,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateRangeFromDrag(target, position);
         };
 
-        this.detachEvents = () => {
-            window.removeEventListener('pointermove', onPointerMove);
-            window.removeEventListener('pointerup', onPointerUp);
-        };
+        this.detachEvents = stopPress;
     }
 
     private detachPointerEvents(): void {

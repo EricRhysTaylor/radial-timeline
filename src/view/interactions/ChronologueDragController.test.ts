@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TFile } from 'obsidian';
 import type { TimelineItem } from '../../types';
 import type { PlacementResult } from '../../modals/ChronologuePlacementModal';
@@ -98,6 +98,65 @@ describe('Chronologue placement owns the pointer while confirmation is open', ()
 
         expect(findTarget).not.toHaveBeenCalled();
         expect(targetWhileChoosing).toBe(originalTarget);
+    });
+});
+
+describe('a Chronologue timeline in a popout window follows each press there', () => {
+    // A popout window of its own (Obsidian's `el.win`): the main window never hears its pointer.
+    let popout: EventTarget;
+    const pointer = (type: string, x = 0, y = 0): Event => Object.assign(new Event(type), { clientX: x, clientY: y, button: 0 });
+
+    function press() {
+        popout = new EventTarget();
+        const drag = harness() as DragHarness & { dragging: boolean; startDrag(evt: Event, group: SVGGElement): void };
+        const view = (drag as unknown as { view: { chronologueState: object; plugin: { app: object } } }).view;
+        view.chronologueState = { shift: false, alien: false };
+        Object.assign(view.plugin.app, { metadataCache: { getFileCache: () => null } });
+        Object.assign(drag, { dragging: false, sourceGroup: null, sourcePath: null, currentTarget: null });
+        Object.assign((drag as unknown as { overlays: object }).overlays, { hideIndicator: vi.fn() });
+        const group = Object.assign(element(), {
+            win: popout,
+            ownerDocument: { documentElement: {} },
+            getAttribute: (name: string) => (name === 'data-path' ? 'A.md' : name === 'data-start-angle' ? '0' : null),
+            querySelector: () => null,
+        }) as unknown as SVGGElement;
+        drag.startDrag(pointer('pointerdown'), group);
+        return drag;
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        // The stage colour reads the theme's CSS, which a test has none of.
+        vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => '' }));
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    it('a plain click ends in that window and never leaves the timeline in drag mode', () => {
+        const drag = press();
+        popout.dispatchEvent(pointer('pointerup'));
+        vi.advanceTimersByTime(1000);
+        expect(drag.dragging).toBe(false);
+        expect(drag.sourceGroup).toBeNull();
+    });
+
+    it('a drag onto another scene opens the placement dialog, once', async () => {
+        const drag = press();
+        const target = { group: element(), path: 'C.md', startAngle: 1 };
+        vi.spyOn(drag, 'findDropTarget').mockReturnValue(target);
+        popout.dispatchEvent(pointer('pointermove', 30, 0));
+        expect(drag.dragging).toBe(true);
+        popout.dispatchEvent(pointer('pointerup', 30, 0));
+        expect(pending.resolvers).toHaveLength(1);
+        // A click in the dialog is no longer part of the press.
+        popout.dispatchEvent(pointer('pointerup', 30, 0));
+        expect(pending.resolvers).toHaveLength(1);
+        pending.resolvers[0](null);
+        await vi.runAllTimersAsync();
+        expect(drag.sourcePath).toBeNull();
+        expect(pending.writes).not.toHaveBeenCalled();
     });
 });
 

@@ -234,6 +234,8 @@ export class RadialTimelineView extends ItemView {
     private writingSessionButton?: HTMLButtonElement;
     private writingSessionLabel?: HTMLElement;
     private writingSessionPanel?: HTMLElement;
+    /** Ends the open writing session panel's listeners on its window. */
+    private stopWritingSessionPanelListeners?: () => void;
     private writingSessionTickInterval?: number;
     private gossamerCachePillEl?: HTMLElement;
     private gossamerCacheTickInterval?: number;
@@ -711,7 +713,11 @@ export class RadialTimelineView extends ItemView {
             sessionPanel.className = 'ert-timeline-session-panel ert-hidden';
             sessionPanel.setAttribute('role', 'dialog');
             doc.body.appendChild(sessionPanel);
-            this.register(() => sessionPanel.remove());
+            this.register(() => {
+                this.stopWritingSessionPanelListeners?.();
+                this.stopWritingSessionPanelListeners = undefined;
+                sessionPanel.remove();
+            });
 
             wireLegendTrigger(this, legendBtn, legendPanel, () => this.updateTimelineLegend(), this.app.workspace);
 
@@ -927,15 +933,6 @@ export class RadialTimelineView extends ItemView {
                     window.clearTimeout(this.writingSessionRingPulseTimeout);
                     this.writingSessionRingPulseTimeout = undefined;
                 }
-            });
-            this.registerDomEvent(doc.body, 'click', (evt: MouseEvent) => {
-                const target = evt.target as Node | null;
-                if (!target) return;
-                if (sessionPanel.contains(target) || sessionBtn.contains(target)) return;
-                this.hideWritingSessionPanel();
-            });
-            this.registerDomEvent(doc, 'keydown', (evt: KeyboardEvent) => {
-                if (evt.key === 'Escape') this.hideWritingSessionPanel();
             });
             this.syncTimelineSearchControl();
             this.refreshWritingSessionControl();
@@ -1733,16 +1730,46 @@ export class RadialTimelineView extends ItemView {
     }
 
     private showWritingSessionPanel(): void {
-        if (!this.writingSessionPanel) return;
+        const panel = this.writingSessionPanel;
+        const button = this.writingSessionButton;
+        if (!panel || !button) return;
+        // The panel hangs from the body of the window the timeline is in now:
+        // a timeline moved to another window takes its panel along.
+        const doc = button.ownerDocument;
+        if (panel.parentElement !== doc.body) doc.body.appendChild(panel);
         this.renderWritingSessionPanel();
         this.positionWritingSessionPanel();
-        this.writingSessionPanel.classList.remove('ert-hidden');
-        this.writingSessionButton?.setAttribute('aria-expanded', 'true');
+        panel.classList.remove('ert-hidden');
+        button.setAttribute('aria-expanded', 'true');
+        this.listenWhileWritingSessionPanelOpen(doc, panel, button);
+    }
+
+    /** While open, a click elsewhere in the panel's window or Escape closes it. */
+    private listenWhileWritingSessionPanelOpen(doc: Document, panel: HTMLElement, button: HTMLElement): void {
+        this.stopWritingSessionPanelListeners?.();
+        const onClick = (evt: MouseEvent) => {
+            const target = evt.target as Node | null;
+            if (!target) return;
+            if (panel.contains(target) || button.contains(target)) return;
+            this.hideWritingSessionPanel();
+        };
+        const onKey = (evt: KeyboardEvent) => {
+            if (evt.key === 'Escape') this.hideWritingSessionPanel();
+        };
+        // SAFE: bound only while the panel is open, on the window it is in now; hide() and unload remove them.
+        doc.body.addEventListener('click', onClick);
+        doc.addEventListener('keydown', onKey); // SAFE: removed with the click listener above.
+        this.stopWritingSessionPanelListeners = () => {
+            doc.body.removeEventListener('click', onClick);
+            doc.removeEventListener('keydown', onKey);
+        };
     }
 
     private hideWritingSessionPanel(): void {
         this.writingSessionPanel?.classList.add('ert-hidden');
         this.writingSessionButton?.setAttribute('aria-expanded', 'false');
+        this.stopWritingSessionPanelListeners?.();
+        this.stopWritingSessionPanelListeners = undefined;
     }
 
     public closeWritingSessionPanel(): void {
@@ -1756,7 +1783,7 @@ export class RadialTimelineView extends ItemView {
         const viewportPadding = 12;
         const left = Math.min(
             Math.max(viewportPadding, btnRect.left),
-            Math.max(viewportPadding, window.innerWidth - panelRect.width - viewportPadding)
+            Math.max(viewportPadding, this.writingSessionButton.win.innerWidth - panelRect.width - viewportPadding)
         );
         this.writingSessionPanel.style.left = `${left}px`;
         this.writingSessionPanel.style.top = `${btnRect.bottom + 8}px`;

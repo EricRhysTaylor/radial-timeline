@@ -324,11 +324,13 @@ export class BugReportModal extends ErtModal {
         const left = ev.clientX - this.dragOffset.x;
         const top = ev.clientY - this.dragOffset.y;
         const rect = this.modalEl.getBoundingClientRect();
-        // Center-anchored: translate is delta from natural centered position.
-        const centerX = (window.innerWidth - rect.width) / 2;
-        const centerY = (window.innerHeight - rect.height) / 2;
-        const clampedLeft = Math.max(0, Math.min(window.innerWidth - rect.width, left));
-        const clampedTop = Math.max(0, Math.min(window.innerHeight - rect.height, top));
+        // Center-anchored: translate is delta from natural centered position,
+        // inside the modal's own window (a popout's included).
+        const win = this.modalEl.win;
+        const centerX = (win.innerWidth - rect.width) / 2;
+        const centerY = (win.innerHeight - rect.height) / 2;
+        const clampedLeft = Math.max(0, Math.min(win.innerWidth - rect.width, left));
+        const clampedTop = Math.max(0, Math.min(win.innerHeight - rect.height, top));
         this.dragTranslate = {
             x: clampedLeft - centerX,
             y: clampedTop - centerY,

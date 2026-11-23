@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TFile } from 'obsidian';
 import type { DragConfirmCurrentMoveSummary } from '../../modals/DragConfirmModal';
 import type { SceneUpdate } from '../../services/SceneReorderService';
 import { describeSubplotMembershipChange, type SubplotMembershipChange } from '../../services/SubplotMembership';
 import { t } from '../../i18n';
-import { OuterRingDragController } from './OuterRingDragController';
-import { describeSceneFile, ringOutlinePath, SubplotRingDragController } from './SubplotRingDragController';
+import { isDragInteractionActive, OuterRingDragController } from './OuterRingDragController';
+import { describeSceneFile, isSubplotDragActive, ringOutlinePath, SubplotRingDragController } from './SubplotRingDragController';
 
 // What the confirm dialog showed, what was renumbered, and which membership
 // edits were applied.
@@ -56,9 +56,13 @@ vi.mock('../../utils/sleep', () => ({ sleep: () => Promise.resolve() }));
 // Just enough SVG: class and [attr="value"] selectors, #id, closest, and
 // creating, inserting and removing the drag outline.
 const fakeDocument = { createElementNS: (_ns: string, _tag: string): FakeEl => new FakeEl([]) };
+// The window the timeline is in (Obsidian's `el.win`). The popout tests give it
+// a window of its own, which the main window's listeners never hear.
+let timelineWindow = new EventTarget();
 
 class FakeEl {
     readonly ownerDocument = fakeDocument;
+    get win(): EventTarget { return timelineWindow; }
     readonly classList = {
         add: (...names: string[]): void => { names.forEach((name) => { if (!this.classes.includes(name)) this.classes.push(name); }); },
         remove: (...names: string[]): void => { names.forEach((name) => { const at = this.classes.indexOf(name); if (at >= 0) this.classes.splice(at, 1); }); },
@@ -90,6 +94,7 @@ class FakeEl {
         this.parent = null;
     }
     setAttribute(name: string, value: string): void { this.attrs[name] = value; }
+    removeAttribute(name: string): void { delete this.attrs[name]; }
     getAttribute(name: string): string | null { return this.attrs[name] ?? null; }
     private descendants(): FakeEl[] { return this.children.flatMap((child) => [child, ...child.descendants()]); }
     private matches(selector: string): boolean {
@@ -484,5 +489,119 @@ describe('native modal interaction after a ring drop', () => {
             await Promise.all([drop, buttonRelease]);
         }
         expect(memberships).toHaveLength(begin ? 1 : 0);
+    });
+});
+
+describe('a timeline in a popout window follows each press there', () => {
+    const pointer = (type: string, x = 0, y = 0, extra: Record<string, unknown> = {}): Event =>
+        Object.assign(new Event(type), { clientX: x, clientY: y, button: 0, shiftKey: false, key: '', ...extra });
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        timelineWindow = new EventTarget();
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        timelineWindow = new EventTarget();
+    });
+
+    type OuterPress = {
+        dragging: boolean;
+        sourceSceneGroup: FakeEl | null;
+        startDrag(evt: Event, group: FakeEl): void;
+        resolvePublishStageColorFromGroup(group: FakeEl): string;
+        findDropTarget(evt: Event): OuterTarget | null;
+    };
+
+    function pressOuter(basename = '14 Scene') {
+        const { svg, groups } = buildTimeline();
+        const controller = new OuterRingDragController({ plugin: makePlugin(lighthouseSubplots), renderScope } as never, svg as never, { onRefresh: () => {}, mode: 'narrative' });
+        const internals = controller as unknown as OuterPress;
+        // The stage colour reads the theme's CSS, which a test has none of.
+        internals.resolvePublishStageColorFromGroup = () => 'stage-colour';
+        // Hit-testing needs a laid-out page; the pointer is over nothing unless a test says otherwise.
+        internals.findDropTarget = () => null;
+        internals.startDrag(pointer('pointerdown'), groups.get(`${OUTER}:${basename}`)!);
+        return { svg, groups, internals };
+    }
+
+    it('a plain click on a scene ends in that window and never leaves the timeline in drag mode', () => {
+        const { svg, internals } = pressOuter();
+        expect(isDragInteractionActive()).toBe(true);
+        timelineWindow.dispatchEvent(pointer('pointerup'));
+        // Past the hold that would promote an unreleased press into a drag.
+        vi.advanceTimersByTime(1000);
+        expect(isDragInteractionActive()).toBe(false);
+        expect(internals.dragging).toBe(false);
+        expect(svg.classList.contains('rt-dragging-outer')).toBe(false);
+    });
+
+    it('a drag onto another scene asks to confirm the reorder, once', async () => {
+        confirmation.hold = true;
+        const { groups, internals } = pressOuter();
+        const target = groups.get(`${OUTER}:12 Scene`)!;
+        internals.findDropTarget = () => ({ type: 'scene', group: target, sceneId: target.querySelector('.rt-scene-path')!.id, act: 1, ring: OUTER });
+        timelineWindow.dispatchEvent(pointer('pointermove', 30, 0));
+        expect(internals.dragging).toBe(true);
+        timelineWindow.dispatchEvent(pointer('pointerup', 30, 0));
+        expect(shown).toHaveLength(1);
+        // The release on the dialog's buttons is no longer part of the press.
+        timelineWindow.dispatchEvent(pointer('pointerup', 30, 0));
+        expect(shown).toHaveLength(1);
+        confirmation.resolvers.forEach(resolve => resolve(false));
+        await vi.runAllTimersAsync();
+        expect(internals.sourceSceneGroup).toBeNull();
+        expect(renumbered).toHaveLength(0);
+    });
+
+    it('Escape in that window cancels a drag', () => {
+        const { svg, internals } = pressOuter();
+        timelineWindow.dispatchEvent(pointer('pointermove', 30, 0));
+        expect(svg.classList.contains('rt-dragging-outer')).toBe(true);
+        timelineWindow.dispatchEvent(pointer('keydown', 30, 0, { key: 'Escape' }));
+        expect(internals.dragging).toBe(false);
+        expect(svg.classList.contains('rt-dragging-outer')).toBe(false);
+    });
+
+    it('a pointer the system takes back (pointercancel) ends the press with nothing moved', () => {
+        const { internals } = pressOuter();
+        timelineWindow.dispatchEvent(pointer('pointermove', 30, 0));
+        timelineWindow.dispatchEvent(pointer('pointercancel', 30, 0));
+        vi.advanceTimersByTime(1000);
+        expect(internals.dragging).toBe(false);
+        expect(isDragInteractionActive()).toBe(false);
+        expect(shown).toHaveLength(0);
+    });
+
+    type SubplotPress = SubplotInternals & {
+        startDrag(evt: Event, group: FakeEl): void;
+        findTarget(evt: Event): { ring: number; element: FakeEl } | null;
+    };
+
+    it('a subplot drag moves the scene to the ring it is released on', async () => {
+        const { svg, groups } = buildTimeline();
+        const controller = new SubplotRingDragController({ plugin: makePlugin(lighthouseSubplots), renderScope } as never, svg as never, { mode: 'narrative', onRefresh: () => {} });
+        const internals = controller as unknown as SubplotPress;
+        internals.findTarget = () => ({ ring: KEEPERS_RING, element: new FakeEl(['rt-void-cell'], { 'data-ring': String(KEEPERS_RING) }) });
+        internals.startDrag(pointer('pointerdown'), groups.get(`${SHIPWRECK_RING}:14 Scene`)!);
+        expect(isSubplotDragActive()).toBe(true);
+        timelineWindow.dispatchEvent(pointer('pointermove', 30, 0));
+        expect(internals.dragging).toBe(true);
+        timelineWindow.dispatchEvent(pointer('pointerup', 30, 0));
+        await vi.runAllTimersAsync();
+        expect(memberships).toEqual([{ path: path('14 Scene'), change: { kind: 'move', from: SHIPWRECK, to: KEEPERS } }]);
+        expect(isSubplotDragActive()).toBe(false);
+    });
+
+    it('a plain click on a subplot ring scene never leaves a subplot drag armed', () => {
+        const { svg, groups } = buildTimeline();
+        const controller = new SubplotRingDragController({ plugin: makePlugin(lighthouseSubplots), renderScope } as never, svg as never, { mode: 'narrative', onRefresh: () => {} });
+        const internals = controller as unknown as SubplotPress;
+        internals.startDrag(pointer('pointerdown'), groups.get(`${SHIPWRECK_RING}:14 Scene`)!);
+        timelineWindow.dispatchEvent(pointer('pointerup'));
+        vi.advanceTimersByTime(1000);
+        expect(internals.dragging).toBe(false);
+        expect(isSubplotDragActive()).toBe(false);
+        expect(svg.classList.contains('rt-dragging-subplot')).toBe(false);
     });
 });

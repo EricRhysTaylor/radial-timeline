@@ -14,6 +14,7 @@ import { sleep } from '../../utils/sleep';
 import { formatNumber } from '../../utils/svg';
 import { membershipOfRing } from './subplotRings';
 import { t } from '../../i18n';
+import { listenOnOwnerWindow } from '../../utils/pressListeners';
 
 /**
  * Drag a scene from one subplot ring to another to change its subplots
@@ -97,6 +98,8 @@ export class SubplotRingDragController {
     private outlinedRing: number | null = null;
     private ringColors = new Map<number, string | undefined>();
     private previewEl: HTMLElement | null = null;
+    /** Stops the current press's listeners on its own window (see listenOnOwnerWindow). */
+    private endPress: (() => void) | null = null;
 
     constructor(
         private readonly view: SubplotRingViewAdapter,
@@ -125,6 +128,7 @@ export class SubplotRingDragController {
         this.view.renderScope.register(() => {
             if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
             this.holdTimer = null;
+            this.stopPressListeners();
             this.hidePreview();
             subplotDragActive = false;
         });
@@ -135,11 +139,11 @@ export class SubplotRingDragController {
                 this.view.renderScope.registerDomEvent(path as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
             }
         }
-        const win = window as unknown as HTMLElement;
-        this.view.renderScope.registerDomEvent(win, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
-        this.view.renderScope.registerDomEvent(win, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
-        this.view.renderScope.registerDomEvent(win, 'keydown', (evt: KeyboardEvent) => this.onKey(evt));
-        this.view.renderScope.registerDomEvent(win, 'keyup', (evt: KeyboardEvent) => this.onKey(evt));
+    }
+
+    private stopPressListeners(): void {
+        this.endPress?.();
+        this.endPress = null;
     }
 
     private log(msg: string, data?: Record<string, unknown>): void {
@@ -168,6 +172,16 @@ export class SubplotRingDragController {
             this.holdTimer = null;
             this.beginDrag();
         }, HOLD_MS);
+
+        // Follow the press on the timeline's own window, a popout's included.
+        this.stopPressListeners();
+        this.endPress = listenOnOwnerWindow(group, {
+            pointermove: (e) => this.onPointerMove(e),
+            pointerup: (e) => { void this.onPointerUp(e); },
+            pointercancel: () => { if (!this.confirming) this.reset(); },
+            keydown: (e) => this.onKey(e),
+            keyup: (e) => this.onKey(e),
+        });
     }
 
     private beginDrag(): void {
@@ -198,6 +212,8 @@ export class SubplotRingDragController {
         if (this.confirming || !this.sourceGroup) return;
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = null;
+        // The press is over: a release on the confirmation that may follow is not part of it.
+        this.stopPressListeners();
         if (this.dragging) {
             lastSubplotDragTime = Date.now();
             // Shift is read at the drop: releasing it first makes the drop a move.
@@ -407,6 +423,7 @@ export class SubplotRingDragController {
     private reset(): void {
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = null;
+        this.stopPressListeners();
         this.hidePreview();
         this.removeRingOutline();
         this.svg.classList.remove('rt-dragging-subplot');

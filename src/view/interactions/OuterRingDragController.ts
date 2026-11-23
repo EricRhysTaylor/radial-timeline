@@ -26,6 +26,7 @@ import { fileStem } from '../../utils/paths';
 import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 import { t } from '../../i18n';
 import { askAboutAttachedSketches, applyAttachedSketchMove, runSceneMoveWithSketches } from '../../timetable/sketchSceneMove';
+import { listenOnOwnerWindow } from '../../utils/pressListeners';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -204,6 +205,8 @@ export class OuterRingDragController {
     private originOuterR?: number;
     private sourcePath: string | null = null;
     private sourceScenePathEl: SVGPathElement | null = null;
+    /** Stops the current press's listeners on its own window (see listenOnOwnerWindow). */
+    private endPress: (() => void) | null = null;
     private readonly overlays: DragOverlays;
 
     constructor(view: OuterRingViewAdapter, svg: SVGSVGElement, options: OuterRingDragOptions) {
@@ -230,17 +233,16 @@ export class OuterRingDragController {
         // Create the tangent-aligned drag reorder indicator (move-horizontal arrows)
         this.overlays.createIndicator();
 
-        // The hold timer that promotes a press into a drag must not outlive the SVG it was pressed on.
+        // The hold timer that promotes a press into a drag, and the press's
+        // window listeners, must not outlive the SVG it was pressed on.
         this.view.renderScope.register(() => {
             if (this.holdTimer !== null) {
                 window.clearTimeout(this.holdTimer);
                 this.holdTimer = null;
             }
+            this.stopPressListeners();
         });
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'keydown', (evt: KeyboardEvent) => this.onKey(evt));
-        
+
         draggableGroups.forEach(group => {
             // Listen on the scene/beat path for pointer events (outer ring only)
             const scenePath = group.querySelector('.rt-scene-path');
@@ -672,9 +674,15 @@ export class OuterRingDragController {
             window.clearTimeout(this.holdTimer);
             this.holdTimer = null;
         }
+        this.stopPressListeners();
         this.svg.classList.remove('rt-dragging-outer');
         this.clearHighlight();
         this.log('resetState');
+    }
+
+    private stopPressListeners(): void {
+        this.endPress?.();
+        this.endPress = null;
     }
 
     private beginDrag(): void {
@@ -1154,7 +1162,9 @@ export class OuterRingDragController {
             window.clearTimeout(this.holdTimer);
             this.holdTimer = null;
         }
-        
+        // The press is over: a release on the confirmation that may follow is not part of it.
+        this.stopPressListeners();
+
         if (this.dragging) {
             // Drag was in progress - finish it and prevent click handler from firing
             await this.finishDrag();
@@ -1180,6 +1190,11 @@ export class OuterRingDragController {
     private onKey(evt: KeyboardEvent): void {
         // Escape cancels the drag; nothing changes.
         if (evt.key === 'Escape' && this.sourceSceneGroup && !this.confirming) this.resetState();
+    }
+
+    /** The system took the pointer (a touch turned into a scroll, say): the press ends with nothing moved. */
+    private onPointerCancel(): void {
+        if (!this.confirming) this.resetState();
     }
 
     /**
@@ -1251,7 +1266,16 @@ export class OuterRingDragController {
             this.holdTimer = null;
             this.beginDrag();
         }, this.CLICK_THRESHOLD_MS);
-        
+
+        // Follow the press on the timeline's own window, a popout's included.
+        this.stopPressListeners();
+        this.endPress = listenOnOwnerWindow(group, {
+            pointermove: (e) => this.onPointerMove(e),
+            pointerup: (e) => { void this.onPointerUp(e); },
+            pointercancel: () => this.onPointerCancel(),
+            keydown: (e) => this.onKey(e),
+        });
+
         this.log('pointerdown', { sceneId, path: filePath });
     }
 

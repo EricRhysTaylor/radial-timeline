@@ -20,7 +20,8 @@ class ElementStub extends NodeStub {
     connected = true;
     shown = true;
     children: ElementStub[] = [];
-    constructor(readonly ownerDocument: DocStub) { super(); }
+    // Changes when the view carrying the element moves to another window.
+    constructor(public ownerDocument: DocStub) { super(); }
     get isConnected() { return this.connected; }
     isShown() { return this.shown; }
     hasClass(cls: string) { return this.classes.has(cls); }
@@ -49,12 +50,12 @@ function page() {
     const workspace = new WorkspaceStub();
     const element = () => new ElementStub(doc);
     /** A press as it reaches the document's capture listeners, with its real target. */
-    const pressOn = (target: EventTarget) => {
+    const pressOn = (target: EventTarget, inDoc: DocStub = doc) => {
         const event = new Event('pointerdown');
         // Obsidian's targetNode is the event's target, typed as a Node.
         Object.defineProperty(event, 'target', { value: target });
         Object.defineProperty(event, 'targetNode', { value: target });
-        doc.dispatchEvent(event);
+        inDoc.dispatchEvent(event);
     };
     const key = () => {
         const pane = element();
@@ -157,6 +158,38 @@ describe('key panel trigger', () => {
         k.panel.children.push(popoutRow as unknown as ElementStub);
         k.pressOn(popoutRow);
         expect(k.open()).toBe(true);
+    });
+
+    it('in a view moved to a new window, a press elsewhere in that window closes it', () => {
+        const k = setup();
+        // The view, and its key with it, moves to a popout window.
+        const popout = new DocStub();
+        for (const el of [k.pane, k.trigger, k.panel, k.row]) el.ownerDocument = popout;
+        k.click();
+        // Nothing is listening for this key in the main window any more.
+        k.pressOn(k.element(), k.doc);
+        expect(k.open()).toBe(true);
+        k.pressOn(k.row, popout);
+        expect(k.open()).toBe(true);
+        k.pressOn(new ElementStub(popout), popout);
+        expect(k.open()).toBe(false);
+        // Escape in that window closes it too.
+        k.click();
+        popout.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' }));
+        expect(k.open()).toBe(false);
+    });
+
+    it('closes an open key whose view moves to another window', () => {
+        const k = setup();
+        k.click();
+        const popout = new DocStub();
+        for (const el of [k.pane, k.trigger, k.panel, k.row]) el.ownerDocument = popout;
+        k.workspace.trigger('layout-change');
+        expect(k.open()).toBe(false);
+        // Opened again there, it listens there.
+        k.click();
+        k.pressOn(new ElementStub(popout), popout);
+        expect(k.open()).toBe(false);
     });
 
     it('closes one pinned key when another key\'s button is pressed', () => {

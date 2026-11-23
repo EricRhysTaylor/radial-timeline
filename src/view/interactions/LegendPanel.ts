@@ -188,15 +188,16 @@ const pinnedKeys = new WeakMap<Document, { panel: HTMLElement; hide: () => void 
  * focusing another key's button opens nothing; clicking it moves the pin.
  */
 export function wireLegendTrigger(component: Component, trigger: HTMLElement, panel: HTMLElement, beforeShow: () => void, workspace: Workspace): void {
-    const doc = trigger.ownerDocument;
     let hideTimer: number | null = null;
     // Meaningful only while the panel is open: the view may close it itself
     // (a mode change does), and a panel that opens again starts unpinned.
     let pinned = false;
+    /** The document this key is pinned in, while it is. */
+    let pinnedDoc: Document | null = null;
     const isOpen = () => panel.hasClass('is-visible');
     const isPinned = () => pinned && isOpen();
     const pinnedElsewhere = (): boolean => {
-        const other = pinnedKeys.get(doc);
+        const other = pinnedKeys.get(trigger.ownerDocument);
         return !!other && other.panel !== panel && other.panel.hasClass('is-visible');
     };
     const cancelHide = () => {
@@ -204,6 +205,43 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
         window.clearTimeout(hideTimer);
         hideTimer = null;
     };
+
+    // The press-elsewhere and Escape listeners sit on the document the button
+    // is in when the key opens. A view moved to another window takes its key
+    // with it, so a key never keeps listening on the window it left.
+    let listening: { doc: Document; stop: () => void } | null = null;
+    const stopListening = () => {
+        listening?.stop();
+        listening = null;
+    };
+    // Capture phase on the document: it runs before any button stops its
+    // own click, so pressing another key's button closes this one.
+    const onPressAnywhere = (evt: PointerEvent) => {
+        if (!isOpen()) return;
+        const node = evt.targetNode;
+        const target = node?.instanceOf(Node) ? node : null;
+        if (target && (panel.contains(target) || trigger.contains(target))) return;
+        hide();
+    };
+    const onKey = (evt: KeyboardEvent) => {
+        if (evt.key === 'Escape') hide();
+    };
+    const listenOnOwnDocument = () => {
+        const doc = trigger.ownerDocument;
+        if (listening?.doc === doc) return;
+        stopListening();
+        // SAFE: bound only while the key is open, on its button's current document; hide() (and unload, via component.register(hide)) removes them.
+        doc.addEventListener('pointerdown', onPressAnywhere, { capture: true });
+        doc.addEventListener('keydown', onKey); // SAFE: removed with the pointerdown listener above.
+        listening = {
+            doc,
+            stop: () => {
+                doc.removeEventListener('pointerdown', onPressAnywhere, { capture: true });
+                doc.removeEventListener('keydown', onKey);
+            },
+        };
+    };
+
     const show = () => {
         cancelHide();
         if (trigger.hidden) return;
@@ -212,19 +250,24 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
         beforeShow();
         panel.addClass('is-visible');
         trigger.setAttribute('aria-expanded', 'true');
+        listenOnOwnDocument();
     };
     const hide = () => {
         cancelHide();
         pinned = false;
-        if (pinnedKeys.get(doc)?.panel === panel) pinnedKeys.delete(doc);
+        if (pinnedDoc && pinnedKeys.get(pinnedDoc)?.panel === panel) pinnedKeys.delete(pinnedDoc);
+        pinnedDoc = null;
         panel.removeClass('is-visible');
         trigger.setAttribute('aria-expanded', 'false');
+        stopListening();
     };
     const pin = () => {
         // A keyboard click reaches no pointerdown, so the old pin goes here.
+        const doc = trigger.ownerDocument;
         const other = pinnedKeys.get(doc);
         if (other && other.panel !== panel) other.hide();
         pinned = true;
+        pinnedDoc = doc;
         pinnedKeys.set(doc, { panel, hide });
     };
     /** Hover and focus open a key for a look, unless another key is pinned. */
@@ -247,7 +290,7 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
         hideTimer = window.setTimeout(() => {
             hideTimer = null;
             if (isPinned()) return;
-            if (panel.matches(':hover') || trigger.matches(':hover') || panel.contains(doc.activeElement)) return;
+            if (panel.matches(':hover') || trigger.matches(':hover') || panel.contains(trigger.ownerDocument.activeElement)) return;
             hide();
         }, 120);
     };
@@ -272,18 +315,6 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     });
     component.registerDomEvent(panel, 'mouseenter', show);
     component.registerDomEvent(panel, 'mouseleave', scheduleHide);
-    // Capture phase on the document: it runs before any button stops its
-    // own click, so pressing another key's button closes this one.
-    component.registerDomEvent(doc, 'pointerdown', (evt: PointerEvent) => {
-        if (!isOpen()) return;
-        const node = evt.targetNode;
-        const target = node?.instanceOf(Node) ? node : null;
-        if (target && (panel.contains(target) || trigger.contains(target))) return;
-        hide();
-    }, { capture: true });
-    component.registerDomEvent(doc, 'keydown', (evt: KeyboardEvent) => {
-        if (evt.key === 'Escape') hide();
-    });
     component.registerEvent(workspace.on('active-leaf-change', leaf => {
         if (!isOpen()) return;
         // The key's own pane taking the focus (a formatting row does) keeps it.
@@ -292,7 +323,8 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     }));
     component.registerEvent(workspace.on('layout-change', () => {
         if (!isOpen()) return;
-        if (!trigger.isConnected || !trigger.isShown()) {
+        // Gone, hidden, or carried to another window with its view: closed.
+        if (!trigger.isConnected || !trigger.isShown() || listening?.doc !== trigger.ownerDocument) {
             hide();
             return;
         }

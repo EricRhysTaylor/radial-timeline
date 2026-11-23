@@ -42,6 +42,7 @@ import {
     resolvePublishStageColorFromGroup,
     resolveSubplotColorFromGroup
 } from './dragGeometry';
+import { listenOnOwnerWindow } from '../../utils/pressListeners';
 
 export interface ChronologueDragViewAdapter {
     chronologueState: { shift: boolean; alien: boolean };
@@ -90,6 +91,8 @@ export class ChronologueDragController {
     private startX = 0;
     private startY = 0;
     private committing = false;
+    /** Stops the current press's listeners on its own window (see listenOnOwnerWindow). */
+    private endPress: (() => void) | null = null;
 
     /** Use exactly the wheel's date-placement dialog for a Timetable drop. */
     async placeFromTimetable(source: string, target: string): Promise<boolean> {
@@ -119,8 +122,12 @@ export class ChronologueDragController {
         sources.forEach(group => group.setAttribute('data-draggable', 'true'));
         this.overlays.createIndicator();
 
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
+        // A press's timer and window listeners must not outlive the SVG it was pressed on.
+        this.view.renderScope.register(() => {
+            if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
+            this.holdTimer = null;
+            this.stopPressListeners();
+        });
 
         sources.forEach(group => {
             const scenePath = group.querySelector('.rt-scene-path');
@@ -177,6 +184,19 @@ export class ChronologueDragController {
             this.holdTimer = null;
             this.beginDrag();
         }, CLICK_THRESHOLD_MS);
+
+        // Follow the press on the timeline's own window, a popout's included.
+        this.stopPressListeners();
+        this.endPress = listenOnOwnerWindow(group, {
+            pointermove: (e) => this.onPointerMove(e),
+            pointerup: (e) => { void this.onPointerUp(e); },
+            pointercancel: () => { if (!this.committing) this.reset(); },
+        });
+    }
+
+    private stopPressListeners(): void {
+        this.endPress?.();
+        this.endPress = null;
     }
 
     private beginDrag(): void {
@@ -209,14 +229,15 @@ export class ChronologueDragController {
     }
 
     private async onPointerUp(evt: PointerEvent): Promise<void> {
-        // The window listener also receives clicks inside the placement dialog.
-        // Keep those releases from opening another modal for the pending drop.
+        // A release while the placement dialog is open never opens another for the pending drop.
         if (this.committing) return;
 
         if (this.holdTimer !== null) {
             window.clearTimeout(this.holdTimer);
             this.holdTimer = null;
         }
+        // The press is over: clicks in the placement dialog that may follow are not part of it.
+        this.stopPressListeners();
 
         if (!this.dragging) {
             if (this.sourceGroup) {
@@ -483,6 +504,7 @@ export class ChronologueDragController {
             window.clearTimeout(this.holdTimer);
             this.holdTimer = null;
         }
+        this.stopPressListeners();
 
         this.svg.classList.remove('rt-dragging-outer');
         this.overlays.clear();

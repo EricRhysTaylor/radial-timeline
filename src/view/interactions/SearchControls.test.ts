@@ -83,13 +83,34 @@ describe('single-server local search availability', () => {
         vi.useFakeTimers();
         try {
             const h = availabilityHarness();
-            Object.assign(h.panel, { expanded: false, panel: { hidden: true, ownerDocument: { win: window } }, shell: { classList: { add: vi.fn(), remove: vi.fn() } },
+            Object.assign(h.panel, { expanded: false, panel: { hidden: true }, shell: { ownerDocument: Object.assign(new EventTarget(), { win: window }), classList: { add: vi.fn(), remove: vi.fn() } },
                 input: { setAttribute: vi.fn() }, syncFromState: vi.fn(), applyEdgeAnchor: vi.fn() });
             h.panel.expand(); await vi.advanceTimersByTimeAsync(5000);
             expect(h.localProbe).toHaveBeenCalledTimes(2);
             h.panel.collapse(); await vi.advanceTimersByTimeAsync(10000);
             expect(h.localProbe).toHaveBeenCalledTimes(2);
             expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+    it('closes on a press outside it in the window the search is in now, a popout included', () => {
+        vi.useFakeTimers();
+        try {
+            const h = availabilityHarness();
+            const inside = {};
+            const shell = { ownerDocument: Object.assign(new EventTarget(), { win: window }), contains: (node: unknown) => node === inside, classList: { add: vi.fn(), remove: vi.fn() } };
+            Object.assign(h.panel, { expanded: false, panel: { hidden: true }, shell,
+                input: { setAttribute: vi.fn() }, syncFromState: vi.fn(), applyEdgeAnchor: vi.fn() });
+            const press = (doc: EventTarget, target: unknown) => doc.dispatchEvent(Object.defineProperty(new Event('pointerdown'), 'target', { value: target }));
+            const mainDoc = shell.ownerDocument;
+            // The timeline, and its search with it, moves to a popout window.
+            shell.ownerDocument = Object.assign(new EventTarget(), { win: window });
+            h.panel.expand();
+            press(mainDoc, {});
+            expect(h.panel.isExpanded()).toBe(true);
+            press(shell.ownerDocument, inside);
+            expect(h.panel.isExpanded()).toBe(true);
+            press(shell.ownerDocument, {});
+            expect(h.panel.isExpanded()).toBe(false);
         } finally { vi.useRealTimers(); }
     });
     it('shows a rejected health check and ignores an answer after closing', async () => {

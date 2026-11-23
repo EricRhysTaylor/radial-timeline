@@ -125,6 +125,15 @@ Owner's decision, 2026-11-20. This applies to every public release an agent runs
   - **the draft release notes**, with a link he can open on his phone. Push `docs/releases/draft-for-release-<v>.md` to `main` first (docs only) and link it on GitHub, where its screenshots render.
 - **Run the release only after his yes** to that version and those notes. If either changes afterwards, ask again.
 - **"Release" from Eric starts this process; it is not the approval.**
+- **Release train (2026-11-23):** Community and the platform batch their
+  changes on a `next` branch and go live twice a day. This repo has no
+  `next`: work stays on `main` as above, and `main` is already the
+  unreleased batch. Its train is the release: one hands-on Obsidian check
+  of the batch in your own Obsidian copy, then Eric's approval of version and
+  notes. A plugin change that needs a Community or platform change says so in
+  its commit; that side lands on their `next` and goes live at their train,
+  before the plugin release that relies on it. Decision:
+  `Command Center/Decisions/2026-11-23 Release train - batch testing for Community, platform and plugin.md`.
 - The version rule and the screenshot rule are in `docs/engineering/standards/release-process.md`, "Release notes".
 
 ## Audit Ownership

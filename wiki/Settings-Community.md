@@ -95,10 +95,22 @@ What comes down: the book's timeline and, by your choice, its released text. Wha
 
 ## Pause, Take Offline, Disconnect
 
-*   **Begin sharing / Pause sharing / Resume sharing**, in Vault → Community, puts your level on Community and keeps it current. While paused, nothing goes up; what you already shared stays visible.
+*   **Begin sharing / Pause sharing / Resume sharing**, in Vault → Community, puts your level on Community and keeps it current. While paused, only one notice goes up, saying that this vault paused and when; what you already shared stays visible. The row reads "Paused in Radial Timeline on" with the date. Resume tells Community too.
+*   **Keep timeline updated**, turned off or on, also tells Community that it changed and when, and nothing else.
 *   **Level 1 — Private** takes your current activity share offline. Your profile, books and posts on the website stay as they are; manage them on My Share.
 *   **Disconnect**, in the Connection row, stops updates and removes this vault's connection key. Your Community account stays as it is. Reconnecting needs a new one-time code.
 *   View, download or delete your Community content on the website.
+
+### Who Paused, And When
+
+Each side says what the other did, with the date:
+
+*   **Paused on Community.** When vault updates for the book are paused on its Share page, the book's block says "Paused on Community on" the date, and how to resume them there. A pause that came from restoring an earlier timeline says so. A held update and a timeline taken offline on Community show their dates the same way.
+*   **Disconnected.** When the vault is disconnected on Community, or when another vault connects to the book, the badge reads **Community: Disconnected** and the Connection code row says who disconnected it and when. Paste a new connection code to connect again.
+*   **A book disconnected from this vault.** The book's block says it was disconnected on Community, and when. The book stays on Community, edited there; turn **Keep timeline updated** on to send this vault's book as a new one.
+*   **Sharing history.** Under the book's block, **Sharing history** lists the latest changes, newest first: who paused or resumed what, disconnects, timelines taken offline or published, and scenes taken down (by title only). It starts folded, on one line naming the newest change.
+
+<p align="center"><img src="images/community-sharing-history.webp" alt="Keep timeline updated for The Paper Orchard with the note Paused on Community on November 22, 2026 at 4:07 PM, and below it Sharing history opened: vault updates paused on Community, resumed on Community, the vault disconnected in Radial Timeline, and Keep timeline updated turned on in Radial Timeline" width="600"></p>
 
 ## New Mac, Reinstall, Or Synced Vault
 

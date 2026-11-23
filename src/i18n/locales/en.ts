@@ -3745,7 +3745,7 @@ export const en = {
             pricingPromise: 'The plugin is free. Sharing your timeline is free. If we ever charge for anything, it will be for things that cost us money to run — and nothing you use today will ever be taken away.',
             connectHeading: 'Connect Radial Timeline',
             connectedHeading: 'Connection',
-            connectDesc: 'Paste the one-time connection code from the website to link this vault to your community profile. Connecting adds your Book Manager books to My Share as private book listings: each book\'s public label or working title, its order, its target dates and Zero-draft mode.',
+            connectDesc: 'Paste the one-time code from the website to connect this vault. Your books then appear on your My Share page, where only you see them.',
             connectionCodeName: 'Connection code',
             connectionCodeDesc: 'Links this vault to your saved community profile so publishing is ready when you are.',
             connectionCodePlaceholder: 'Connection code from radialtimeline.com',

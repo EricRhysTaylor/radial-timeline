@@ -38,7 +38,7 @@ describe('timeline privacy details', () => {
         let rejectFirst: (error: Error) => void = () => {};
         state.save.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; })).mockResolvedValue(answer);
         vi.stubGlobal('window', { setTimeout: vi.fn() });
-        const node = { createDiv: () => node };
+        const node = { createDiv: () => node, empty: () => { state.rows = []; }, isConnected: true };
         const container = node as unknown as HTMLElement;
         const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: `privacy-test-${applied}` }, sharingPaused: false } } };
         const book = { id: `privacy-test-book-${applied}`, title: 'Book', sourceFolder: 'Book' };
@@ -63,6 +63,41 @@ describe('timeline privacy details', () => {
         await vi.waitFor(() => expect(state.rows.some(row => row.name === t('ui.communityShareSection.timelineDetailCast'))).toBe(true));
         await find('ui.communityShareSection.timelineDetailCast').change(false);
         expect(state.save).toHaveBeenLastCalledWith(plugin, book.id, { hiddenSceneFields: applied ? ['synopsis', 'title', 'characters'] : ['synopsis', 'characters'] });
+    });
+});
+
+describe('the minute refresh', () => {
+    it('keeps the timeline and its switches on screen while it reads the website again, and redraws only this block', async () => {
+        const timers: Array<() => void> = [];
+        vi.stubGlobal('window', { setTimeout: vi.fn((fn: () => void) => { timers.push(fn); return 0; }) });
+        const answer = { ok: true, shared: true, project_id: 'project', share: { status: 'active', hidden_scene_fields: ['synopsis'], generic_subplot_names: false } };
+        let resolveSecond: (value: unknown) => void = () => {};
+        state.fetch.mockReset()
+            .mockResolvedValueOnce(answer)
+            .mockImplementationOnce(() => new Promise(resolve => { resolveSecond = resolve; }));
+        const node = { createDiv: () => node, empty: () => { state.rows = []; }, isConnected: true };
+        const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'minute-refresh' }, sharingPaused: false } } };
+        const book = { id: 'minute-refresh-book', title: 'Book', sourceFolder: 'Book' };
+        const rerender = vi.fn();
+        const cast = () => state.rows.some(row => row.name === t('ui.communityShareSection.timelineDetailCast'));
+        state.rows = [];
+        renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: node as never, book: book as never, rerender });
+        await vi.waitFor(() => expect(cast()).toBe(true));
+
+        const now = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 61_000);
+        try {
+            timers[timers.length - 1]();
+            expect(state.fetch).toHaveBeenCalledTimes(2);
+            // The read is out: the last answer stays on screen, never "Checking with the website…".
+            expect(cast()).toBe(true);
+            resolveSecond({ ...answer, share: { ...answer.share, hidden_scene_fields: ['synopsis', 'characters'] } });
+            await vi.waitFor(() => expect(timers.length).toBeGreaterThan(1));
+            expect(cast()).toBe(true);
+            // Only this block is drawn again; the rest of the tab stays as it is.
+            expect(rerender).not.toHaveBeenCalled();
+        } finally {
+            now.mockRestore();
+        }
     });
 });
 
@@ -104,7 +139,7 @@ describe('who paused this book, and when', () => {
         vi.stubGlobal('window', { setTimeout: vi.fn() });
         const { formatCommunityDate } = await import('../../communityShare/sharingWords');
         const paused = t('ui.communitySharing.vaultUpdatesPaused', { date: formatCommunityDate(AT) });
-        const node = { createDiv: () => node, createEl: () => node, addEventListener: () => {} };
+        const node = { createDiv: () => node, createEl: () => node, addEventListener: () => {}, empty: () => { state.notes = []; }, isConnected: true };
         const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'standing-notes' }, sharingPaused: false } } };
         const book = { id: 'standing-notes-book', title: 'Book', sourceFolder: 'Book' };
         state.record.lastError = paused;
@@ -122,6 +157,8 @@ describe('who paused this book, and when', () => {
         const node: Record<string, unknown> = {
             createDiv: () => node,
             addEventListener: () => {},
+            empty: () => { made.length = 0; },
+            isConnected: true,
             createEl: (tag: string, options?: { text?: string }) => { const el = { ...node, tag, text: options?.text, open: false }; made.push(el as never); return el; },
         };
         const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'history-list' }, sharingPaused: false } } };
@@ -157,7 +194,7 @@ describe('timeline status wording', () => {
     it('shows matching sync and status errors once while retaining distinct errors', async () => {
         const { CommunityShareError } = await import('../../communityShare/communityShareClient');
         vi.stubGlobal('window', { setTimeout: vi.fn() });
-        const node = { createDiv: () => node };
+        const node = { createDiv: () => node, empty: () => { state.notes = []; }, isConnected: true };
         const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'duplicate-errors' }, sharingPaused: false } } };
         const book = { id: 'duplicate-errors-book', title: 'Book', sourceFolder: 'Book' };
         state.record.lastError = 'Connection key missing';

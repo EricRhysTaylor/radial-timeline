@@ -124,9 +124,54 @@ function addNote(setting: Setting, text: string, kind: 'note' | 'sent' | 'warnin
     setting.descEl.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-community-timeline-${kind}`, text });
 }
 
-export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerender }: CommunityTimelineBlockProps): void {
+// The block on screen now. A status read redraws only this block when its
+// answer arrives, never the whole section, and a block that has left the
+// screen is not drawn.
+let redrawMountedBlock: (() => void) | null = null;
+
+/**
+ * Ask the website for this book's status. The block keeps showing the last
+ * answer while the read is out, so the timeline and its detail switches stay
+ * on screen; the answer redraws the block alone.
+ */
+function refreshTimelineStatus(plugin: RadialTimelinePlugin, bookId: string, key: string): void {
+    if (statusInflight) return;
+    statusInflight = true;
+    const requestedAt = Date.now();
+    const epochAtStart = statusEpoch;
+    // A send or detail save while this was out makes its answer out of date.
+    const newerCached = () => statusEpoch !== epochAtStart
+        || (statusCache?.key === key && statusCache.fetchedAt >= requestedAt);
+    void fetchTimelineShareStatus(plugin, bookId)
+        .then(next => {
+            if (!newerCached()) statusCache = { key, fetchedAt: Date.now(), answer: next };
+        })
+        .catch((error: unknown) => {
+            if (newerCached()) return;
+            statusCache = {
+                key,
+                fetchedAt: Date.now(),
+                error: errorText(error, t('ui.communityShareSection.timelineStatusFailed')),
+            };
+        })
+        .finally(() => {
+            statusInflight = false;
+            redrawMountedBlock?.();
+        });
+}
+
+export function renderCommunityTimelineBlock(props: CommunityTimelineBlockProps): void {
+    const block = props.containerEl.createDiv({ cls: ERT_CLASSES.STACK });
+    const draw = () => {
+        block.empty();
+        drawCommunityTimelineBlock(props, block);
+    };
+    redrawMountedBlock = () => { if (block.isConnected) draw(); };
+    draw();
+}
+
+function drawCommunityTimelineBlock({ plugin, book, rerender }: CommunityTimelineBlockProps, block: HTMLElement): void {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    const block = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
     // No book yet: the next step, with no heading over it.
     if (!book) {
         new Setting(block).setDesc(t('ui.communityShareSection.timelineAddBook'));
@@ -154,32 +199,11 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     const key = `${settings.connection.connectionId ?? ''}:${bookId}`; // SAFE: before Community connects there is no connection id to key on
     const cached = statusCache?.key === key ? statusCache : null;
     const stale = !cached || Date.now() - cached.fetchedAt >= STATUS_TTL_MS;
-    const answer = stale ? undefined : cached?.answer;
+    // A write clears the cache, so an answer kept here is never older than the
+    // author's last change; "Checked at" under the timeline says when it was read.
+    const answer = cached?.answer;
     const share = answer?.share;
-    if (stale && !statusInflight) {
-        statusInflight = true;
-        const requestedAt = Date.now();
-        const epochAtStart = statusEpoch;
-        // A send or detail save while this was out makes its answer out of date.
-        const newerCached = () => statusEpoch !== epochAtStart
-            || (statusCache?.key === key && statusCache.fetchedAt >= requestedAt);
-        void fetchTimelineShareStatus(plugin, bookId)
-            .then(next => {
-                if (!newerCached()) statusCache = { key, fetchedAt: Date.now(), answer: next };
-            })
-            .catch((error: unknown) => {
-                if (newerCached()) return;
-                statusCache = {
-                    key,
-                    fetchedAt: Date.now(),
-                    error: errorText(error, t('ui.communityShareSection.timelineStatusFailed')),
-                };
-            })
-            .finally(() => {
-                statusInflight = false;
-                rerender();
-            });
-    }
+    if (stale) refreshTimelineStatus(plugin, bookId, key);
 
     const shareRow = new Setting(block)
         .setName(t('ui.communityShareSection.timelineShareName'))
@@ -242,10 +266,13 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
 
     if (!answer?.shared || !share) return;
 
-    // An open settings pane must not keep presenting an expired preview as current.
+    // An open settings pane reads the website again once the answer is a
+    // minute old, and keeps the last one on screen until the new one arrives.
     const checkedAt = cached!.fetchedAt;
     window.setTimeout(() => {
-        if (block.isConnected && statusCache?.key === key && statusCache.fetchedAt === checkedAt) rerender();
+        if (block.isConnected && statusCache?.key === key && statusCache.fetchedAt === checkedAt) {
+            refreshTimelineStatus(plugin, bookId, key);
+        }
     }, Math.max(1, STATUS_TTL_MS - (Date.now() - checkedAt) + 10));
     const summary = block.createDiv({ cls: 'ert-community-wheel-card' });
     const visual = summary.createDiv({ cls: 'ert-community-wheel-card__image' });

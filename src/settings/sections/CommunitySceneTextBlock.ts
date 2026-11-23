@@ -17,7 +17,7 @@
 
 import { Setting } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
-import { CommunityShareError } from '../../communityShare/communityShareClient';
+import { CommunityShareError, hiddenSceneNote } from '../../communityShare/communityShareClient';
 import { COMMUNITY_SITE_URL } from '../../communityShare/communityMailbox';
 import { canShareSceneText, normalizeCommunityShareSettings, timelineShareFor } from '../../communityShare/communityShareSettings';
 import { loadSceneTextState, requestedSceneNote, type SceneTextState } from '../../communityShare/sceneReleaseVault';
@@ -157,9 +157,9 @@ export function renderCommunitySceneTextBlock({ plugin, containerEl, book, reren
                 readers: tCount('reader', release.readers),
                 date: formatCommunityDate(release.updated_at),
             }));
-        const note = row.state === 'changed' ? 'ui.communityShareSection.releasedChanged'
-            : row.state === 'hidden' ? 'ui.sceneReleaseModal.stateHidden'
-                : row.state === 'website' ? 'ui.communityShareSection.releasedNotInVault' : null;
-        if (note) item.descEl.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-community-timeline-warning`, text: t(note) });
+        const note = row.state === 'changed' ? t('ui.communityShareSection.releasedChanged')
+            : row.state === 'hidden' ? hiddenSceneNote(release)
+                : row.state === 'website' ? t('ui.communityShareSection.releasedNotInVault') : null;
+        if (note) item.descEl.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-community-timeline-warning`, text: note });
     }
 }

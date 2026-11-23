@@ -65,7 +65,7 @@ export type SceneReleaseRowState =
     | 'released'
     /** Released, and the vault's cleaned text differs from the released text. */
     | 'changed'
-    /** Hidden from readers after a report: being checked, or held. The website says which. */
+    /** Hidden from readers: held after review, or waiting for review (hiddenSceneNote says which). */
     | 'hidden'
     /** A release the website holds that matches no scene in this vault. */
     | 'website';

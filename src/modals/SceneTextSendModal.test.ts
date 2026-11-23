@@ -80,7 +80,7 @@ function harness(options: { content?: string; request?: Partial<SceneTextRequest
             consent: options.consent ?? true,
             releases: [{
                 id: 'release-1', scene_id: 'scn_a1b2c3d4', scene_title: '1 Opening', version: 3, rating: 'general', words: 7,
-                text_hash: 'a'.repeat(64), hidden: false, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z', readers: 2,
+                text_hash: 'a'.repeat(64), hidden: false, hold: null, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z', readers: 2,
             }],
         },
         onDone
@@ -100,10 +100,10 @@ function answerWith(status: number, body: unknown) {
     return request;
 }
 
-const accepted = () => answerWith(200, {
+const accepted = (visibility: { hidden: boolean; hold: null | 'privacy' | 'copyright' } = { hidden: false, hold: null }) => answerWith(200, {
     release: {
         id: 'release-1', scene_title: '1 Opening', version: 1,
-        rating: 'mature', words: 7, hidden: false, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z'
+        rating: 'mature', words: 7, ...visibility, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z'
     }
 });
 
@@ -180,6 +180,19 @@ describe('Send scene to Community', () => {
         await h.screen.buttonNamed(SEND).click();
         expect(bodies(request)[0]).toMatchObject({ action: 'update', request_id: REQUEST_ID, expected_version: 3 });
         expect(notices).toEqual([t('ui.sceneReleaseModal.updatedNotice')]);
+    });
+
+    it.each([
+        ['text a person held before', { hidden: true, hold: 'copyright' as const }, () => t('ui.sceneReleaseModal.stateHeld', { reason: t('ui.sceneReleaseModal.holdCopyright') })],
+        ['a held scene sent again', { hidden: true, hold: null }, () => t('ui.sceneReleaseModal.stateWaiting')],
+    ])('a scene hidden on arrival (%s) is never announced as updated for every reader', async (_label, visibility, note) => {
+        const h = harness({ request: { kind: 'update', release_id: 'release-1', release_version: 3 } });
+        accepted(visibility);
+        await opened(h);
+        await h.screen.buttonNamed(SEND).click();
+        expect(notices).toEqual([t('ui.sceneReleaseModal.sentHiddenNotice', { note: note() })]);
+        expect(notices[0]).not.toMatch(/report/i);
+        expect(h.onDone).toHaveBeenCalledTimes(1);
     });
 
     it('records on the website the agreement given on choosing Level 4, then sends', async () => {

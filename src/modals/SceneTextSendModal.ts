@@ -19,7 +19,7 @@
 
 import { App, ButtonComponent, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { CommunityShareError, sceneTextProblemMessage, type SceneReleaseStatus } from '../communityShare/communityShareClient';
+import { CommunityShareError, hiddenSceneNote, sceneTextProblemMessage, type SceneReleaseStatus } from '../communityShare/communityShareClient';
 import type { SceneBlock } from '../communityShare/sceneReleaseText';
 import { declineSceneTextRequest, sendRequestedScene, type SceneTextRequest } from '../communityShare/sceneTextRequests';
 import { readSceneReleaseDraft, type SceneReleaseDraft } from '../communityShare/sceneReleaseVault';
@@ -182,6 +182,7 @@ export class SceneTextSendModal extends ErtModal {
         if (this.busy || previewed.problem || !scenePath) return;
         this.busy = true;
         this.syncButtons();
+        let hiddenNote: string | null = null;
         try {
             // The author approved the text on screen. If the note has changed
             // since, neither text goes: the new one is shown for a fresh look.
@@ -198,7 +199,11 @@ export class SceneTextSendModal extends ErtModal {
                 this.syncButtons();
                 return;
             }
-            await sendRequestedScene(plugin, book, { request, blocks: previewed.blocks });
+            const sent = await sendRequestedScene(plugin, book, { request, blocks: previewed.blocks });
+            // A scene can be hidden on arrival: text a person held before, or a
+            // held scene sent again, which waits for review. Never "updated for
+            // every reader" then.
+            hiddenNote = hiddenSceneNote(sent.release);
         } catch (error) {
             const code = error instanceof CommunityShareError ? error.code : '';
             new Notice(code === 'revision_conflict'
@@ -209,7 +214,9 @@ export class SceneTextSendModal extends ErtModal {
             else this.syncButtons();
             return;
         }
-        new Notice(t(request.kind === 'update' ? 'ui.sceneReleaseModal.updatedNotice' : 'ui.sceneReleaseModal.sentNotice'));
+        new Notice(hiddenNote
+            ? t('ui.sceneReleaseModal.sentHiddenNotice', { note: hiddenNote })
+            : t(request.kind === 'update' ? 'ui.sceneReleaseModal.updatedNotice' : 'ui.sceneReleaseModal.sentNotice'));
         this.finish();
     }
 

@@ -76,7 +76,7 @@ function harness() {
 }
 
 /** The website: a status with one released scene (released as "The storm came."), and one request. */
-async function website() {
+async function website(visibility: { hidden: boolean; hold: null | 'privacy' | 'copyright' } = { hidden: false, hold: null }) {
     const released = await sceneTextHash(parsePastedScene('The storm came.'));
     const request = vi.spyOn(obsidian, 'requestUrl');
     request.mockReset();
@@ -92,7 +92,7 @@ async function website() {
             project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 3,
             releases: [{
                 id: 'release-2', scene_id: 'scn_00000002', scene_title: '2 Storm', version: 1, rating: 'general', words: 3,
-                text_hash: released, hidden: false, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z', readers: 2,
+                text_hash: released, ...visibility, released_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z', readers: 2,
             }],
         }) };
     }) as never);
@@ -149,6 +149,19 @@ describe('scenes asked for, and released, at Level 4', () => {
         expect(knownSceneTextCounts(h.settings, h.book as never)).toEqual({ asked: 1, released: 1 });
         // Reading sent no text.
         for (const [options] of request.mock.calls) expect((options as unknown as { body: string }).body).not.toContain('blocks');
+    });
+
+    it.each([
+        ['held after review', { hidden: true, hold: 'privacy' as const }, () => t('ui.sceneReleaseModal.stateHeld', { reason: t('ui.sceneReleaseModal.holdPrivacy') })],
+        ['waiting for review', { hidden: true, hold: null }, () => t('ui.sceneReleaseModal.stateWaiting')],
+    ])('a hidden scene says it is %s, and never blames a report', async (_label, visibility, note) => {
+        const h = harness();
+        await website(visibility);
+        h.render();
+        await vi.waitFor(() => expect(h.row('2 Storm')).toBeDefined());
+        const storm = h.row('2 Storm')!;
+        expect(storm.desc).toContain(note());
+        expect(storm.desc).not.toMatch(/report/i);
     });
 
     it('Review opens the Send dialog for that request', async () => {

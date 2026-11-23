@@ -26,6 +26,7 @@ import {
     CommunityShareError,
     acceptSceneReleaseTerms,
     fetchSceneReleaseStatus,
+    hiddenSceneNote,
     pauseCommunitySharing,
     resumeCommunitySharing,
     scheduleCommunityProjectSync,
@@ -38,6 +39,7 @@ import {
 import { declineSceneTextRequest, fetchSceneTextRequests, sendRequestedScene } from './sceneTextRequests';
 import { parsePastedScene, type SceneBlock } from './sceneReleaseText';
 import { SCENE_AUTHOR_AGREEMENT_VERSION } from './sceneAgreement';
+import { t } from '../i18n';
 
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';
 const RELEASE_ID = '44444444-4444-4444-8444-444444444444';
@@ -62,6 +64,7 @@ const releaseRow = (extra: Record<string, unknown> = {}) => ({
     words: 7,
     text_hash: 'a'.repeat(64),
     hidden: false,
+    hold: null,
     released_at: '2026-11-15T10:00:00Z',
     updated_at: '2026-11-15T11:00:00Z',
     readers: 1,
@@ -89,6 +92,7 @@ const releaseAnswer = () => ({
         rating: 'general',
         words: 7,
         hidden: false,
+        hold: null,
         released_at: '2026-11-15T10:00:00Z',
         updated_at: '2026-11-15T10:00:00Z'
     }
@@ -391,6 +395,8 @@ describe('the website\'s answers', () => {
         ['an unknown rating', { releases: [releaseRow({ rating: 'explicit' })] }],
         ['an unknown standing', { standing: 'suspended' }],
         ['a missing limit', { limit: undefined }],
+        ['a hold that is not privacy or copyright', { releases: [releaseRow({ hidden: true, hold: 'sexual' })] }],
+        ['a missing hold', { releases: [releaseRow({ hold: undefined })] }],
     ])('refuses a malformed status: %s', async (_label, extra) => {
         const h = harness();
         respond({ body: statusAnswer(extra) });
@@ -400,10 +406,22 @@ describe('the website\'s answers', () => {
 
     it('accepts a detached release and an account in poor standing', async () => {
         const h = harness();
-        respond({ body: statusAnswer({ standing: 'account_flagged', releases: [releaseRow({ scene_id: null, hidden: true })] }) });
+        respond({ body: statusAnswer({ standing: 'account_flagged', releases: [releaseRow({ scene_id: null, hidden: true, hold: 'copyright' })] }) });
         const status = await fetchSceneReleaseStatus(h.plugin as never, h.book);
         expect(status.standing).toBe('account_flagged');
         expect(status.releases[0].scene_id).toBeNull();
+    });
+
+    it('words a hidden scene by the hold a person placed, never by a report', () => {
+        expect(hiddenSceneNote({ hidden: false, hold: null })).toBeNull();
+        expect(hiddenSceneNote({ hidden: true, hold: null })).toBe(t('ui.sceneReleaseModal.stateWaiting'));
+        expect(hiddenSceneNote({ hidden: true, hold: 'privacy' }))
+            .toBe(t('ui.sceneReleaseModal.stateHeld', { reason: t('ui.sceneReleaseModal.holdPrivacy') }));
+        expect(hiddenSceneNote({ hidden: true, hold: 'copyright' }))
+            .toBe(t('ui.sceneReleaseModal.stateHeld', { reason: t('ui.sceneReleaseModal.holdCopyright') }));
+        for (const hold of [null, 'privacy', 'copyright'] as const) {
+            expect(hiddenSceneNote({ hidden: true, hold })).not.toMatch(/report/i);
+        }
     });
 
     it.each([

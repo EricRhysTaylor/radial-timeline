@@ -25,6 +25,7 @@ const release = (id: string, sceneId: string | null, extra: Partial<SceneRelease
     words: 3,
     text_hash: 'a'.repeat(64),
     hidden: false,
+    hold: null,
     released_at: '2026-11-15T10:00:00Z',
     updated_at: '2026-11-15T10:00:00Z',
     readers: 0,
@@ -49,7 +50,7 @@ describe('buildSceneReleaseRows', () => {
     const releases = [
         release('r2', 'scn_00000002', { text_hash: 'b'.repeat(64) }),
         release('r3', 'scn_00000003', { text_hash: 'c'.repeat(64) }),
-        release('r4', 'scn_00000004', { hidden: true }),
+        release('r4', 'scn_00000004', { hidden: true, hold: 'privacy' }),
         release('r-detached', null),
         release('r-gone', 'scn_0000dead'),
     ];

@@ -2004,6 +2004,23 @@ export async function keepTimelineUpdated(plugin: RadialTimelinePlugin, bookId: 
 
 export type SceneReleaseRating = 'general' | 'mature';
 
+/**
+ * Why a person at Radial Timeline held a scene after a report. Reports never
+ * hide a scene; only a hold does (decision 2026-11-22, "Scene text goes to
+ * human review, not AI").
+ */
+export type SceneReleaseHold = 'privacy' | 'copyright';
+
+/**
+ * Whether readers can open a scene, from `hidden` and `hold`:
+ *   hidden, with a hold     held after review (or this very text was held before)
+ *   hidden, with no hold    an earlier version was held: waiting for review
+ */
+export interface SceneReleaseVisibility {
+    hidden: boolean;
+    hold: SceneReleaseHold | null;
+}
+
 /** One released scene as the website reports it. Never carries the text. */
 export interface SceneReleaseSummary {
     id: string;
@@ -2015,8 +2032,9 @@ export interface SceneReleaseSummary {
     words: number;
     /** SHA-256 of the released text, as sceneReleaseText.sceneTextHash computes it. */
     text_hash: string;
-    /** Hidden from readers after a report: being checked, or held. The website says which. */
+    /** Hidden from readers: held after review, or waiting for review (SceneReleaseVisibility). */
     hidden: boolean;
+    hold: SceneReleaseHold | null;
     released_at: string;
     updated_at: string;
     /** How many readers the author named for this scene. A count, never who. */
@@ -2042,7 +2060,9 @@ export interface SceneReleaseResult {
         version: number;
         rating: SceneReleaseRating;
         words: number;
+        /** A scene can be hidden on arrival: SceneReleaseVisibility. */
         hidden: boolean;
+        hold: SceneReleaseHold | null;
         released_at: string;
         updated_at: string;
     };
@@ -2056,6 +2076,7 @@ interface SceneReleaseConsentAnswer {
 const SCENE_TEXT_HASH_RE = /^[0-9a-f]{64}$/;
 const SCENE_RELEASE_RATINGS: ReadonlySet<unknown> = new Set(['general', 'mature']);
 const SCENE_RELEASE_STANDINGS: ReadonlySet<unknown> = new Set([null, 'account_flagged', 'account_deletion_pending']);
+const SCENE_RELEASE_HOLDS: ReadonlySet<unknown> = new Set([null, 'privacy', 'copyright']);
 
 function isVersion(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 1;
@@ -2072,6 +2093,7 @@ function isSceneReleaseSummary(value: unknown): value is SceneReleaseSummary {
         && isCount(release.words)
         && typeof release.text_hash === 'string' && SCENE_TEXT_HASH_RE.test(release.text_hash)
         && typeof release.hidden === 'boolean'
+        && SCENE_RELEASE_HOLDS.has(release.hold)
         && typeof release.released_at === 'string'
         && typeof release.updated_at === 'string'
         && isCount(release.readers);
@@ -2099,8 +2121,23 @@ export function isSceneReleaseResult(value: unknown): value is SceneReleaseResul
         && SCENE_RELEASE_RATINGS.has(release.rating)
         && isCount(release.words)
         && typeof release.hidden === 'boolean'
+        && SCENE_RELEASE_HOLDS.has(release.hold)
         && typeof release.released_at === 'string'
         && typeof release.updated_at === 'string';
+}
+
+/**
+ * What the author is told about a hidden scene, or null when readers can
+ * open it. A scene is hidden only by a person's hold, never by a report.
+ */
+export function hiddenSceneNote(release: SceneReleaseVisibility): string | null {
+    if (!release.hidden) return null;
+    if (!release.hold) return t('ui.sceneReleaseModal.stateWaiting');
+    return t('ui.sceneReleaseModal.stateHeld', { reason: sceneHoldReason(release.hold) });
+}
+
+function sceneHoldReason(hold: SceneReleaseHold): string {
+    return hold === 'privacy' ? t('ui.sceneReleaseModal.holdPrivacy') : t('ui.sceneReleaseModal.holdCopyright');
 }
 
 function isSceneReleaseConsentAnswer(value: unknown): value is SceneReleaseConsentAnswer {

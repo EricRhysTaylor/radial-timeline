@@ -172,4 +172,37 @@ describe('scenes asked for, and released, at Level 4', () => {
         await h.row('1 Opening')!.buttons[0].click();
         expect(FakeModal.opened[0]).toBeInstanceOf(SceneTextSendModal);
     });
+
+    it('a read still out when a Send or Decline lands is dropped, and the state is read again', async () => {
+        const h = harness();
+        const request = await website();
+        const answerBefore = request.getMockImplementation()!;
+        // The first requests read is answered before the Send lands (the request
+        // still open), and arrives after it.
+        let release!: () => void;
+        const held = new Promise<void>(resolve => { release = resolve; });
+        let first = true;
+        request.mockImplementation((async (options: { body: string }) => {
+            const action = (JSON.parse(options.body) as { action?: string }).action;
+            if (action === 'requests' && first) {
+                first = false;
+                const before = await answerBefore(options as never);
+                await held;
+                return before;
+            }
+            if (action === 'requests') return { status: 200, text: JSON.stringify({ ok: true, requests: [] }) };
+            return answerBefore(options as never);
+        }) as never);
+        h.render();
+        await vi.waitFor(() => expect(actions(request)).toContain('requests'));
+        // The request was answered while the read was out.
+        forgetSceneTextState();
+        h.render();
+        await vi.waitFor(() => expect(h.row(ASKED)!.desc).toBe(t('ui.communityShareSection.requestsNone')));
+        release();
+        await vi.waitFor(() => expect(actions(request).filter(action => action === 'requests')).toHaveLength(2));
+        // The forgotten read's answer never replaces the newer one.
+        expect(h.row(ASKED)!.desc).toBe(t('ui.communityShareSection.requestsNone'));
+        expect(knownSceneTextCounts(h.settings, h.book as never).asked).toBe(0);
+    });
 });

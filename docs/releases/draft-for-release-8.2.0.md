@@ -24,6 +24,16 @@ Your books now travel both ways between your vault and the Community website: br
 
 See [Scenes asked for on Community](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#scenes-asked-for-on-community) and [A book from Community](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#a-book-from-community).
 
+### Who paused sharing, and when
+
+- **Both sides say who and when.** **Pause sharing**, **Resume sharing** and **Keep timeline updated** each tell Community that they changed and when, and nothing more. In Radial Timeline, the sharing row reads "Paused in Radial Timeline on" with the date. A book paused on Community says "Paused on Community on" with the date, and how to resume it.
+- **Community: Disconnected.** When the vault is disconnected on Community, the badge says so, with who and when, and the Connection code row is ready for a new code.
+- **Sharing history.** Each book's block lists its latest sharing changes, newest first, folded under one line.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/4462a74fb783b25a09755596c52b5ed2514b1c1c/wiki/images/community-sharing-history.webp" alt="Keep timeline updated for The Paper Orchard with the note Paused on Community on November 22, 2026 at 4:07 PM, and below it the Sharing history opened, newest first" width="600">
+
+See [Who paused, and when](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#who-paused-and-when).
+
 ### Canvas subplot branches
 
 - **On every device.** Canvas subplot branches now keep their review details in a small file beside the Canvas, so **Branches out of date — review updates** and text drops work on every device that syncs the vault. The details follow the Canvas when you rename it or its folder.

@@ -166,8 +166,8 @@ optional and author-triggered.
 Community Share is shipped. It is opt-in and inert until the author connects
 this vault to the website and selects a sharing level: nothing publishes on
 install, and Level 1 (Private) publishes nothing. One thing does cross the
-wire from the moment a vault is connected, at every level above Private while
-sharing is not paused: the Book Manager list (up to 50 books), which the
+wire from the moment a vault is connected, while sharing is not paused: the
+Book Manager list (up to 50 books), which the
 website keeps as **private book listings** on My Share. Each book sends its
 Book Manager id, its public label (or its working title when no label is
 set), its order and its four stage target dates; the active book also sends
@@ -176,8 +176,8 @@ visible only to the author on My Share and become public only by an explicit
 switch on the website; the plugin never changes that. The list is sent right
 after Connect, when Obsidian opens, every six hours while the vault stays
 open, after a change to a book's target dates or to Zero-draft mode, with the
-Community mailbox sync, and before a timeline's first send. The Private level
-and **Pause sharing** stop it. Full behavior and the per-level field breakdown live in the
+Community mailbox sync, and before a timeline's first send. Choosing the
+Private level in the plugin, or **Pause sharing**, stops it. Full behavior and the per-level field breakdown live in the
 [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 wiki page.
 

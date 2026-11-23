@@ -93,9 +93,12 @@ describe('sceneNormalizer', () => {
         expect(audit.notes).toHaveLength(0);
     });
 
-    it('reports scene Synopsis warnings by word count', async () => {
+    it('reports scene Synopsis warnings by word count, past the longest Synopsis the plugin keeps', async () => {
+        // A cap of 12 keeps a reply of up to 32 words as written (cap + 20).
+        const words = (count: number) => Array.from({ length: count }, (_, index) => `word${index + 1}`).join(' ');
         const app = createInMemoryApp({
-            'Books/BookA/01 Long Synopsis.md': `---\nID: scn_long\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\nSynopsis: one two three four five six seven eight nine ten eleven twelve thirteen\n---\nBody`,
+            'Books/BookA/01 Kept Synopsis.md': `---\nID: scn_kept\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\nSynopsis: ${words(32)}\n---\nBody`,
+            'Books/BookA/02 Long Synopsis.md': `---\nID: scn_long\nClass: Scene\nAct: 1\nWhen: 2026-01-02\nPulse Update:\nSummary Update:\nSynopsis: ${words(33)}\n---\nBody`,
         });
 
         const audit = await analyzeScenes({
@@ -104,12 +107,14 @@ describe('sceneNormalizer', () => {
                 ...buildSettings(false),
                 synopsisGenerationMaxWords: 12,
             },
-            files: [app.vault.getMarkdownFiles()[0]],
+            files: app.vault.getMarkdownFiles(),
         });
 
         expect(audit.summary.scenesWithWarnings).toBe(1);
-        expect(audit.notes[0].semanticWarnings).toEqual(['Synopsis length above target: 13 words (target 12 words).']);
-        expect(formatSemanticWarningReason(audit.notes[0].semanticWarnings)).toBe('Synopsis Warnings: 13 words');
+        const warned = audit.notes.filter(note => note.semanticWarnings.length > 0);
+        expect(warned).toHaveLength(1);
+        expect(warned[0].semanticWarnings).toEqual(['Synopsis length above target: 33 words (target 32 words).']);
+        expect(formatSemanticWarningReason(warned[0].semanticWarnings)).toBe('Synopsis Warnings: 33 words');
     });
 
     it('reports beat Purpose warnings by word count instead of lines', async () => {

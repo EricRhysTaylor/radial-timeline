@@ -29,7 +29,7 @@ import {
 import { explainScope, resolveBookScopedFiles } from '../services/NoteScopeResolver';
 import { readReferenceId } from './sceneIds';
 import { getActiveLoadedBeatTab, getLoadedBeatTabWorkspaceSystemId } from '../storyBeats/workspaceState';
-import { getSynopsisGenerationWordLimit } from './synopsisLimits';
+import { getSynopsisGenerationWordLimit, getSynopsisKeepWordLimit } from './synopsisLimits';
 import { countWords } from './text';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -232,7 +232,10 @@ function buildSemanticWarnings(
         const synopsis = getStringField(fm, 'Synopsis');
         if (synopsis) {
             const wordCount = countWords(synopsis);
-            const targetWords = getSynopsisGenerationWordLimit(settings);
+            // The plugin keeps a reply a few words over the cap as written
+            // (getSynopsisKeepWordLimit), so only a Synopsis past that is
+            // flagged: one the plugin wrote itself never is.
+            const targetWords = getSynopsisKeepWordLimit(getSynopsisGenerationWordLimit(settings));
             if (wordCount > targetWords) {
                 warnings.push(`${SYNOPSIS_LENGTH_WARNING}: ${wordCount} words (target ${targetWords} words).`);
             }

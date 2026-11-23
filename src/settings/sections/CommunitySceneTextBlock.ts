@@ -46,6 +46,10 @@ interface SceneTextCache {
 }
 let stateCache: SceneTextCache | null = null;
 let stateInflight = false;
+// Bumped by forgetSceneTextState: a read that was out when the state was
+// forgotten (a Send or Decline landed meanwhile) may hold the request just
+// answered, so its answer is dropped rather than cached for a minute.
+let stateEpoch = 0;
 const STATE_TTL_MS = 60 * 1000;
 
 function cacheKey(settings: CommunityShareSettings, book: Pick<BookProfile, 'id'>): string {
@@ -55,6 +59,8 @@ function cacheKey(settings: CommunityShareSettings, book: Pick<BookProfile, 'id'
 /** Forget the website's answer, so the next render reads it again (after a Send, a Decline, or a link). */
 export function forgetSceneTextState(): void {
     stateCache = null;
+    stateEpoch += 1;
+    stateInflight = false;
 }
 
 /** What Vault → Community's line counts for the active book: known only after the website answered. */
@@ -94,9 +100,13 @@ export function renderCommunitySceneTextBlock({ plugin, containerEl, book, reren
     const state = cached?.state;
     if ((!cached || Date.now() - cached.fetchedAt >= STATE_TTL_MS) && !stateInflight) {
         stateInflight = true;
+        const epoch = stateEpoch;
         void loadSceneTextState(plugin, book)
-            .then(next => { stateCache = { key, fetchedAt: Date.now(), state: next }; })
+            .then(next => {
+                if (epoch === stateEpoch) stateCache = { key, fetchedAt: Date.now(), state: next };
+            })
             .catch((error: unknown) => {
+                if (epoch !== stateEpoch) return;
                 stateCache = {
                     key,
                     fetchedAt: Date.now(),
@@ -104,7 +114,9 @@ export function renderCommunitySceneTextBlock({ plugin, containerEl, book, reren
                 };
             })
             .finally(() => {
-                stateInflight = false;
+                // A forgotten read leaves the flag to the read that replaced it; the
+                // rerender still runs, and starts a fresh read if none is out.
+                if (epoch === stateEpoch) stateInflight = false;
                 rerender();
             });
     }

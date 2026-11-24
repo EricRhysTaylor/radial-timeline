@@ -1,4 +1,5 @@
 import { createSketchNote } from './createSketchNote';
+import { openScenePopout, readerOffset, renderReaderText, sceneBodyStart } from './sceneCardReader';
 import { applySketchPlacement } from './applySketchPlacement';
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
@@ -421,6 +422,8 @@ export class TimetableView extends BasesView {
     private panelEditing: { path: string; original: unknown } | null = null;
     private panelEvents: Component | null = null;
     private expandedPanelCharacters = new Set<string>();
+    private flippedScenePath: string | null = null;
+    private readonly sceneReaderScroll = new Map<string, number>();
     private draggedScene: string | null = null;
     private draggedSketch: string | null = null;
     private sketchProblems = new Map<string, PlacementProblem>();
@@ -3237,6 +3240,61 @@ export class TimetableView extends BasesView {
                             preview.setText(content.slice(info.exists ? info.contentStart : 0).trim());
                         });
                     }
+                }
+                if (!outline && row.kind === 'scene' && sceneActions) {
+                    const flip = sceneActions.createEl('button', { cls: 'ert-timetable-panels__flip clickable-icon', attr: { type: 'button' } });
+                    setIcon(flip, 'book-open');
+                    setAccessibleLabel(flip, t('ui.timetable.panelReadScene'));
+                    setTooltip(flip, t('ui.timetable.panelReadScene'));
+                    const back = panel.createDiv({ cls: 'ert-timetable-panels__reader' });
+                    const bar = back.createDiv({ cls: 'ert-timetable-panels__reader-bar' });
+                    bar.createEl('strong', { text: `${row.prefix ? `${row.prefix} · ` : ''}${displayName(row.basename)}` });
+                    const openScene = bar.createEl('button', { cls: 'ert-timetable-panels__reader-open clickable-icon', attr: { type: 'button' } });
+                    setIcon(openScene, 'square-arrow-out-up-right');
+                    setAccessibleLabel(openScene, t('ui.timetable.panelEditScene'));
+                    setTooltip(openScene, t('ui.timetable.panelEditScene'));
+                    const close = bar.createEl('button', { cls: 'ert-timetable-panels__reader-close clickable-icon', attr: { type: 'button' } });
+                    setIcon(close, 'rotate-ccw');
+                    setAccessibleLabel(close, t('ui.timetable.panelShowFront'));
+                    setTooltip(close, t('ui.timetable.panelShowFront'));
+                    const hint = back.createDiv({ cls: 'ert-timetable-panels__reader-hint', text: t('ui.timetable.panelReaderHint') });
+                    const reader = back.createDiv({ cls: 'ert-timetable-panels__reader-text', attr: { tabindex: '0' } });
+                    let snapshot = '';
+                    let ready = false;
+                    const load = async () => {
+                        snapshot = await this.plugin.app.vault.read(entry.file);
+                        if (!reader.isConnected || this.flippedScenePath !== row.path) return;
+                        renderReaderText(reader, snapshot.slice(sceneBodyStart(snapshot)), this.plugin.app, entry.file);
+                        ready = true;
+                        reader.scrollTop = this.sceneReaderScroll.get(row.path) ?? 0;
+                    };
+                    const show = (visible: boolean) => {
+                        if (visible) {
+                            this.rootEl.querySelectorAll('.ert-timetable-panels__panel.is-reader-open').forEach(other => other.removeClass('is-reader-open'));
+                            this.flippedScenePath = row.path;
+                            panel.addClass('is-reader-open');
+                            void load();
+                        } else {
+                            this.sceneReaderScroll.set(row.path, reader.scrollTop);
+                            panel.removeClass('is-reader-open');
+                            if (this.flippedScenePath === row.path) this.flippedScenePath = null;
+                        }
+                    };
+                    this.panelEvents?.registerDomEvent(flip, 'click', evt => { evt.stopPropagation(); show(true); });
+                    this.panelEvents?.registerDomEvent(close, 'click', evt => { evt.stopPropagation(); show(false); flip.focus(); });
+                    this.panelEvents?.registerDomEvent(openScene, 'click', evt => { evt.stopPropagation(); void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument); });
+                    this.panelEvents?.registerDomEvent(reader, 'scroll', () => this.sceneReaderScroll.set(row.path, reader.scrollTop));
+                    this.panelEvents?.registerDomEvent(reader, 'click', (evt: MouseEvent) => {
+                        evt.stopPropagation();
+                        const selection = reader.ownerDocument.getSelection();
+                        if (!ready || (selection?.anchorNode && reader.contains(selection.anchorNode) && selection.toString())) return;
+                        const offset = readerOffset(reader, evt.clientX, evt.clientY);
+                        if (offset === null) return;
+                        void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument, snapshot, sceneBodyStart(snapshot) + offset)
+                            .then(opened => { if (!opened) void load(); });
+                    });
+                    hint.setAttr('aria-hidden', 'true');
+                    if (this.flippedScenePath === row.path) show(true);
                 }
             }
         }

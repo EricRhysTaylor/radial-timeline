@@ -1422,6 +1422,19 @@
 .ert-ui button.ert-sketch-move-primary { background: var(--interactive-accent); color: var(--text-on-accent); }
 .ert-ui button.ert-sketch-move-primary:hover { background: var(--interactive-accent-hover); }
 .ert-timetable-panels__panel { position: relative; display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
+.ert-timetable .ert-timetable-panels__reader { display: none; }
+.ert-timetable .ert-timetable-panels__panel.is-reader-open > :not(.ert-timetable-panels__reader),
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel.is-scene.is-reader-open > button.ert-timetable-panels__synopsis:not(.is-empty) { display: none; }
+.ert-timetable .ert-timetable-panels__panel.is-reader-open > .ert-timetable-panels__reader {
+    display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; gap: var(--size-4-2);
+    color: var(--text-normal); background: var(--background-primary);
+}
+.ert-timetable .ert-timetable-panels__reader-bar { display: flex; align-items: center; gap: var(--size-4-2); }
+.ert-timetable .ert-timetable-panels__reader-bar strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ert-timetable .ert-timetable-panels__reader-hint { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ert-timetable .ert-timetable-panels__reader-text { flex: 1 1 auto; min-height: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text; }
+.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__reader { padding: var(--size-4-3); }
+.ert-timetable .ert-timetable-panels__flip { display: inline-flex; }
 .ert-timetable .ert-timetable-panels__panel { height: auto; cursor: default; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-sketch { border-style: dashed; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-current { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }

@@ -46,7 +46,7 @@ export function renderReaderText(reader: HTMLElement, source: string, app: App, 
 }
 
 /** Open or reuse a separate window showing this note, then select its exact source position. */
-export async function openScenePopout(app: App, file: TFile, origin: Document, snapshot?: string, offset?: number): Promise<boolean> {
+export async function openScenePopout(app: App, file: TFile, origin: Document, snapshot?: string, offset?: number, endOffset?: number): Promise<boolean> {
     const current = await app.vault.read(file);
     if (snapshot !== undefined && current !== snapshot) {
         new Notice(t('ui.timetable.panelReaderChanged'));
@@ -79,7 +79,7 @@ export async function openScenePopout(app: App, file: TFile, origin: Document, s
         view.editor.setCursor(position);
         view.editor.scrollIntoView({ from: position, to: position }, true);
         // Obsidian's editor scroll does not account for a long Properties block.
-        await revealHighlight(app, file, { content: snapshot ?? current, matches: [[offset, offset + 1]] });
+        await revealHighlight(app, file, { content: snapshot ?? current, matches: [[offset, endOffset ?? offset + 1]] });
     }
     return true;
 }
@@ -93,4 +93,50 @@ export function readerOffset(reader: HTMLElement, x: number, y: number): number 
     before.selectNodeContents(reader);
     before.setEnd(range.startContainer, range.startOffset);
     return before.toString().length;
+}
+
+let sentenceCache: { text: string; ranges: Array<{ start: number; end: number }> } | null = null;
+
+/** Find the sentence containing a source offset, keeping repeated text distinct. */
+export function readerSentence(text: string, offset: number): { start: number; end: number } | null {
+    if (offset < 0 || offset >= text.length || /\s/.test(text[offset])) return null;
+    if (sentenceCache?.text !== text) {
+        const Segmenter = (Intl as unknown as { Segmenter: new (locale: undefined, options: { granularity: 'sentence' }) => { segment(input: string): Iterable<{ index: number; segment: string }> } }).Segmenter;
+        const segmenter = new Segmenter(undefined, { granularity: 'sentence' });
+        const ranges: Array<{ start: number; end: number }> = [];
+        let sentenceStart = 0;
+        for (const part of segmenter.segment(text)) {
+            if (/\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Rev|St|Col|Gen|Capt|Lt|Sgt)\.\s*$/i.test(part.segment)) continue;
+            const sentence = text.slice(sentenceStart, part.index + part.segment.length);
+            const leading = sentence.length - sentence.trimStart().length;
+            ranges.push({ start: sentenceStart + leading, end: sentenceStart + sentence.trimEnd().length });
+            sentenceStart = part.index + part.segment.length;
+        }
+        sentenceCache = { text, ranges };
+    }
+    return sentenceCache.ranges.find(range => offset >= range.start && offset < range.end) ?? null;
+}
+
+/** Highlight a sentence without replacing the text nodes used for navigation and selection. */
+export function highlightReaderSentence(reader: HTMLElement, sentence: { start: number; end: number } | null): void {
+    const win = reader.ownerDocument.defaultView;
+    if (!win || !('highlights' in win.CSS) || !('Highlight' in win)) return;
+    const highlights = win.CSS.highlights as unknown as { delete(name: string): void; set(name: string, highlight: Highlight): void };
+    highlights.delete('ert-reader-sentence');
+    if (!sentence) return;
+    const walker = reader.ownerDocument.createTreeWalker(reader, NodeFilter.SHOW_TEXT);
+    const range = reader.ownerDocument.createRange();
+    let offset = 0;
+    let started = false;
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const end = offset + (node.textContent?.length ?? 0);
+        if (!started && sentence.start < end) { range.setStart(node, sentence.start - offset); started = true; }
+        if (started && sentence.end <= end) {
+            range.setEnd(node, sentence.end - offset);
+            highlights.set('ert-reader-sentence', new Highlight(range));
+            break;
+        }
+        offset = end;
+    }
 }

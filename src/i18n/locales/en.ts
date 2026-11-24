@@ -6215,6 +6215,7 @@ export const en = {
             panelShowFront: 'Show card front',
             panelEditScene: 'Edit scene in pop-out',
             panelReaderHint: 'Click text to open the scene at that spot',
+            panelReaderScroll: 'Scroll scene',
             panelReaderChanged: 'This scene changed. The card is refreshing; click the passage again.',
             panelSynopsisType: 'This synopsis is not text. Open the note to edit it.',
             panelSave: 'Save',

@@ -1,10 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MarkdownView, type App, type TFile } from 'obsidian';
-import { openScenePopout, readerOffset, readerScale } from './sceneCardReader';
+import { openScenePopout, readerOffset, readerScale, readerSentence } from './sceneCardReader';
 
 vi.mock('../utils/fileUtils', () => ({ revealHighlight: vi.fn() }));
 
 describe('scene card navigation', () => {
+    it('finds the hovered sentence by position, even when sentences repeat', () => {
+        const text = 'Mr. Bennet smiled. Mr. Bennet smiled!\nA new line.';
+        const first = readerSentence(text, text.indexOf('smiled'))!;
+        expect(text.slice(first.start, first.end)).toBe('Mr. Bennet smiled.');
+        const second = readerSentence(text, text.lastIndexOf('smiled'))!;
+        expect(text.slice(second.start, second.end)).toBe('Mr. Bennet smiled!');
+        expect(second.start).toBeGreaterThan(0);
+        expect(readerSentence(text, text.indexOf('\n'))).toBeNull();
+    });
     it('places the visible part proportionally along the scene scale', () => {
         expect(readerScale(100, 400, 0)).toEqual({ size: 25, top: 0 });
         expect(readerScale(100, 400, 150)).toEqual({ size: 25, top: 37.5 });

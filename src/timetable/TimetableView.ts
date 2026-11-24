@@ -1,5 +1,5 @@
 import { createSketchNote } from './createSketchNote';
-import { openScenePopout, readerOffset, readerScale, renderReaderText, sceneBodyStart } from './sceneCardReader';
+import { highlightReaderSentence, openScenePopout, readerOffset, readerScale, readerSentence, renderReaderText, sceneBodyStart } from './sceneCardReader';
 import { applySketchPlacement } from './applySketchPlacement';
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
@@ -3260,9 +3260,12 @@ export class TimetableView extends BasesView {
                     const reader = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-text', attr: { tabindex: '0' } });
                     const scale = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-scale', attr: { 'aria-hidden': 'true' } });
                     const indicator = scale.createDiv({ cls: 'ert-timetable-panels__reader-scale-position' });
+                    for (const position of ['start', 'middle', 'end']) scale.createDiv({ cls: `ert-timetable-panels__reader-tick is-${position}` });
+                    readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-scroll-cue', text: t('ui.timetable.panelReaderScroll'), attr: { 'aria-hidden': 'true' } });
                     const updateScale = () => {
                         const geometry = readerScale(reader.clientHeight, reader.scrollHeight, reader.scrollTop);
                         scale.toggleClass('is-visible', geometry !== null);
+                        readerFrame.toggleClass('is-scrollable', geometry !== null);
                         if (geometry) indicator.setCssProps({ '--ert-reader-scale-top': `${geometry.top}%`, '--ert-reader-scale-size': `${geometry.size}%` });
                     };
                     const observer = new ResizeObserver(updateScale);
@@ -3279,6 +3282,7 @@ export class TimetableView extends BasesView {
                         updateScale();
                     };
                     const show = (visible: boolean) => {
+                        highlightReaderSentence(reader, null);
                         if (visible) {
                             this.rootEl.querySelectorAll('.ert-timetable-panels__panel.is-reader-open').forEach(other => other.removeClass('is-reader-open'));
                             this.flippedScenePath = row.path;
@@ -3294,17 +3298,22 @@ export class TimetableView extends BasesView {
                     this.panelEvents?.registerDomEvent(close, 'click', evt => { evt.stopPropagation(); show(false); flip.focus(); });
                     this.panelEvents?.registerDomEvent(openScene, 'click', evt => { evt.stopPropagation(); void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument); });
                     this.panelEvents?.registerDomEvent(reader, 'scroll', () => { this.sceneReaderScroll.set(row.path, reader.scrollTop); updateScale(); });
-                    this.panelEvents?.registerDomEvent(readerFrame, 'pointermove', (evt: PointerEvent) => {
-                        readerFrame.toggleClass('is-scale-obscuring', evt.pointerType !== 'touch' && evt.clientX >= readerFrame.getBoundingClientRect().right - 20);
+                    this.panelEvents?.registerDomEvent(reader, 'pointermove', (evt: PointerEvent) => {
+                        if (!ready || evt.pointerType === 'touch') return;
+                        const offset = readerOffset(reader, evt.clientX, evt.clientY);
+                        highlightReaderSentence(reader, offset === null ? null : readerSentence(reader.textContent ?? '', offset));
                     });
-                    this.panelEvents?.registerDomEvent(readerFrame, 'pointerleave', () => readerFrame.removeClass('is-scale-obscuring'));
+                    this.panelEvents?.registerDomEvent(reader, 'pointerleave', () => highlightReaderSentence(reader, null));
+                    this.panelEvents?.register(() => highlightReaderSentence(reader, null));
                     this.panelEvents?.registerDomEvent(reader, 'click', (evt: MouseEvent) => {
                         evt.stopPropagation();
                         const selection = reader.ownerDocument.getSelection();
                         if (!ready || (selection?.anchorNode && reader.contains(selection.anchorNode) && selection.toString())) return;
                         const offset = readerOffset(reader, evt.clientX, evt.clientY);
                         if (offset === null) return;
-                        void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument, snapshot, sceneBodyStart(snapshot) + offset)
+                        const sentence = readerSentence(reader.textContent ?? '', offset);
+                        const bodyStart = sceneBodyStart(snapshot);
+                        void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument, snapshot, bodyStart + (sentence?.start ?? offset), sentence ? bodyStart + sentence.end : undefined)
                             .then(opened => { if (!opened) void load(); });
                     });
                     if (this.flippedScenePath === row.path) show(true);

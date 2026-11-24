@@ -66,6 +66,12 @@ class StoryImagePicker extends FuzzySuggestModal<TFile> {
 /** A card's own picture choices, kept in plugin data, never in author notes. */
 export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown> | undefined, images: TFile[], event: MouseEvent, refresh: () => void, automaticSubject?: string, canvasBackdrop = false): void {
     const menu = new Menu().setUseNativeMenu(false);
+    addStoryImageMenuItems(menu, plugin, file, fm, images, refresh, automaticSubject, canvasBackdrop);
+    menu.showAtMouseEvent(event);
+}
+
+/** The image choices, for a menu that also holds other scene actions (the scene panel's ⋯ menu). */
+export function addStoryImageMenuItems(menu: Menu, plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown> | undefined, images: TFile[], refresh: () => void, automaticSubject?: string, canvasBackdrop = false): void {
     const write = (change: Partial<StoryImageChoice> | null) => {
         const previous = storyImageChoice(plugin, file.path);
         const next = change ? { ...previous, ...change } : { canvasBackgroundShade: previous.canvasBackgroundShade };
@@ -104,5 +110,4 @@ export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm
             label, checked: selected === shade, run: () => write({ canvasBackgroundShade: shade }),
         })));
     }
-    menu.showAtMouseEvent(event);
 }

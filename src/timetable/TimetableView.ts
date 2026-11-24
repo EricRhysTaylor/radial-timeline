@@ -121,7 +121,7 @@ import { panelPlaceImage } from './panelPlaceImage';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { addMenuChoices } from './menuChoices';
-import { describePlaceImage, explicitCardImage, showStoryImageMenu } from './storyImageMenu';
+import { addStoryImageMenuItems, describePlaceImage, explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
 import { coverPosition, type PanelFocus } from './panelFocus';
@@ -3022,6 +3022,9 @@ export class TimetableView extends BasesView {
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
                 const sceneActions = !outline && row.kind === 'scene' ? panel.createDiv({ cls: 'ert-timetable-panels__scene-actions' }) : null;
+                // A scene panel shows two buttons: Read scene, and a ⋯ menu that holds these image-focus actions.
+                let frameCover: (() => void) | null = null;
+                let framePlace: (() => void) | null = null;
                 const backdropImage = !outline ? shown.backdrop : null;
                 if (backdropImage) {
                     panel.addClass('has-place-background');
@@ -3033,8 +3036,9 @@ export class TimetableView extends BasesView {
                     backdropEl.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
                     this.panelEvents?.registerDomEvent(backdropEl, 'error', () => { backdrop.remove(); panel.removeClass('has-place-background'); });
                     const placePath = backdropImage.path;
-                    if (placePath) {
-                        const adjust = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
+                    if (placePath && sceneActions) framePlace = () => editFocus(backdropImage.url, placePath, placeFocus);
+                    else if (placePath) {
+                        const adjust = panel.createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
                         setIcon(adjust, 'focus');
                         setAccessibleLabel(adjust, t('ui.timetable.placeFocus'));
                         setTooltip(adjust, t('ui.timetable.placeFocus'));
@@ -3091,8 +3095,8 @@ export class TimetableView extends BasesView {
                     this.panelEvents?.registerDomEvent(insert, 'click', evt => { evt.stopPropagation(); this.outlineInsertionAct = null; this.outlineInsertionPath = row.path; this.render(); });
                 }
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
-                if (!outline && (row.kind === 'scene' || row.kind === 'sketch')) {
-                    const imageOptions = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
+                if (!outline && row.kind === 'sketch') {
+                    const imageOptions = panel.createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
                     setIcon(imageOptions, 'image-plus');
                     setAccessibleLabel(imageOptions, t('ui.timetable.storyImageMenu'));
                     setTooltip(imageOptions, t('ui.timetable.storyImageMenu'));
@@ -3124,13 +3128,7 @@ export class TimetableView extends BasesView {
                     setIcon(dateLine.createSpan({ cls: 'ert-timetable-panels__date-icon' }), 'calendar-days');
                     dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
                 }
-                if (!outline && row.kind === 'scene' && panelImage && imagePath && imageFit === 'fill') {
-                    const focusButton = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__focus clickable-icon', attr: { type: 'button' } });
-                    setIcon(focusButton, 'focus');
-                    setAccessibleLabel(focusButton, t('ui.timetable.panelFocusTitle'));
-                    setTooltip(focusButton, t('ui.timetable.panelFocusTitle'));
-                    this.panelEvents?.registerDomEvent(focusButton, 'click', evt => { evt.stopPropagation(); editFocus(panelImage, imagePath, focus); });
-                }
+                if (sceneActions && panelImage && imagePath && imageFit === 'fill') frameCover = () => editFocus(panelImage, imagePath, focus);
                 // A small panel's cover fills it, so there the Place + character portrait rides as an inset instead.
                 const insetImage = !outline && size === 'small' ? shown.companion : null;
                 if (insetImage) {
@@ -3146,11 +3144,13 @@ export class TimetableView extends BasesView {
                     const insetPath = insetImage.path;
                     if (insetPath && imageFit === 'fill') this.panelEvents?.registerDomEvent(inset, 'click', evt => { evt.stopPropagation(); editFocus(insetImage.url, insetPath, insetFocus); });
                 }
-                const open = (sketchActions ?? sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
-                setIcon(open, !outline && row.kind !== 'scene' ? 'arrow-up-right' : 'file-text');
-                setAccessibleLabel(open, t('ui.timetable.panelOpen'));
-                setTooltip(open, t('ui.timetable.panelOpen'));
-                this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void this.openOutlineFile(entry.file, evt); });
+                if (!sceneActions) {
+                    const open = (sketchActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
+                    setIcon(open, !outline && row.kind !== 'scene' ? 'arrow-up-right' : 'file-text');
+                    setAccessibleLabel(open, t('ui.timetable.panelOpen'));
+                    setTooltip(open, t('ui.timetable.panelOpen'));
+                    this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void this.openOutlineFile(entry.file, evt); });
+                }
                 const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
                 const extraSubplots: HTMLElement[] = [];
                 for (const [index, name] of row.subplots.entries()) {
@@ -3318,6 +3318,23 @@ export class TimetableView extends BasesView {
                             .catch((error: unknown) => console.error('[Timetable] Could not open this scene at the sentence', error));
                     });
                     if (this.flippedScenePath === row.path) show(true);
+                    const more = sceneActions.createEl('button', { cls: 'ert-timetable-panels__more clickable-icon', attr: { type: 'button' } });
+                    setIcon(more, 'more-horizontal');
+                    setAccessibleLabel(more, t('ui.timetable.panelMore'));
+                    setTooltip(more, t('ui.timetable.panelMore'));
+                    this.panelEvents?.registerDomEvent(more, 'click', (event: MouseEvent) => {
+                        event.stopPropagation();
+                        const menu = new Menu().setUseNativeMenu(false);
+                        menu.addItem(item => item.setTitle(t('ui.timetable.panelOpen')).setIcon('file-text').onClick(evt => { void this.openOutlineFile(entry.file, evt instanceof MouseEvent ? evt : undefined); }));
+                        const cover = frameCover;
+                        const place = framePlace;
+                        if (cover || place) menu.addSeparator();
+                        if (cover) menu.addItem(item => item.setTitle(t('ui.timetable.panelFocusTitle')).setIcon('focus').onClick(cover));
+                        if (place) menu.addItem(item => item.setTitle(t('ui.timetable.placeFocus')).setIcon('focus').onClick(place));
+                        menu.addSeparator();
+                        addStoryImageMenuItems(menu, this.plugin, entry.file, frontmatter, imageFiles, () => this.render(), selectedSubject ?? undefined);
+                        menu.showAtMouseEvent(event);
+                    });
                 }
             }
         }

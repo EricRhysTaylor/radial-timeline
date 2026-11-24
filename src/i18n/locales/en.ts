@@ -6207,6 +6207,7 @@ export const en = {
             panelSizeLarge: 'Large',
             panelSketch: 'Sketch',
             panelOpen: 'Open note',
+            panelMore: 'Scene options',
             panelExpandSketch: 'Expand sketch',
             panelCloseSketch: 'Close sketch',
             panelSynopsis: 'Synopsis',

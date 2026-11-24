@@ -1712,9 +1712,6 @@
 .ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene.is-linked { outline: 3px solid var(--ert-timetable-link-color, var(--interactive-accent)); outline-offset: -3px; }
 
 .ert-timetable-panels__cover-image.is-fit { object-fit: contain; object-position: center; }
-.ert-timetable .ert-timetable-panels__focus { position: absolute; z-index: 2; top: var(--size-4-3); right: 44px; width: 28px; height: 28px; padding: 5px; color: var(--text-muted); background: var(--background-secondary); box-shadow: none; }
-.ert-timetable .ert-timetable-panels__focus:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__focus { top: 8px; right: 44px; color: white; background: rgb(0 0 0 / 55%); }
 .ert-panel-focus-frame { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; gap: var(--size-4-3); min-height: 100px; }
 .ert-panel-focus-image { position: relative; display: inline-flex; max-width: 100%; justify-self: center; }
 .ert-panel-focus-image img { display: block; max-width: 100%; max-height: 45vh; width: auto; height: auto; cursor: crosshair; }
@@ -1812,7 +1809,6 @@
 .ert-timetable button.ert-timetable-panels__image-menu { position: absolute; z-index: 4; top: var(--size-4-1); right: 72px; width: 28px; height: 28px; padding: var(--size-4-1); opacity: 0; color: var(--text-muted); }
 .ert-timetable .ert-timetable-panels__scene-actions { position: absolute; z-index: 4; top: var(--size-4-3); right: var(--size-4-3); display: flex; align-items: center; gap: var(--size-4-1); }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-scene .ert-timetable-panels__scene-actions > button { position: static; flex: none; }
-.ert-timetable .has-place-background .ert-timetable-panels__scene-actions > button { color: var(--text-normal); background: var(--ert-place-text-surface); }
 .ert-timetable-panels__panel:hover .ert-timetable-panels__image-menu,
 .ert-timetable-panels__panel:focus-within .ert-timetable-panels__image-menu { opacity: 1; }
 .ert-canvas-story-card__image-menu { position: absolute; z-index: 5; right: var(--size-4-2); bottom: var(--size-4-2); width: 32px; height: 32px; padding: var(--size-4-1); pointer-events: auto; opacity: 0; }
@@ -1821,8 +1817,12 @@
 
 /* Keep scene controls aligned with the card's content inset. */
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__scene-actions { top: var(--size-4-5); right: var(--size-4-5); flex-direction: column; }
-/* The image menu shows on hover; at the foot of the column it leaves no gap above the others while hidden. */
-.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__scene-actions > .ert-timetable-panels__image-menu { order: 1; }
+/* A scene panel's two buttons: Read scene on top, the ⋯ menu below it. Always shown, so touch screens reach them too. */
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-scene .ert-timetable-panels__scene-actions > button.clickable-icon { width: 32px; height: 32px; padding: 6px; --icon-size: 20px; color: var(--text-muted); background: var(--background-secondary); box-shadow: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-scene .ert-timetable-panels__scene-actions > button.clickable-icon:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .has-place-background .ert-timetable-panels__scene-actions > button.clickable-icon { color: var(--text-normal); background: var(--ert-place-text-surface); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__scene-actions > button.clickable-icon { color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__scene-actions > button.clickable-icon:hover { color: white; background: rgb(0 0 0 / 75%); }
 .ert-timetable-panels__subplot[hidden] { display: none; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__meta:not(.is-expanded) { flex-wrap: nowrap; overflow: hidden; }
 .ert-timetable .ert-timetable-panels__meta:not(.is-expanded) .ert-timetable-panels__subplot { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

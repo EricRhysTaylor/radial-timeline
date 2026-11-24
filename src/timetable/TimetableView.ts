@@ -3248,7 +3248,6 @@ export class TimetableView extends BasesView {
                     setTooltip(flip, t('ui.timetable.panelReadScene'));
                     const back = panel.createDiv({ cls: 'ert-timetable-panels__reader' });
                     const bar = back.createDiv({ cls: 'ert-timetable-panels__reader-bar' });
-                    bar.createEl('strong', { text: `${row.prefix ? `${row.prefix} · ` : ''}${displayName(row.basename)}` });
                     const openScene = bar.createEl('button', { cls: 'ert-timetable-panels__reader-open clickable-icon', attr: { type: 'button' } });
                     setIcon(openScene, 'square-arrow-out-up-right');
                     setAccessibleLabel(openScene, t('ui.timetable.panelEditScene'));
@@ -3257,7 +3256,6 @@ export class TimetableView extends BasesView {
                     setIcon(close, 'rotate-ccw');
                     setAccessibleLabel(close, t('ui.timetable.panelShowFront'));
                     setTooltip(close, t('ui.timetable.panelShowFront'));
-                    const hint = back.createDiv({ cls: 'ert-timetable-panels__reader-hint', text: t('ui.timetable.panelReaderHint') });
                     const readerFrame = back.createDiv({ cls: 'ert-timetable-panels__reader-frame' });
                     const reader = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-text', attr: { tabindex: '0' } });
                     const scale = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-scale', attr: { 'aria-hidden': 'true' } });
@@ -3309,7 +3307,6 @@ export class TimetableView extends BasesView {
                         void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument, snapshot, sceneBodyStart(snapshot) + offset)
                             .then(opened => { if (!opened) void load(); });
                     });
-                    hint.setAttr('aria-hidden', 'true');
                     if (this.flippedScenePath === row.path) show(true);
                 }
             }

@@ -1429,9 +1429,7 @@
     display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; gap: var(--size-4-2);
     color: var(--text-normal); background: var(--background-primary);
 }
-.ert-timetable .ert-timetable-panels__reader-bar { display: flex; align-items: center; gap: var(--size-4-2); }
-.ert-timetable .ert-timetable-panels__reader-bar strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ert-timetable .ert-timetable-panels__reader-hint { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ert-timetable .ert-timetable-panels__reader-bar { display: flex; justify-content: flex-end; align-items: center; gap: var(--size-4-2); }
 .ert-timetable .ert-timetable-panels__reader-frame { position: relative; flex: 1 1 auto; min-height: 0; }
 .ert-timetable .ert-timetable-panels__reader-text { height: 100%; min-height: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text; }
 .ert-timetable .ert-timetable-panels__reader-scale { position: absolute; inset: 0 2px 0 auto; width: 7px; border-radius: 4px; background: var(--background-modifier-border); opacity: 0; pointer-events: none; transition: opacity 160ms ease; }
@@ -1473,6 +1471,8 @@
 .ert-timetable .ert-timetable-panels.is-large:not(.is-outline) .ert-timetable-panels__panel { height: 400px; }
 .ert-timetable .ert-timetable-panels.is-small:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { box-sizing: border-box; height: 220px; overflow-x: hidden; overflow-y: auto; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel > :not(.ert-timetable-panels__backdrop) { flex-shrink: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-reader-open { background: var(--background-primary); box-shadow: none; outline: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-reader-open > .ert-timetable-panels__reader { flex: 1 1 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel.is-scene:not(.is-editing-synopsis) { overflow: hidden; }
 /* The scene's buttons stand in a column at the top right, so the header gives up one button's width, not a row's. */
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__header { max-height: 40%; overflow-y: auto; padding-right: 40px; }

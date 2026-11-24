@@ -1,5 +1,5 @@
 import { createSketchNote } from './createSketchNote';
-import { openScenePopout, readerOffset, renderReaderText, sceneBodyStart } from './sceneCardReader';
+import { openScenePopout, readerOffset, readerScale, renderReaderText, sceneBodyStart } from './sceneCardReader';
 import { applySketchPlacement } from './applySketchPlacement';
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
@@ -3258,7 +3258,18 @@ export class TimetableView extends BasesView {
                     setAccessibleLabel(close, t('ui.timetable.panelShowFront'));
                     setTooltip(close, t('ui.timetable.panelShowFront'));
                     const hint = back.createDiv({ cls: 'ert-timetable-panels__reader-hint', text: t('ui.timetable.panelReaderHint') });
-                    const reader = back.createDiv({ cls: 'ert-timetable-panels__reader-text', attr: { tabindex: '0' } });
+                    const readerFrame = back.createDiv({ cls: 'ert-timetable-panels__reader-frame' });
+                    const reader = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-text', attr: { tabindex: '0' } });
+                    const scale = readerFrame.createDiv({ cls: 'ert-timetable-panels__reader-scale', attr: { 'aria-hidden': 'true' } });
+                    const indicator = scale.createDiv({ cls: 'ert-timetable-panels__reader-scale-position' });
+                    const updateScale = () => {
+                        const geometry = readerScale(reader.clientHeight, reader.scrollHeight, reader.scrollTop);
+                        scale.toggleClass('is-visible', geometry !== null);
+                        if (geometry) indicator.setCssProps({ '--ert-reader-scale-top': `${geometry.top}%`, '--ert-reader-scale-size': `${geometry.size}%` });
+                    };
+                    const observer = new ResizeObserver(updateScale);
+                    observer.observe(reader);
+                    this.panelEvents?.register(() => observer.disconnect());
                     let snapshot = '';
                     let ready = false;
                     const load = async () => {
@@ -3267,6 +3278,7 @@ export class TimetableView extends BasesView {
                         renderReaderText(reader, snapshot.slice(sceneBodyStart(snapshot)), this.plugin.app, entry.file);
                         ready = true;
                         reader.scrollTop = this.sceneReaderScroll.get(row.path) ?? 0;
+                        updateScale();
                     };
                     const show = (visible: boolean) => {
                         if (visible) {
@@ -3283,7 +3295,11 @@ export class TimetableView extends BasesView {
                     this.panelEvents?.registerDomEvent(flip, 'click', evt => { evt.stopPropagation(); show(true); });
                     this.panelEvents?.registerDomEvent(close, 'click', evt => { evt.stopPropagation(); show(false); flip.focus(); });
                     this.panelEvents?.registerDomEvent(openScene, 'click', evt => { evt.stopPropagation(); void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument); });
-                    this.panelEvents?.registerDomEvent(reader, 'scroll', () => this.sceneReaderScroll.set(row.path, reader.scrollTop));
+                    this.panelEvents?.registerDomEvent(reader, 'scroll', () => { this.sceneReaderScroll.set(row.path, reader.scrollTop); updateScale(); });
+                    this.panelEvents?.registerDomEvent(readerFrame, 'pointermove', (evt: PointerEvent) => {
+                        readerFrame.toggleClass('is-scale-obscuring', evt.pointerType !== 'touch' && evt.clientX >= readerFrame.getBoundingClientRect().right - 20);
+                    });
+                    this.panelEvents?.registerDomEvent(readerFrame, 'pointerleave', () => readerFrame.removeClass('is-scale-obscuring'));
                     this.panelEvents?.registerDomEvent(reader, 'click', (evt: MouseEvent) => {
                         evt.stopPropagation();
                         const selection = reader.ownerDocument.getSelection();

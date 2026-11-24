@@ -2,6 +2,14 @@ import { MarkdownView, Notice, getFrontMatterInfo, type App, type TFile } from '
 import { t } from '../i18n';
 import { revealHighlight } from '../utils/fileUtils';
 
+/** A proportional viewport marker, with a small minimum size for very long scenes. */
+export function readerScale(viewport: number, content: number, scroll: number): { size: number; top: number } | null {
+    if (viewport <= 0 || content <= viewport) return null;
+    const size = Math.max(0.06, Math.min(1, viewport / content));
+    const position = Math.max(0, Math.min(1, scroll / (content - viewport)));
+    return { size: size * 100, top: position * (1 - size) * 100 };
+}
+
 /** Keep the note's exact source characters so identical words navigate to their own positions. */
 export function sceneBodyStart(source: string): number {
     const info = getFrontMatterInfo(source);

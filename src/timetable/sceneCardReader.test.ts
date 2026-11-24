@@ -1,10 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MarkdownView, type App, type TFile } from 'obsidian';
-import { openScenePopout, readerOffset } from './sceneCardReader';
+import { openScenePopout, readerOffset, readerScale } from './sceneCardReader';
 
 vi.mock('../utils/fileUtils', () => ({ revealHighlight: vi.fn() }));
 
 describe('scene card navigation', () => {
+    it('places the visible part proportionally along the scene scale', () => {
+        expect(readerScale(100, 400, 0)).toEqual({ size: 25, top: 0 });
+        expect(readerScale(100, 400, 150)).toEqual({ size: 25, top: 37.5 });
+        expect(readerScale(100, 400, 300)).toEqual({ size: 25, top: 75 });
+        expect(readerScale(100, 100, 0)).toBeNull();
+        expect(readerScale(0, 100, 0)).toBeNull();
+    });
+
+    it('keeps long-scene markers visible and within the scale', () => {
+        expect(readerScale(100, 10000, 9900)).toEqual({ size: 6, top: 94 });
+        expect(readerScale(100, 400, -20)?.top).toBe(0);
+        expect(readerScale(100, 400, 999)?.top).toBe(75);
+    });
     it('does not open a stale snapshot', async () => {
         const getLeaf = vi.fn();
         const app = { vault: { read: async () => 'changed' }, workspace: { getLeaf } } as unknown as App;

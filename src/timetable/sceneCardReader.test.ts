@@ -14,6 +14,11 @@ describe('scene card navigation', () => {
         expect(second.start).toBeGreaterThan(0);
         expect(readerSentence(text, text.indexOf('\n'))).toBeNull();
     });
+    it('keeps the last sentence when the text ends on an abbreviation', () => {
+        const text = 'She left. Then she called the Dr.';
+        const last = readerSentence(text, text.indexOf('called'))!;
+        expect(text.slice(last.start, last.end)).toBe('Then she called the Dr.');
+    });
     it('places the visible part proportionally along the scene scale', () => {
         expect(readerScale(100, 400, 0)).toEqual({ size: 25, top: 0 });
         expect(readerScale(100, 400, 150)).toEqual({ size: 25, top: 37.5 });

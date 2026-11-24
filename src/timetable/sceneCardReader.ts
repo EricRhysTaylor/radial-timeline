@@ -112,6 +112,12 @@ export function readerSentence(text: string, offset: number): { start: number; e
             ranges.push({ start: sentenceStart + leading, end: sentenceStart + sentence.trimEnd().length });
             sentenceStart = part.index + part.segment.length;
         }
+        // A text ending on an abbreviation ("...said Dr.") leaves its last sentence unclosed.
+        const rest = text.slice(sentenceStart);
+        if (rest.trim()) {
+            const leading = rest.length - rest.trimStart().length;
+            ranges.push({ start: sentenceStart + leading, end: sentenceStart + rest.trimEnd().length });
+        }
         sentenceCache = { text, ranges };
     }
     return sentenceCache.ranges.find(range => offset >= range.start && offset < range.end) ?? null;

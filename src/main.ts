@@ -74,7 +74,7 @@ import { COMMUNITY_AUTO_SYNC_INTERVAL_MS, CommunityMailbox } from './communitySh
 import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
 import { markTimetableRows, refreshTimetableViews } from './timetable/timetableRegistry';
-import { getOpenDocuments } from './utils/documents';
+import { bindToAllDocuments, getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT, syncSubplotPalette } from './renderer/utils/subplotColors';
 import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, migrateVaultNarrationDefault, normalizeBookProfile, recordBookNarrations, shouldSeedBookProfileFromLegacySettings } from './utils/books';
@@ -776,8 +776,8 @@ export default class RadialTimelinePlugin extends Plugin {
         this.registerDomEvent(window, 'focus', () => this.signalWritingActivity(true));
         // Each window has its own document: scrolling a scene in a popout window counts too.
         const onScroll = () => this.signalWritingActivity();
-        this.registerDomEvent(this.app.workspace.containerEl.doc, 'scroll', onScroll, { capture: true });
-        this.registerEvent(this.app.workspace.on('window-open', (win) => this.registerDomEvent(win.doc, 'scroll', onScroll, { capture: true })));
+        // bindToAllDocuments also covers popouts already open when the plugin (re)loads.
+        bindToAllDocuments(this, (doc) => this.registerDomEvent(doc, 'scroll', onScroll, { capture: true }));
         this.publishingValidationService = new PublishingValidationService(this);
         this.timelineAuditAiService = new TimelineAuditAiService(this);
         

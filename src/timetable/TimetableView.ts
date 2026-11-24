@@ -3287,7 +3287,7 @@ export class TimetableView extends BasesView {
                             this.rootEl.querySelectorAll('.ert-timetable-panels__panel.is-reader-open').forEach(other => other.removeClass('is-reader-open'));
                             this.flippedScenePath = row.path;
                             panel.addClass('is-reader-open');
-                            void load();
+                            void load().catch((error: unknown) => console.error('[Timetable] Could not read this scene for the card reader', error));
                         } else {
                             this.sceneReaderScroll.set(row.path, reader.scrollTop);
                             panel.removeClass('is-reader-open');
@@ -3296,7 +3296,7 @@ export class TimetableView extends BasesView {
                     };
                     this.panelEvents?.registerDomEvent(flip, 'click', evt => { evt.stopPropagation(); show(true); });
                     this.panelEvents?.registerDomEvent(close, 'click', evt => { evt.stopPropagation(); show(false); flip.focus(); });
-                    this.panelEvents?.registerDomEvent(openScene, 'click', evt => { evt.stopPropagation(); void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument); });
+                    this.panelEvents?.registerDomEvent(openScene, 'click', evt => { evt.stopPropagation(); void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument).catch((error: unknown) => console.error('[Timetable] Could not open this scene', error)); });
                     this.panelEvents?.registerDomEvent(reader, 'scroll', () => { this.sceneReaderScroll.set(row.path, reader.scrollTop); updateScale(); });
                     this.panelEvents?.registerDomEvent(reader, 'pointermove', (evt: PointerEvent) => {
                         if (!ready || evt.pointerType === 'touch') return;
@@ -3314,7 +3314,8 @@ export class TimetableView extends BasesView {
                         const sentence = readerSentence(reader.textContent ?? '', offset);
                         const bodyStart = sceneBodyStart(snapshot);
                         void openScenePopout(this.plugin.app, entry.file, panel.ownerDocument, snapshot, bodyStart + (sentence?.start ?? offset), sentence ? bodyStart + sentence.end : undefined)
-                            .then(opened => { if (!opened) void load(); });
+                            .then(opened => { if (!opened) return load(); })
+                            .catch((error: unknown) => console.error('[Timetable] Could not open this scene at the sentence', error));
                     });
                     if (this.flippedScenePath === row.path) show(true);
                 }

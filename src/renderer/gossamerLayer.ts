@@ -5,6 +5,7 @@ import type { TimelineItem } from '../types';
 import { GossamerRun, extractPresentBeatScores, extractBeatOrder } from '../utils/gossamer';
 import { getMostAdvancedStageColor, lightenColor, getRunColorWithSaturation } from '../utils/colour';
 import { escapeXml } from '../utils/svg';
+import { safeCssColor } from '../utils/cssColorSafety';
 
 export interface PolarConfig {
   innerRadius: number;
@@ -51,9 +52,13 @@ export function renderGossamerLayer(
   
 
   const defaultColor = getCSSVar('--rt-gossamer-default-color', '#7a7a7a');
-  const projectStageColor = publishStageColors
-    ? getMostAdvancedStageColor(scenes, publishStageColors)
-    : Array.from(publishStageColorByBeat?.values() || [])[0] || defaultColor;
+  // Stage colours come from settings and are written into SVG attributes below.
+  const projectStageColor = safeCssColor(
+    publishStageColors
+      ? getMostAdvancedStageColor(scenes, publishStageColors)
+      : Array.from(publishStageColorByBeat?.values() || [])[0],
+    defaultColor
+  );
 
   // Get selected beat model from plugin settings (passed through run meta if needed)
   const selectedBeatModel = run?.meta?.model;
@@ -348,7 +353,7 @@ export function renderGossamerLayer(
       const totalInStage = stageRuns.length;
       
       // Apply saturation gradient (older = less saturated, newer = more saturated)
-      return getRunColorWithSaturation(stageColor, positionInStage, totalInStage);
+      return safeCssColor(getRunColorWithSaturation(stageColor, positionInStage, totalInStage), historicalColor);
     });
     
     // Reverse to draw oldest first (bottom layer)

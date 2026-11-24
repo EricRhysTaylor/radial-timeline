@@ -1,4 +1,7 @@
 import { STATUS_HEX } from '../../utils/constants';
+import { escapeXml } from '../../utils/svg';
+import { safeCssColor } from '../../utils/cssColorSafety';
+import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import { getHeroPattern, heroPatternShapesToSvgString, type HeroPattern } from './HeroPatterns';
 
 /**
@@ -31,15 +34,22 @@ export function renderDefs(
   const todoFill = portableSvg ? STATUS_HEX.Todo : `var(--rt-color-todo, ${STATUS_HEX.Todo})`;
   const plaidOpacity = portableSvg ? '0.82' : 'var(--rt-color-plaid-opacity, 0.82)';
 
-  const fillRuleAttr = workingPattern.fillRule ? ` fill-rule="${workingPattern.fillRule}"` : '';
-  const plaid = Object.entries(PUBLISH_STAGE_COLORS).map(([stage, color]) => {
+  const fillRuleAttr = workingPattern.fillRule === 'evenodd' || workingPattern.fillRule === 'nonzero'
+    ? ` fill-rule="${workingPattern.fillRule}"`
+    : '';
+  const fillOpacity = Number(workingPattern.fillOpacity);
+  const workingFillOpacity = Number.isFinite(fillOpacity) ? fillOpacity : 0.4;
+  const plaid = Object.entries(PUBLISH_STAGE_COLORS).map(([rawStage, rawColor]) => {
+    // Stage names and colours come from settings; keep them inert in markup.
+    const stage = escapeXml(rawStage);
+    const color = safeCssColor(rawColor, DEFAULT_SETTINGS.publishStageColors.Zero);
     // Working pattern: Hero Patterns motif (https://heropatterns.com, CC BY 4.0)
     // by Steve Schoger. Motif chosen via `settings.workingPatternId`.
     const workingPath = `
       <pattern id="${idPrefix}plaidWorking${stage}" patternUnits="userSpaceOnUse" width="${workingW}" height="${workingH}">
         <rect width="${workingW}" height="${workingH}" fill="${workingFill}" opacity="${plaidOpacity}"/>
         <g transform="scale(${patternScale})">
-          <g fill="${color}" fill-opacity="${workingPattern.fillOpacity}"${fillRuleAttr}>
+          <g fill="${color}" fill-opacity="${workingFillOpacity}"${fillRuleAttr}>
             ${heroPatternShapesToSvgString(workingPattern)}
           </g>
         </g>

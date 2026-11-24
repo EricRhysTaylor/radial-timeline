@@ -263,3 +263,69 @@ export function validateSvgPattern(svgText: string): ValidationResult {
         : { tileW, tileH, shapes, fillOpacity };
     return { ok: true, pattern };
 }
+
+const STORED_ID_RE = /^custom-[A-Za-z0-9_-]{1,64}$/;
+const MAX_STORED_NAME_LENGTH = 200;
+
+function isFiniteInRange(value: unknown, min: number, max: number): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+}
+
+function sanitizeStoredShape(raw: unknown): HeroPatternShape | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const { tag, attrs } = raw as { tag?: unknown; attrs?: unknown };
+    if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) return null;
+    const source = attrs as Record<string, unknown>;
+    const opacity = source.opacity;
+    if (opacity !== undefined && (typeof opacity !== 'string' || !OPACITY_RE.test(opacity))) return null;
+
+    if (tag === 'path') {
+        if (Object.keys(source).some(name => !PATH_ALLOWED.has(name))) return null;
+        const d = source.d;
+        if (typeof d !== 'string' || d.length === 0 || d.length > MAX_PATH_DATA_BYTES || !PATH_DATA_RE.test(d)) return null;
+        return { tag: 'path', attrs: opacity !== undefined ? { d, opacity } : { d } };
+    }
+    if (tag === 'circle') {
+        if (Object.keys(source).some(name => !CIRCLE_ALLOWED.has(name))) return null;
+        const { cx, cy, r } = source;
+        if (typeof cx !== 'string' || typeof cy !== 'string' || typeof r !== 'string') return null;
+        if (!NUMBER_RE.test(cx) || !NUMBER_RE.test(cy) || !NUMBER_RE.test(r)) return null;
+        return { tag: 'circle', attrs: opacity !== undefined ? { cx, cy, r, opacity } : { cx, cy, r } };
+    }
+    return null;
+}
+
+function sanitizeStoredPattern(raw: unknown): HeroPattern | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const record = raw as Record<string, unknown>;
+    const { id, name, tileW, tileH, fillOpacity, fillRule, shapes } = record;
+    if (typeof id !== 'string' || !STORED_ID_RE.test(id)) return null;
+    if (typeof name !== 'string' || name.trim().length === 0 || name.length > MAX_STORED_NAME_LENGTH) return null;
+    if (!isFiniteInRange(tileW, MIN_TILE, MAX_TILE) || !isFiniteInRange(tileH, MIN_TILE, MAX_TILE)) return null;
+    if (!isFiniteInRange(fillOpacity, 0, 1)) return null;
+    if (fillRule !== undefined && fillRule !== 'evenodd' && fillRule !== 'nonzero') return null;
+    if (!Array.isArray(shapes) || shapes.length === 0 || shapes.length > MAX_ELEMENTS) return null;
+    const cleanShapes: HeroPatternShape[] = [];
+    for (const shape of shapes) {
+        const clean = sanitizeStoredShape(shape);
+        if (!clean) return null;
+        cleanShapes.push(clean);
+    }
+    return fillRule
+        ? { id, name, tileW, tileH, fillOpacity, fillRule, shapes: cleanShapes }
+        : { id, name, tileW, tileH, fillOpacity, shapes: cleanShapes };
+}
+
+/**
+ * Re-check custom patterns read back from settings (data.json). Pasted
+ * patterns pass {@link validateSvgPattern} when they are added, but the saved
+ * copy can be edited outside Radial Timeline (a synced or shared vault), so on
+ * load every pattern is held to the same rules again and any pattern that
+ * breaks one is dropped whole.
+ */
+export function sanitizeStoredHeroPatterns(raw: unknown): HeroPattern[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map(sanitizeStoredPattern)
+        .filter((pattern): pattern is HeroPattern => pattern !== null);
+}

@@ -9,6 +9,8 @@
  * (DOM construction for the settings preview) can render them without
  * injecting raw markup. The per-stage tint is applied by a parent <g>.
  */
+import { escapeXml } from '../../utils/svg';
+
 export interface HeroPatternShape {
     tag: 'path' | 'circle';
     attrs: Record<string, string>;
@@ -91,11 +93,22 @@ export function getHeroPattern(
     return HERO_PATTERNS[0];
 }
 
+// Attribute names a shape may carry in string output. Custom patterns are
+// re-checked on load, but the serializer keeps its own allowlist and escapes
+// every value so a bad entry can never add an attribute to the timeline SVG.
+const SHAPE_ATTRIBUTES: Readonly<Record<HeroPatternShape['tag'], ReadonlySet<string>>> = {
+    path: new Set(['d', 'opacity']),
+    circle: new Set(['cx', 'cy', 'r', 'opacity']),
+};
+
 /** Serialize the pattern shapes to an SVG fragment string (for renderer string output). */
 export function heroPatternShapesToSvgString(pattern: HeroPattern): string {
     return pattern.shapes.map(shape => {
+        const allowed = SHAPE_ATTRIBUTES[shape.tag];
+        if (!allowed) return '';
         const attrs = Object.entries(shape.attrs)
-            .map(([k, v]) => `${k}="${v}"`)
+            .filter(([k]) => allowed.has(k))
+            .map(([k, v]) => `${k}="${escapeXml(String(v))}"`)
             .join(' ');
         return `<${shape.tag} ${attrs}/>`;
     }).join('');

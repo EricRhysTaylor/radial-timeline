@@ -1,15 +1,25 @@
-# Manuscript Reading View
+# Writing Studio for Obsidian
 
 **High priority · Planned** · Obsidian plugin · November 25, 2026
 
 Authors can draft a chapter across several scene notes and still want to read it as a chapter. Give them a live, continuous Markdown view of the book inside Obsidian that they can open during a writing session without running an export. Use the original scene notes as the source of the prose, and let readers return directly to the scene they want to revise.
 
+## Studio layout
+
+Use the Community Writing Studio as the layout reference for a dedicated book workspace in the plugin. The [Community book reader](https://community.radialtimeline.com/timeline/cf9250b7-e3ea-4a6a-9de5-215706b1a292/read/1) shows how to keep the timeline, prose, and scene context in view together.
+
+- **Left rail.** Keep the compact radial timeline and contents visible beside the manuscript. Highlight the current scene as the author scrolls. Clicking a wedge or contents entry jumps to that location in the same manuscript.
+- **Center.** Give the continuous Markdown manuscript the main reading column. Put the current location and previous/next controls by the reading header.
+- **Right rail.** Show the active scene’s details and an **Open source note** action. The details and wheel follow the same scene as the manuscript scrolls.
+- **Narrow panes.** Collapse the navigator into a strip above the manuscript and let the author expand it on demand. Fold the scene details away so the prose has room.
+
+Use Obsidian’s theme and workspace conventions. **Reading View** is the first workflow in the studio, with editing available through the source note.
+
 ## Reading and navigation
 
-- Open **Reading View** for the current book from the timeline or Timetable. When opened from a scene, start at that scene. Render the draft in manuscript order with native Obsidian Markdown, chapter headings, and quiet scene breaks. Keep each scene addressable and provide **Open source note**.
+- Open **Reading View** for the current book from the timeline or Timetable. When opened from a scene, start at that scene. Render the draft in manuscript order with native Obsidian Markdown, chapter headings, and quiet scene breaks. Give each scene its own anchor.
 - Keep scrolling across scenes and chapters in the full-book view. Let readers narrow the same pane to a single scene or chapter for a focused review. Keep reading scope independent of the unit used for jumps.
-- Provide previous and next buttons and a contents list for scene and chapter jumps. Include act jumps where the book has meaningful act boundaries. Keep the current location visible as the reader moves.
-- Use the [Community book reader](https://community.radialtimeline.com/timeline/cf9250b7-e3ea-4a6a-9de5-215706b1a292/read/1) as the navigation reference. A compact radial timeline highlights the current scene on scroll, and clicking a wedge jumps to that scene. A chapter can span several wedges.
+- Step by scene or chapter with the previous and next buttons. Include act jumps where the book has meaningful act boundaries. A chapter can span several wedges.
 
 ## Chapter source and manuscript order
 
@@ -24,7 +34,8 @@ If scene 04 belongs to **The Arrival** again, keep the order 01, 02, 03, 04. Sho
 
 ## Checks before shipping
 
-- A chapter with several scene notes reads as one section, and scrolling into each scene updates the wheel and source-note link.
+- In a wide pane, the navigator, prose, and scene details are visible together. In a narrow pane, the prose has the full reading width and the navigation remains available.
+- A chapter with several scene notes reads as one section. Scrolling into each scene updates the wheel, scene details, and source-note link, while choosing a scene in the navigator scrolls to its prose.
 - Unnumbered chapter folders and an act/chapter folder hierarchy produce the same chapter sequence in Reading View and the published manuscript. Interleaved folders preserve scene order and surface the split.
 - A draft without chapter markers can still be read and navigated by scene. A draft using the existing `Chapter` workflow keeps its chapter starts.
 - Changes to scene prose appear in the reader without another export. Scene jumps and chapter jumps both follow manuscript order, including when the timeline is showing story chronology.

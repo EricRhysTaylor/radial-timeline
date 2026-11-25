@@ -92,6 +92,7 @@ Location: `docs/engineering/plans/`
 Contains architecture proposals and historical planning documents.
 These describe design direction but are not always authoritative rules.
 
+- **[Manuscript Reading View](plans/manuscript-reading-view-plan.md)** — **High priority.** Read the live Obsidian draft as continuous Markdown, with chapter headings from scene properties or folders and a compact radial timeline for scene, chapter, and act navigation. Planned.
 - **[workflow-videos-plan.md](plans/workflow-videos-plan.md)** — Short videos (45–90 s) that each show one workflow, opened by a play icon beside the wiki link in settings headings, dialog badges and wiki sections, through registered `/go/rt-video-…` links. The video list (`src/settings/workflowVideos.ts`) and icon are built; an icon shows only once its video is published. Lists the proposed videos, how to make and publish one, and how to keep them current. Built 2026-11-11.
 - **[bce-scene-dates-plan.md](plans/bce-scene-dates-plan.md)** — BCE scene dates: `When: 1184-06-14 BCE`, astronomical years inside one parser, era labels ("1184 BCE"; CE only when a book crosses eras), every caller that reads, writes or shows a When, and a suggested re-dating of the Odyssey. Built 2026-11-09.
 

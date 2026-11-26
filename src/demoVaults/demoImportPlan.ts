@@ -92,7 +92,7 @@ export async function prepareDemoImport(
             const raw: unknown = JSON.parse(strFromU8(data));
             const books = demo.books.map(book => ({ id: book.sourceFolder, sourceFolder: book.sourceFolder }));
             const record = readPortableStoryMap(raw, books);
-            if (!record || !paths.has(path.slice(0, -'.storymap.json'.length))) throw new Error('Invalid demo story map details.');
+            if (!record || !paths.has(path.slice(0, -'.storymap.json'.length))) throw new Error('Invalid demo subplot map details.');
             const folder = record.bookId;
             const rebase = (item: string) => resolvePath(item, true);
             const next = { ...record,

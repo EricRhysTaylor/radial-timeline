@@ -55,7 +55,7 @@ describe('reviewed demo import plan', () => {
         const node = { id: 'a', type: 'file', file: 'Characters/Character.md', x: 0, y: 0, width: 100, height: 100 };
         const sidecar = { schemaVersion: 1, bookFolder: 'Book', provenance: { version: 1, generatedAt: '2026-11-21', act: null, subplot: null, layout: 'horizontal', initialFocus: 'all', scenes: [{ path: 'Characters/Character.md', act: 1, subplots: [] }], generated: { nodes: [node], edges: [] } } };
         const { bytes, demo, numbers } = await fixture({ [`Demo/${canvasPath}`]: JSON.stringify({ nodes: [node], edges: [] }), [`Demo/${canvasPath}.storymap.json`]: JSON.stringify(sidecar) });
-        await expect(prepareDemoImport(bytes, demo, numbers)).rejects.toThrow('Invalid demo story map details');
+        await expect(prepareDemoImport(bytes, demo, numbers)).rejects.toThrow('Invalid demo subplot map details');
     });
     it('rebases links, bracketed filenames, brief references and book scope without changing quotations', async () => {
         const { bytes, demo, numbers } = await fixture();

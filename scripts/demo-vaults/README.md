@@ -4,7 +4,7 @@ This is the maintained content-only packager. It replaces the legacy helper unde
 
 Each `<sample-id>.json` is the contract for that book's published edition. The current editions are `2026-11-10` for all three books, and the plugin catalog points at them from Radial Timeline 8.0.1: every packaged scene uses `Narration`, and each book carries its Timetable and subplot Canvas. Evidence: `Demo Vaults/Testing Vaults/2026-11-10 Story Vault editions/README.md`. For the next edition, change the contract's `edition` to its release date and keep the earlier edition in git history and `Demo Vaults/Releases/`.
 
-When a Story Map has a neighboring `.canvas.storymap.json` file, include that file in the edition contract alongside the Canvas and its scenes. It contains the generation baseline needed for Review story map after installation; the packager checks that it travels with its map and referenced scenes, and the import route rebases its paths. Do not reconstruct a baseline from a map whose generation state is unknown.
+When a Story Map has a neighboring `.canvas.storymap.json` file, include that file in the edition contract alongside the Canvas and its scenes. It contains the generation baseline needed for the **Review subplot branches** dialog after installation; the packager checks that it travels with its map and referenced scenes, and the import route rebases its paths. Do not reconstruct a baseline from a map whose generation state is unknown.
 
 ```sh
 uv run scripts/demo-vaults/package_sample_vault.py \

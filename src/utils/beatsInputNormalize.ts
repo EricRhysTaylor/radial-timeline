@@ -87,7 +87,8 @@ export function toBeatMatchKey(value: string): string {
   const trimmed = normalizeInlineText(value);
   if (!trimmed) return '';
   const withoutAct = trimmed.replace(/^Act\s*\d+\s*:\s*/i, '');
-  const withoutPrefix = withoutAct.replace(/^\d+(?:\.\d+)?\s*[.\-:)]?\s*/i, '');
+  // A numbering prefix has a separator. Keep digits that belong to the title.
+  const withoutPrefix = withoutAct.replace(/^\d+(?:\.\d+)?(?:\s*(?:\.(?!\d)|[-:)])\s*|\s+)/, '');
   return normalizeForMatching(normalizeWordNumbers(withoutPrefix));
 }
 

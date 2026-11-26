@@ -1234,9 +1234,8 @@ export function renderBeatPropertiesSection(params: {
                     setTooltip(rangeInput, t('settings.beats.design.rangeTooltip'));
                     plugin.registerDomEvent(rangeInput, 'change', () => {
                         const rangeVal = rangeInput.value.trim();
-                        const updated = [...orderedBeats];
-                        updated[index] = { ...orderedBeats[index], range: rangeVal || undefined };
-                        void saveBeats(updated);
+                        orderedBeats[index] = { ...orderedBeats[index], range: rangeVal || undefined };
+                        void saveBeats(orderedBeats);
                     });
 
                     // Act select

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlotSystemPreset } from './beatsSystems';
 import { createBeatNotesFromSet, ensureBeatInThisBookTemplateField } from './beatsTemplates';
+import { toBeatMatchKey } from './beatsInputNormalize';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { getTemplateParts } from './yamlTemplateNormalize';
 
@@ -66,6 +67,25 @@ describe('beatsTemplates', () => {
         const created = vault.files.values().next().value as string;
         expect(created).toContain('Description: "Legacy purpose"');
         expect(created).not.toContain('{{Description}}');
+    });
+
+    it('recognizes a generated note for a custom beat whose title starts with an ordinal', async () => {
+        const vault = createVaultMock();
+        const name = '1st Pinch Point';
+        const customSystem: PlotSystemPreset = {
+            name: 'Custom',
+            beatCount: 1,
+            beats: [name],
+            beatDetails: [{ name, description: 'Pressure rises', act: 1 }]
+        };
+
+        const result = await createBeatNotesFromSet(vault as never, 'Custom', 'Story', customSystem, {
+            explicitSceneNumbers: [3]
+        });
+
+        expect(result.createdPaths).toEqual(['Story/3.01 1st Pinch Point.md']);
+        expect(toBeatMatchKey('3.01 1st Pinch Point')).toBe(toBeatMatchKey(name));
+        expect(toBeatMatchKey(name)).toBe('1st pinch point');
     });
 
     it('supports explicit scene anchoring for beat filenames', async () => {

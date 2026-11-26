@@ -21,22 +21,28 @@ Use Obsidian’s theme and workspace conventions. **Reading View** is the first 
 - Keep scrolling across scenes and chapters in the full-book view. Let readers narrow the same pane to a single scene or chapter for a focused review. Keep reading scope independent of the unit used for jumps.
 - Step by scene or chapter with the previous and next buttons. Include act jumps where the book has meaningful act boundaries. A chapter can span several wedges.
 
+## Chapters in Timetable Outline
+
+- Add a collapsible heading above each chapter’s scene rows in **Timetable → Outline**. Keep the act headings and manuscript scene order. Scenes without a resolved chapter appear in their usual act and position.
+- Put **Read chapter** on each heading. It opens the current book in Writing Studio at the start of that chapter.
+
 ## Chapter source and manuscript order
 
-Offer a per-book **Chapter source** setting shared by Reading View and Publish.
+Use a per-book **Chapter source** setting to resolve the same headings and scene ranges in Timetable Outline, Reading View, and Publish.
 
 - **Scene property.** The default uses the existing `Chapter` marker on the opening scene. Following scenes continue in that chapter until the next marker.
 - **Folder.** The author chooses which level under the book’s manuscript folder represents chapters. Use the folder at that level for membership and its name for the heading. Chapter folders can sit directly under the manuscript folder or under an act folder.
 
 Both modes use Radial Timeline’s existing narrative scene order, including its scene index sorting. Folder names need no index prefix, and Obsidian’s File Explorer sort has no effect on Reading View or Publish. In Folder mode, a heading appears when the ordered scenes enter a different chapter folder. For example, if scenes 01 and 02 are in **The Arrival** and scene 03 is in **The Escape**, **The Arrival** comes first.
 
-If scene 04 belongs to **The Arrival** again, keep the order 01, 02, 03, 04. Show **The Arrival** again at scene 04 and flag the split folder so the author can adjust the scene index or folder. Use the same chapter resolution for reading and publishing so the heading boundaries agree. Scenes with no resolved chapter remain readable in order.
+If scene 04 belongs to **The Arrival** again, keep the order 01, 02, 03, 04. Show **The Arrival** again at scene 04 and flag the split folder so the author can adjust the scene index or folder. Scenes with no resolved chapter remain readable in order.
 
 ## Checks before shipping
 
 - In a wide pane, the navigator, prose, and scene details are visible together. In a narrow pane, the prose has the full reading width and the navigation remains available.
 - A chapter with several scene notes reads as one section. Scrolling into each scene updates the wheel, scene details, and source-note link, while choosing a scene in the navigator scrolls to its prose.
-- Unnumbered chapter folders and an act/chapter folder hierarchy produce the same chapter sequence in Reading View and the published manuscript. Interleaved folders preserve scene order and surface the split.
+- In Timetable Outline, a chapter heading expands and collapses its scene rows, and **Read chapter** jumps to its opening scene in Writing Studio.
+- Unnumbered chapter folders and an act/chapter folder hierarchy produce the same chapter sequence in Timetable Outline, Reading View, and the published manuscript. Interleaved folders preserve scene order and surface the split.
 - A draft without chapter markers can still be read and navigated by scene. A draft using the existing `Chapter` workflow keeps its chapter starts.
 - Changes to scene prose appear in the reader without another export. Scene jumps and chapter jumps both follow manuscript order, including when the timeline is showing story chronology.
 

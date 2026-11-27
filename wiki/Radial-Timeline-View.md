@@ -42,7 +42,7 @@ See [Narrative Mode](Narrative-Mode#book-and-saga-scope) for Saga behavior and l
 
 ### In a narrow pane
 
-The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Canvas**, commands, manuscript export, bug report, **Help**, and **Settings**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
+The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Writing Studio**, **Canvas**, commands, manuscript export, bug report, **Help**, and **Settings**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
 
 ## Getting Help
 
@@ -90,3 +90,5 @@ The legend is a quick visual guide for the current mode.
 ## Timetable
 
 The [Timetable](Timetable) opens beside the wheel from its title-bar table button. It follows the active book or saga and links scene rows to the wheel’s hover highlight.
+
+**Writing Studio** opens from the title-bar open-book button, next to the Timetable button. It shows the active book as one continuous text beside a compact wheel, its contents and the details of the scene being read. **Open source note** opens that scene beside the studio for editing.

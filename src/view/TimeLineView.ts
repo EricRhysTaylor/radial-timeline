@@ -20,6 +20,7 @@ import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { SubplotCanvasModal } from '../timetable/SubplotCanvasModal';
 import { CanvasWorkspacePicker } from '../timetable/CanvasWorkspacePicker';
 import { bookStoryMaps, preferredStoryMap } from '../timetable/storyMapPaths';
+import { openWritingStudio } from '../writingStudio/openWritingStudio';
 import RadialTimelinePlugin from '../main';
 import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
@@ -625,6 +626,7 @@ export class RadialTimelineView extends ItemView {
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: (anchor: HTMLElement) => void }> = [
                 { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
+                { label: t('ui.writingStudio.title'), icon: 'book-open-text', run: () => { void openWritingStudio(this.app); } },
                 { label: t('ui.timeLineView.canvasAction'), icon: 'layout-dashboard', run: (anchor) => {
                     const book = getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings) : undefined;
                     const candidates = book ? bookStoryMaps(this.app.vault.getFiles(), book) : [];
@@ -729,7 +731,7 @@ export class RadialTimelineView extends ItemView {
             booksGroup.appendChild(booksIcon);
             booksGroup.appendChild(select);
             setAccessibleLabel(select, t('ui.timeLineView.bookSelector'));
-            // Right cluster order: legend · search · books · ⌘ · printer · bug · gear
+            // Right cluster order: legend · search · books · table · studio · canvas · ⌘ · printer · bug · help · gear
             // (or the one actions menu in their place on a narrow bar)
             wrapper.appendChild(legendBtn);
             wrapper.appendChild(legendPanel);

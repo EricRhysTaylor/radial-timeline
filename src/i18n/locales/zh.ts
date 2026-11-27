@@ -5781,8 +5781,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             showOverdue: '显示逾期场景',
             followTimeline: '在画布中跟随按住 Shift 悬停的场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
-            showTimetable: 'Radial Timeline：在时间表中显示',
-            showTimeline: 'Radial Timeline：在时间线上显示',
             promote: 'Radial Timeline：提升为场景',
 
             cardLabel: '卡片',

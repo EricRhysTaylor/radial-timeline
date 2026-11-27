@@ -5786,8 +5786,6 @@ export const th: DeepPartial<TranslationKeys> = {
             showOverdue: 'แสดงฉากที่เกินกำหนด',
             followTimeline: 'ติดตามฉากที่ชี้พร้อมกด Shift บน Canvas',
             fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
-            showTimetable: 'Radial Timeline: แสดงในตารางเวลา',
-            showTimeline: 'Radial Timeline: แสดงบนไทม์ไลน์',
             promote: 'Radial Timeline: เปลี่ยนเป็นฉาก',
 
             cardLabel: 'การ์ด',

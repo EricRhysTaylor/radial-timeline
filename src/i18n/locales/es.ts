@@ -5786,8 +5786,6 @@ export const es: DeepPartial<TranslationKeys> = {
             showOverdue: 'Mostrar escenas atrasadas',
             followTimeline: 'Seguir en Canvas la escena señalada con Mayús',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
-            showTimetable: 'Radial Timeline: Mostrar en la tabla',
-            showTimeline: 'Radial Timeline: Mostrar en la línea temporal',
             promote: 'Radial Timeline: Convertir en escena',
 
             cardLabel: 'Tarjeta',

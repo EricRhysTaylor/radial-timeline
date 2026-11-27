@@ -1,4 +1,5 @@
 import { getFrontMatterInfo, Notice, parseYaml, Setting, TFile } from 'obsidian';
+import { logoMenuTitle } from '../../utils/nativeMenus';
 import type RadialTimelinePlugin from '../../main';
 import { ErtModal } from '../../ui/ErtModal';
 import { t } from '../../i18n';
@@ -150,11 +151,11 @@ export function registerTimeReferences(plugin: RadialTimelinePlugin): void {
     plugin.registerEvent(plugin.app.vault.on('delete', file => reconcileReferenceSelection(file.path, new Set())));
     plugin.registerEvent(plugin.app.vault.on('rename', (_file, oldPath) => reconcileReferenceSelection(oldPath, new Set())));
     plugin.registerEvent(plugin.app.workspace.on('file-menu', (menu, file) => {
-        if (file instanceof TFile && isReferenceScene(plugin, file)) menu.addItem(item => item.setTitle(`Radial Timeline: ${t('timeReferences.title')}`).setSection('radial-timeline').setIcon('rt-logo')
+        if (file instanceof TFile && isReferenceScene(plugin, file)) menu.addItem(item => item.setTitle(logoMenuTitle(plugin.app, t('timeReferences.title'))).setSection('radial-timeline').setIcon('rt-logo')
             .onClick(() => manageTimeReferences(plugin, file)));
     }));
     plugin.registerEvent(plugin.app.workspace.on('editor-menu', (menu, editor, context) => {
-        if (context.file && isReferenceScene(plugin, context.file)) menu.addItem(item => item.setTitle(`Radial Timeline: ${t('timeReferences.add')}`).setSection('radial-timeline').setIcon('rt-logo')
+        if (context.file && isReferenceScene(plugin, context.file)) menu.addItem(item => item.setTitle(logoMenuTitle(plugin.app, t('timeReferences.add'))).setSection('radial-timeline').setIcon('rt-logo')
             .onClick(() => { if (context.file) manageTimeReferences(plugin, context.file, editor.getSelection()); }));
     }));
 }

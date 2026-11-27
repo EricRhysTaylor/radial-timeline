@@ -13,6 +13,7 @@
  */
 
 import { Notice, normalizePath, parseYaml, requireApiVersion, stringifyYaml, TFile, type WorkspaceLeaf } from 'obsidian';
+import { logoMenuTitle } from '../utils/nativeMenus';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { getActiveBook, getSagaBooks, getTimelineScope } from '../utils/books';
@@ -82,7 +83,7 @@ export class TimetableService {
         });
         this.plugin.registerEvent(this.plugin.app.workspace.on('file-menu', (menu, file) => {
             if (!(file instanceof TFile) || file.extension !== 'base') return;
-            menu.addItem(item => item.setTitle(`Radial Timeline: ${t('ui.timetable.restoreView')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void this.restoreView(file); }));
+            menu.addItem(item => item.setTitle(logoMenuTitle(this.plugin.app, t('ui.timetable.restoreView'))).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void this.restoreView(file); }));
         }));
         // Defaults reach only new tables; this brings an existing one in line (after a confirm).
         this.plugin.addCommand({

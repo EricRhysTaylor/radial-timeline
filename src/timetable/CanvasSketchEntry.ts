@@ -1,4 +1,5 @@
 import { ItemView, Notice, type Menu, type TAbstractFile, TFile, type View } from 'obsidian';
+import { logoMenuTitle } from '../utils/nativeMenus';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { getActiveBook, getBookIdForPath } from '../utils/books';
@@ -139,14 +140,14 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
         if (file instanceof TFile && file.extension === 'md' && nodes instanceof Map && [...nodes.values()].some(node => node.getData?.().file === file.path)) {
             const bookId = getBookIdForPath(plugin.settings.books, file.path);
             if (!bookId) return;
-            menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimetable')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
+            menu.addItem(item => item.setTitle(logoMenuTitle(plugin.app, t('ui.canvasSketch.showTimetable'))).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
                 void (async () => {
                     await plugin.setActiveBookId(bookId);
                     await plugin.openTimetable();
                     window.setTimeout(() => markTimetableRows(file.path, null, true), 300);
                 })();
             }));
-            if (plugin.isSceneFile(file.path)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimeline')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
+            if (plugin.isSceneFile(file.path)) menu.addItem(item => item.setTitle(logoMenuTitle(plugin.app, t('ui.canvasSketch.showTimeline'))).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
                 void (async () => { await plugin.setActiveBookId(bookId); await plugin.revealSceneOnTimeline(file.path); })();
             }));
             if (isPromotable(plugin.app, plugin.settings, file)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.promote')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void runPromotion(plugin, [file]); }));

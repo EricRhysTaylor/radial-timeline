@@ -5786,8 +5786,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             showOverdue: 'Afficher les scènes en retard',
             followTimeline: 'Suivre Maj-survol de la chronologie dans le Canvas',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
-            showTimetable: 'Radial Timeline : Afficher dans le tableau',
-            showTimeline: 'Radial Timeline : Afficher sur la chronologie',
             promote: 'Radial Timeline : Promouvoir en scène',
 
             cardLabel: 'Carte',

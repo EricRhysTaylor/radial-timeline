@@ -5863,8 +5863,8 @@ export const en = {
             showOverdue: 'Show overdue scenes',
             followTimeline: 'Follow Shift-hover from timeline in Canvas',
             fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
-            showTimetable: 'Radial Timeline: Show in Timetable',
-            showTimeline: 'Radial Timeline: Show on timeline',
+            showTimetable: 'Show in Timetable',
+            showTimeline: 'Show on timeline',
             promote: 'Radial Timeline: Promote to scene',
 
             cardLabel: 'Card',

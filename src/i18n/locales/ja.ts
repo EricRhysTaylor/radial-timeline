@@ -5780,8 +5780,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             showOverdue: '期限超過のシーンを表示',
             followTimeline: 'Shiftキーを押して指したシーンをキャンバスで追跡',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
-            showTimetable: 'Radial Timeline: タイムテーブルで表示',
-            showTimeline: 'Radial Timeline: タイムラインで表示',
             promote: 'Radial Timeline: シーンに昇格',
 
             cardLabel: 'カード',

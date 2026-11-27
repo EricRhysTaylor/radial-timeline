@@ -5,6 +5,7 @@ import { addMarkdownContents, contentsDepth } from '../publishing/documentConten
  */
 
 import { App, Notice, TFile, type Menu } from 'obsidian';
+import { logoMenuTitle } from '../utils/nativeMenus';
 import { promises as fs } from 'fs'; // SAFE: local template and proof artifact fingerprints.
 import { randomUUID } from 'crypto'; // SAFE: unique local proof job folders.
 import { hashProofInput, getManuscriptProofConfigurationKey, type ManuscriptProofReceipt, type ManuscriptProofDependency } from '../publishing/manuscriptProof';
@@ -253,10 +254,10 @@ export class CommandRegistrar {
         });
         // Every Markdown note's menus (its ⋯ menu, the file list, a right-click
         // in the note) offer the exporter with that note as the source, in the
-        // Radial Timeline section. "RT" says whose exporter it is: other plugins
-        // add export items too. The palette adds the plugin name on its own.
+        // Radial Timeline section. The logo, or the name where native menus
+        // hide it, says whose exporter it is: other plugins add export items too.
         const addExportItem = (menu: Menu, file: TFile) => menu.addItem(item => item
-            .setTitle(`RT ${t('commands.manuscriptExport')}`)
+            .setTitle(logoMenuTitle(this.app, t('commands.manuscriptExport')))
             .setSection('radial-timeline')
             .setIcon('rt-logo')
             .onClick(() => this.openManuscriptExportModal(file.path)));

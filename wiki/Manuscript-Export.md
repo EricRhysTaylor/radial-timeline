@@ -20,7 +20,7 @@ The panel supports ordering, selection range, output presets, and publishing-ori
 
 **Command Palette → Radial Timeline: Export to PDF, Word, Markdown**
 
-To export one note, open its **⋯** menu, right-click it in the file list, or right-click inside the note, and choose **RT Export to PDF, Word, Markdown**. The panel opens with that note as the source.
+To export one note, open its **⋯** menu, right-click it in the file list, or right-click inside the note, and choose **Export to PDF, Word, Markdown** in the Radial Timeline section (with native menus, the default on a Mac, it reads **Radial Timeline: Export to PDF, Word, Markdown**). The panel opens with that note as the source.
 
 The export panel lets you:
 - Select the output format (Novel, Screenplay, Podcast Script)

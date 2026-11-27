@@ -5786,8 +5786,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             showOverdue: 'Hiện các cảnh quá hạn',
             followTimeline: 'Theo cảnh trỏ cùng phím Shift trên Canvas',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
-            showTimetable: 'Radial Timeline: Hiện trong bảng thời gian',
-            showTimeline: 'Radial Timeline: Hiện trên dòng thời gian',
             promote: 'Radial Timeline: Chuyển thành cảnh',
 
             cardLabel: 'Thẻ',

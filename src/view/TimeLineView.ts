@@ -55,7 +55,8 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
-import { openMailboxMenu, paintMailboxButton, usesNativeMenus } from '../communityShare/communityMailbox';
+import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
+import { usesNativeMenus } from '../utils/nativeMenus';
 import { DESK_LAMP_PANEL_HELP, DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
 import { projectSessionFeedPost, sessionPostBookId } from '../services/WritingSessionLog';
 import { hasSceneNotes, isRenderedOnTimeline } from '../utils/sceneHelpers';

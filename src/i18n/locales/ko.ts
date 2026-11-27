@@ -5779,8 +5779,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             showOverdue: '기한이 지난 장면 표시',
             followTimeline: 'Shift를 누르고 가리킨 장면을 캔버스에서 따라가기',
             fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
-            showTimetable: 'Radial Timeline: 시간표에 표시',
-            showTimeline: 'Radial Timeline: 타임라인에 표시',
             promote: 'Radial Timeline: 장면으로 승격',
 
             cardLabel: '카드',

@@ -37,7 +37,7 @@ import { setAccessibleLabel } from '../utils/domTooltip';
  * pill's gold count, like the other things that wait on you.
  */
 
-import { Menu, Notice, Platform, setIcon, type App } from 'obsidian';
+import { Menu, Notice, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getFormattingLocale, t } from '../i18n';
 import { tooltip as applyTooltip } from '../utils/tooltip';
@@ -210,20 +210,6 @@ export function communitySyncNativeText(state: CommunitySyncState, nextAt: numbe
     return nextAt === null
         ? t('ui.communityMailbox.syncRowNativeNoSchedule', { status })
         : t('ui.communityMailbox.syncRowNative', { status, time: formatAutoSyncTime(nextAt, now) });
-}
-
-/**
- * Obsidian's Appearance → Native menus (desktop only). Menus then render
- * through the OS: titles as plain text, no icons, no DOM to hang a tooltip on.
- * Never set (null) means Obsidian's platform default, which is on for macOS
- * (App.updateUseNativeMenu).
- */
-export function usesNativeMenus(app: App): boolean {
-    if (!Platform.isDesktopApp) return false;
-    // SAFE: Vault.getConfig is not in Obsidian's public typings; 'nativeMenus' is the Appearance setting's config key. Absent getConfig reads as off (Obsidian's own menus).
-    const vault = app.vault as unknown as { getConfig?: (key: string) => unknown };
-    const setting = vault.getConfig?.('nativeMenus');
-    return setting === true || (setting === null && Platform.isMacOS);
 }
 
 export interface MailboxView {

@@ -47,6 +47,8 @@ interface StudioState {
 
 /** How far down the reading column a scene must reach to be the one being read. */
 const READING_LINE = 0.3;
+/** How long the reading position must rest before the source split follows it, in ms. */
+const FOLLOW_DELAY_MS = 300;
 const MODEL_REFRESH_MS = 500;
 const PROSE_REFRESH_MS = 250;
 
@@ -104,7 +106,12 @@ export class WritingStudioView extends ItemView {
     private scrollFrame = 0;
     private modelTimer: number | null = null;
     private proseTimers = new Map<string, number>();
+    /**
+     * The split beside the studio that Open source note opened. It follows the
+     * scene being read until the author closes it or opens another note in it.
+     */
     private sourceLeaf: WorkspaceLeaf | null = null;
+    private followTimer: number | null = null;
 
     constructor(leaf: WorkspaceLeaf, private plugin: RadialTimelinePlugin) {
         super(leaf);
@@ -169,6 +176,7 @@ export class WritingStudioView extends ItemView {
         for (const timer of this.proseTimers.values()) window.clearTimeout(timer);
         this.proseTimers.clear();
         if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
+        if (this.followTimer !== null) window.clearTimeout(this.followTimer);
     }
 
     // ── Shell ────────────────────────────────────────────────────────────
@@ -213,6 +221,8 @@ export class WritingStudioView extends ItemView {
         for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) {
             this.registerDomEvent(this.mainEl, type, () => { this.pinned = null; }, { passive: true });
         }
+        // Back in the studio after writing in the source split: it catches up.
+        this.registerDomEvent(this.rootEl, 'pointerdown', () => this.scheduleFollow(), { passive: true });
     }
 
     private setNavOpen(open: boolean): void {
@@ -720,8 +730,9 @@ export class WritingStudioView extends ItemView {
 
     /**
      * Open the scene's note for editing. A note already open is revealed. The
-     * first note opens in a split beside the studio and later ones reuse it,
-     * so the studio stays in view; Cmd/Ctrl-click opens a new tab instead.
+     * first note opens in a split beside the studio, which then follows the
+     * scene being read (followSource), so the studio stays in view; Cmd/Ctrl-
+     * click opens a new tab instead, which does not follow.
      */
     private async openSource(scene: StudioScene, newTab: boolean): Promise<void> {
         const file = this.app.vault.getAbstractFileByPath(scene.path);
@@ -786,7 +797,43 @@ export class WritingStudioView extends ItemView {
         this.renderCaption();
         this.renderHeader();
         this.renderDetails();
-        if (changed) this.app.workspace.requestSaveLayout();
+        if (changed) {
+            this.app.workspace.requestSaveLayout();
+            this.scheduleFollow();
+        }
+    }
+
+    /** Bring the source split to the scene being read once the reading settles. */
+    private scheduleFollow(): void {
+        if (!this.sourceLeaf) return;
+        if (this.followTimer !== null) window.clearTimeout(this.followTimer);
+        this.followTimer = window.setTimeout(() => {
+            this.followTimer = null;
+            void this.followSource().catch((error: unknown) => console.error('[Writing Studio] Could not open the scene beside the studio', error));
+        }, FOLLOW_DELAY_MS);
+    }
+
+    /**
+     * Show the scene being read in the source split, without taking focus.
+     * Never while the author's cursor is in the split: it waits until they
+     * come back to the studio. Following ends when the split is closed or
+     * shows a note outside this book.
+     */
+    private async followSource(): Promise<void> {
+        const leaf = this.sourceLeaf;
+        const book = this.book;
+        if (!leaf || !book) return;
+        const view = leaf.view;
+        const shown = view instanceof MarkdownView ? view.file?.path : undefined;
+        if (!this.app.workspace.getLeavesOfType('markdown').includes(leaf) || !shown || !book.scenes.some(scene => scene.path === shown)) {
+            this.sourceLeaf = null;
+            return;
+        }
+        if (view.containerEl.contains(view.containerEl.ownerDocument.activeElement)) return;
+        const scene = book.scenes[this.current];
+        if (!scene || scene.path === shown) return;
+        const file = this.app.vault.getAbstractFileByPath(scene.path);
+        if (file instanceof TFile) await leaf.openFile(file, { active: false });
     }
 
     private scheduleSpy(): void {

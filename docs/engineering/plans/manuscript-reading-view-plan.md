@@ -14,7 +14,7 @@ Use the Community Writing Studio as the layout reference for a dedicated book wo
 
 - **Left rail.** Keep the compact radial timeline and contents visible beside the manuscript. Highlight the current scene as the author scrolls. Clicking a wedge or contents entry jumps to that location in the same manuscript.
 - **Center.** Give the continuous Markdown manuscript the main reading column. Put the current location and previous/next controls by the reading header.
-- **Right rail.** Show the active scene’s details and an **Open source note** action. The details and wheel follow the same scene as the manuscript scrolls.
+- **Right rail.** Show the active scene’s details and an **Open source note** action. The details and wheel follow the same scene as the manuscript scrolls. The note opens in a split beside the studio and then follows the scene being read (built November 27, 2026): it switches 300 ms after the reading settles, never while the author's cursor is in it (it catches up on the next press in the studio), and stops following when closed or pointed at a note outside the book.
 - **Narrow panes.** Collapse the navigator into a strip above the manuscript and let the author expand it on demand. Fold the scene details away so the prose has room.
 
 Use Obsidian’s theme and workspace conventions. **Reading View** is the first workflow in the studio, with editing available through the source note.

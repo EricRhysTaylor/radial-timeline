@@ -91,4 +91,4 @@ The legend is a quick visual guide for the current mode.
 
 The [Timetable](Timetable) opens beside the wheel from its title-bar table button. It follows the active book or saga and links scene rows to the wheel’s hover highlight.
 
-**Writing Studio** opens from the title-bar open-book button, next to the Timetable button. It shows the active book as one continuous text beside a compact wheel, its contents and the details of the scene being read. **Open source note** opens that scene beside the studio for editing.
+**Writing Studio** opens from the title-bar open-book button, next to the Timetable button. It shows the active book as one continuous text beside a compact wheel, its contents and the details of the scene being read. **Open source note** opens that scene beside the studio for editing. From then on that note follows the scene you are reading: scroll, pick a scene in the contents or press the arrows, and it switches once you stop. It never switches while your cursor is in it; it catches up when you click back into the studio. Close it to stop following. Cmd/Ctrl-click opens the note in a new tab instead, which stays put.

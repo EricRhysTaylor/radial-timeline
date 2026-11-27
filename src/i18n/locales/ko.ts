@@ -6698,7 +6698,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         publishingValidationService: {
             addFieldInBookDetails: '내보내기 전에 게시 → 책 정보에서 {{field}}을(를) 추가하세요.',
-            addFieldInManuscriptDetails: '내보내기 전에 위의 원고 정보에서 {{field}}을(를) 추가하세요.',
             assetExtensionInvalid: '템플릿 에셋은 .tex 확장자를 사용해야 합니다.',
             assetInvalid: '템플릿 에셋이 유효하지 않습니다.',
             assetLayoutMissing: '템플릿 에셋에 원본 레이아웃 레코드가 없습니다.',

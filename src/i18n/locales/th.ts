@@ -6705,7 +6705,6 @@ export const th: DeepPartial<TranslationKeys> = {
         },
         "publishingValidationService": {
             "addFieldInBookDetails": "เพิ่ม {{field}} ในการเผยแพร่ → รายละเอียดหนังสือก่อนส่งออก",
-            "addFieldInManuscriptDetails": "เพิ่ม {{field}} ในรายละเอียดต้นฉบับด้านบนก่อนส่งออก",
             "assetExtensionInvalid": "เนื้อหาเทมเพลตต้องใช้ส่วนขยาย .tex",
             "assetInvalid": "เนื้อหาเทมเพลตไม่ถูกต้อง",
             "assetLayoutMissing": "เนื้อหาเทมเพลตไม่มีเรกคอร์ดเค้าโครงต้นทาง",

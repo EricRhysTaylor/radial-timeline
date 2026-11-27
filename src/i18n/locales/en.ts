@@ -6856,7 +6856,7 @@ export const en = {
         },
         publishingValidationService: {
             addFieldInBookDetails: 'Add {{field}} in Publish → Book details before exporting.',
-            addFieldInManuscriptDetails: 'Add {{field}} in the manuscript details above before exporting.',
+            addFieldInWhatToExport: 'Add {{field}} under What to export before exporting.',
             assetExtensionInvalid: 'Template assets must use a .tex extension.',
             assetInvalid: 'Template asset is invalid.',
             assetLayoutMissing: 'Template asset is missing its source layout record.',

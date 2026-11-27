@@ -6705,7 +6705,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         },
         "publishingValidationService": {
             "addFieldInBookDetails": "Ajoutez {{field}} dans Publier → Détails du livre avant d'exporter.",
-            "addFieldInManuscriptDetails": "Ajoutez {{field}} dans les détails du manuscrit ci-dessus avant d'exporter.",
             "assetExtensionInvalid": "Les éléments de modèle doivent utiliser une extension .tex.",
             "assetInvalid": "L'actif du modèle n'est pas valide.",
             "assetLayoutMissing": "L'actif de modèle manque de son enregistrement de mise en page source.",

@@ -108,7 +108,7 @@ describe('deliverable readiness', () => {
         const resolve = vi.spyOn(service, 'resolveBookMetaForBook');
         const context = { exportType: 'manuscript', outputFormat, manuscriptMetadata: { title: 'Direct', author: '' } } as const;
         const issues = getExportValidationIssues(service.collect(undefined, context), context);
-        expect(issues).toContainEqual(expect.objectContaining({ field: 'Book.author', message: 'Add author in the manuscript details above before exporting.' }));
+        expect(issues).toContainEqual(expect.objectContaining({ field: 'Book.author', message: 'Add author under What to export before exporting.' }));
         expect(issues).not.toContainEqual(expect.objectContaining({ field: 'Book.title' }));
         expect(resolve).not.toHaveBeenCalled();
     });

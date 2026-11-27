@@ -6698,7 +6698,6 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         publishingValidationService: {
             addFieldInBookDetails: 'Fügen Sie vor dem Export {{field}} unter Veröffentlichen → Buchdetails hinzu.',
-            addFieldInManuscriptDetails: 'Fügen Sie vor dem Export {{field}} oben in den Manuskriptdetails hinzu.',
             assetExtensionInvalid: 'Vorlagen-Assets müssen die Endung .tex haben.',
             assetInvalid: 'Vorlagen-Asset ist ungültig.',
             assetLayoutMissing: 'Dem Vorlagen-Asset fehlt der zugehörige Layout-Quelleintrag.',

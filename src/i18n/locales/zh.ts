@@ -6700,7 +6700,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         publishingValidationService: {
             addFieldInBookDetails: '导出前，请在 发布 → 书籍详情 中添加{{field}}。',
-            addFieldInManuscriptDetails: '导出前，请在上方的手稿详情中添加{{field}}。',
             assetExtensionInvalid: '模板资源必须使用 .tex 扩展名。',
             assetInvalid: '模板资源无效。',
             assetLayoutMissing: '模板资源缺少其来源版式记录。',

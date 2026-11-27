@@ -487,7 +487,7 @@ export class PublishingValidationService {
             missingRequired.forEach(field => {
                 const fieldName = field === 'Book.title' ? t('ui.publishingValidationService.requiredFieldTitle') : field === 'Book.author' ? t('ui.publishingValidationService.requiredFieldAuthor') : field === 'Rights.year' ? t('ui.publishingValidationService.requiredFieldRightsYear') : field.toLowerCase();
                 const message = context.manuscriptMetadata
-                    ? t('ui.publishingValidationService.addFieldInManuscriptDetails', { field: fieldName })
+                    ? t('ui.publishingValidationService.addFieldInWhatToExport', { field: fieldName })
                     : t('ui.publishingValidationService.addFieldInBookDetails', { field: fieldName });
                 pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', message, {
                     actionable: true,

@@ -6699,7 +6699,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         publishingValidationService: {
             addFieldInBookDetails: 'エクスポートの前に、公開 → 書籍情報で {{field}} を追加してください。',
-            addFieldInManuscriptDetails: 'エクスポートの前に、上の原稿の詳細で {{field}} を追加してください。',
             assetExtensionInvalid: 'テンプレートアセットの拡張子は .tex である必要があります。',
             assetInvalid: 'テンプレートアセットが無効です。',
             assetLayoutMissing: 'テンプレートアセットにソースのレイアウト記録がありません。',

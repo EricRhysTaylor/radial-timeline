@@ -6705,7 +6705,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         },
         "publishingValidationService": {
             "addFieldInBookDetails": "Thêm {{field}} trong Xuất bản → Chi tiết sách trước khi xuất.",
-            "addFieldInManuscriptDetails": "Thêm {{field}} vào chi tiết bản thảo ở trên trước khi xuất.",
             "assetExtensionInvalid": "Tài sản mẫu phải sử dụng tiện ích mở rộng .tex.",
             "assetInvalid": "Tài sản mẫu không hợp lệ.",
             "assetLayoutMissing": "Tài sản mẫu thiếu bản ghi bố cục nguồn của nó.",

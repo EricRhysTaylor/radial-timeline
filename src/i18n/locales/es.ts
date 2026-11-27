@@ -6705,7 +6705,6 @@ export const es: DeepPartial<TranslationKeys> = {
         },
         "publishingValidationService": {
             "addFieldInBookDetails": "Agregue {{field}} en Publicar → Detalles del libro antes de exportar.",
-            "addFieldInManuscriptDetails": "Agregue {{field}} en los detalles del manuscrito anterior antes de exportar.",
             "assetExtensionInvalid": "Los activos de plantilla deben usar una extensión .tex.",
             "assetInvalid": "El activo de la plantilla no es válido.",
             "assetLayoutMissing": "El activo de la plantilla no tiene su registro de diseño de origen.",

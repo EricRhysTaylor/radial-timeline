@@ -10110,8 +10110,8 @@
 .ert-ui.ert-scope--modal .ert-export-save-row {
   display: flex;
   flex-direction: column;
-  gap: var(--ert-gap-sm);
-  padding: var(--ert-pad-sm) var(--ert-pad-md);
+  gap: var(--ert-gap-md);
+  padding: var(--ert-pad-md);
   border: 1px dashed color-mix(in srgb, var(--interactive-accent) 45%, transparent);
   border-radius: var(--ert-control-radius);
   background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
@@ -10138,6 +10138,18 @@
 
 .ert-ui.ert-scope--modal .ert-export-save-row .ert-manuscript-source-save {
   padding-top: 0;
+}
+
+/* Each text line gets its own room: the note under the starting-point pills,
+   and the draft status above its hint. */
+.ert-ui.ert-scope--modal .ert-export-save-row__purposes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--modal .ert-export-save-row .ert-export-preset-summary-stack {
+  gap: var(--ert-gap-sm);
 }
 
 .ert-ui.ert-scope--modal .ert-export-save-row__picker select {

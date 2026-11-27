@@ -252,6 +252,15 @@ export function chapterAt(book: StudioBook, sceneIndex: number): StudioChapter |
 }
 
 /**
+ * The chapter's title already names it as a numbered chapter ("Chapter 1",
+ * "CHAPTER III.", "Chapter Twelve"), so a "Chapter n" label beside it would
+ * say the same thing twice.
+ */
+export function chapterTitleIsNumber(title: string): boolean {
+    return /^chapter\s+[^\s]+$/i.test(title.trim());
+}
+
+/**
  * The scene a previous/next press lands on, or null at the book's edge.
  * By scene: the neighbour. By chapter: the next chapter's opening scene; going
  * back from inside a chapter lands on its opening scene first, then on the

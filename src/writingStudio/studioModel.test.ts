@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { actStarts, buildOutline, buildStudioBook, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
+import { actStarts, buildOutline, buildStudioBook, chapterTitleIsNumber, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
 
 function scene(path: string, title: string, extra: Partial<TimelineItem> & { chapter?: string } = {}): TimelineItem {
     const { chapter, ...rest } = extra;
@@ -157,5 +157,12 @@ describe('Writing Studio navigation', () => {
 
     it('finds each act\'s opening scene', () => {
         expect(actStarts(book)).toEqual([{ act: 1, scene: 0 }, { act: 2, scene: 3 }]);
+    });
+});
+
+describe('Writing Studio chapter labels', () => {
+    it('knows when a chapter title already names its number, so the label is not repeated', () => {
+        for (const title of ['Chapter 1', 'CHAPTER III.', 'chapter twelve', ' Chapter Twenty-One ']) expect(chapterTitleIsNumber(title)).toBe(true);
+        for (const title of ['The Arrival', 'Chapter 1: The Arrival', 'Chapter', 'Netherfield Park Is Let']) expect(chapterTitleIsNumber(title)).toBe(false);
     });
 });

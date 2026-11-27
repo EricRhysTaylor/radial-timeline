@@ -36,7 +36,7 @@ import { toRomanNumeral } from '../utils/romanNumerals';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { assignSubplotColors, bookOwnSubplotColors, subplotColorCss, subplotColorOn } from '../renderer/utils/subplotColors';
 import { WRITING_STUDIO_VIEW_TYPE } from './constants';
-import { actStarts, buildOutline, buildStudioBook, chapterAt, scopeRange, stepTarget, type OutlineLeaf, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
+import { actStarts, buildOutline, buildStudioBook, chapterAt, chapterTitleIsNumber, scopeRange, stepTarget, type OutlineLeaf, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
 import { buildStudioWheel, wheelSubplotOrder, type StudioWheelHandle } from './studioWheel';
 
 interface StudioState {
@@ -505,7 +505,7 @@ export class WritingStudioView extends ItemView {
             }
             if (chapter && chapter.firstScene === index) {
                 const heading = section.createEl('h2', { cls: 'ert-studio__chapter' });
-                heading.createSpan({ cls: 'ert-studio__chapter-kicker', text: t('ui.writingStudio.chapterNumber', { n: String(chapter.index + 1) }) });
+                if (!chapterTitleIsNumber(chapter.title)) heading.createSpan({ cls: 'ert-studio__chapter-kicker', text: t('ui.writingStudio.chapterNumber', { n: String(chapter.index + 1) }) });
                 heading.createSpan({ cls: 'ert-studio__chapter-title', text: chapter.title });
             } else if (index !== this.range.first) {
                 section.createDiv({ cls: 'ert-studio__break', attr: { 'aria-hidden': 'true' } });
@@ -647,8 +647,10 @@ export class WritingStudioView extends ItemView {
         events.registerDomEvent(toggle, 'click', () => this.setDetailsOpen(this.rootEl.dataset.detailsOpen !== 'true'));
 
         const location = this.headEl.createDiv({ cls: 'ert-studio__location' });
-        location.createSpan({ cls: 'ert-studio__kicker', text: chapter ? t('ui.writingStudio.chapterNumber', { n: String(chapter.index + 1) }) : t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
-        if (chapter) location.createSpan({ cls: 'ert-studio__kicker-quiet', text: t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
+        // A chapter titled "Chapter 1" is not labelled "Chapter 1" again above its title.
+        const numbered = chapter && !chapterTitleIsNumber(chapter.title);
+        location.createSpan({ cls: 'ert-studio__kicker', text: numbered ? t('ui.writingStudio.chapterNumber', { n: String(chapter.index + 1) }) : t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
+        if (numbered) location.createSpan({ cls: 'ert-studio__kicker-quiet', text: t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
         this.headEl.createDiv({ cls: 'ert-studio__title', text: chapter ? chapter.title : scene.name });
 
         this.stripKickerEl.setText(chapter
@@ -695,7 +697,7 @@ export class WritingStudioView extends ItemView {
             facts.createEl('dt', { text: label });
             facts.createEl('dd', { text: value });
         };
-        fact(t('ui.writingStudio.detailsChapter'), chapter ? `${chapter.index + 1} · ${chapter.title}` : null);
+        fact(t('ui.writingStudio.detailsChapter'), chapter ? (chapterTitleIsNumber(chapter.title) ? chapter.title : `${chapter.index + 1} · ${chapter.title}`) : null);
         fact(t('ui.writingStudio.detailsAct'), toRomanNumeral(scene.act));
         fact(t('ui.writingStudio.detailsWhen'), scene.when ? formatExportWhen(scene.when) : null);
         fact(t('ui.writingStudio.detailsSubplots'), scene.subplots.join(', '));

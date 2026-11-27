@@ -36,6 +36,52 @@ function build(items: TimelineItem[], overrides: Partial<Parameters<typeof build
     });
 }
 
+describe('chapters', () => {
+    const at = (n: number, folder: string, frontmatter: Record<string, unknown> = {}) => scene({
+        title: `${n} Scene ${n}`,
+        path: `Private Folder/Book/${folder}${n} Scene ${n}.md`,
+        sceneId: `scn_a1b2c3${String(n).padStart(2, '0')}`,
+        rawFrontmatter: frontmatter,
+    });
+    const chaptersOf = (payload: ReturnType<typeof build>) => payload.items.map(item => [item.title, item.chapter]);
+
+    it('sends each scene the chapter its Chapter property opens, continued until the next', () => {
+        const payload = build([
+            at(1, ''),
+            at(2, '', { Chapter: '[[Notes/The Arrival|The Arrival]]' }),
+            at(3, ''),
+            at(4, '', { Chapter: 'The Escape' }),
+        ]);
+        expect(chaptersOf(payload)).toEqual([
+            ['1 Scene 1', undefined],
+            ['2 Scene 2', 'The Arrival'],
+            ['3 Scene 3', 'The Arrival'],
+            ['4 Scene 4', 'The Escape'],
+        ]);
+        expect(payload.items[0]).not.toHaveProperty('chapter');
+    });
+
+    it('sends a chapter folder by its own name, never its path, and a split folder in both places', () => {
+        const payload = build([
+            at(1, 'Act One/The Arrival/'),
+            at(2, 'Act One/The Arrival/'),
+            at(3, 'Act One/The Escape/'),
+            at(4, 'Act One/The Arrival/'),
+            at(5, 'Act One/'),
+        ], { book: { title: 'Private Working Title', sourceFolder: 'Private Folder/Book', chapterSource: { kind: 'folder', depth: 2 } } });
+        expect(chaptersOf(payload)).toEqual([
+            ['1 Scene 1', 'The Arrival'],
+            ['2 Scene 2', 'The Arrival'],
+            ['3 Scene 3', 'The Escape'],
+            ['4 Scene 4', 'The Arrival'],
+            ['5 Scene 5', undefined],
+        ]);
+        const json = JSON.stringify(payload);
+        expect(json).not.toContain('Private Folder');
+        expect(json).not.toContain('Act One');
+    });
+});
+
 describe('buildTimelineSharePayload', () => {
     it('sends the fields the website reads', () => {
         const [item] = build([scene()]).items;

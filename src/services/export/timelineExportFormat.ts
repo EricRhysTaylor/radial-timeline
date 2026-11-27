@@ -13,6 +13,10 @@ import { splitWhenEra } from '../../utils/date';
  * the retired manual JSON export, whose document shape this version began on.
  * 1.1.0 (additive): adds `exportId`, a per-export provenance UUID that also
  * appears in the SVG image export's <metadata> block.
+ * Still 1.1.0 (additive, November 2026): each scene may carry `chapter`, its
+ * resolved chapter title. Not bumped: the server accepts only versions it
+ * lists and drops item fields it does not read, and a missing `chapter` means
+ * "no chapter" from an older plugin and a newer one alike.
  */
 export const TIMELINE_DATA_EXPORT_SCHEMA_VERSION = '1.1.0';
 

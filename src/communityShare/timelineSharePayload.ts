@@ -15,8 +15,8 @@
  * Scene text is not on a TimelineItem, and this builder could not send it if it
  * were: the rule is enforced by what is listed here, not by what is left out.
  *
- * Every text field that is sent (title, synopsis, act, subplots, cast, status,
- * publish stage and the book's title, subtitle and author) goes through
+ * Every text field that is sent (title, synopsis, act, chapter, subplots, cast,
+ * status, publish stage and the book's title, subtitle and author) goes through
  * `linkText` first, so no link target leaves: a vault link leaves as the name
  * the reader sees, a web link as its shown text, and an attachment embed not
  * at all. See `linkText` for each form.
@@ -27,6 +27,7 @@ import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from '../services/
 import { compareManuscriptTitles } from '../utils/sceneHelpers';
 import { isOpaqueSceneId } from '../utils/sceneIds';
 import { isNarrationValue } from '../utils/pov';
+import { bookChapterContext, buildTimelineChapterResolverItems, resolveChapters } from '../utils/timelineChapters';
 
 export interface TimelineShareItem {
     itemType: 'Scene';
@@ -38,6 +39,14 @@ export interface TimelineShareItem {
     subplot: string[];
     act?: string;
     actNumber?: number;
+    /**
+     * The scene's chapter title, from the book's Chapter source (the `Chapter`
+     * property or a folder's own name, never its path), resolved as every
+     * other chapter surface resolves it. Absent when the scene is in no
+     * chapter. The website starts a chapter where the title changes from one
+     * scene to the next, so a split folder reads as it does in Timetable.
+     */
+    chapter?: string;
     number?: number;
     /**
      * The scene's narration override (`Narration:`, or a legacy `POV:` not yet
@@ -66,7 +75,8 @@ export interface TimelineSharePayload {
 export interface BuildTimelineSharePayloadParams {
     items: TimelineItem[];
     bookMeta: BookMeta | null;
-    book: Pick<BookProfile, 'title' | 'publicLabel'>;
+    /** `sourceFolder` and `chapterSource` give the book's Chapter source; without them, the `Chapter` property. */
+    book: Pick<BookProfile, 'title' | 'publicLabel'> & Partial<Pick<BookProfile, 'sourceFolder' | 'chapterSource'>>;
     actCount?: number;
     pluginVersion: string;
     exportId: string;
@@ -245,7 +255,14 @@ export function timelineSceneNotes(items: TimelineItem[], previous: Readonly<Rec
     return notes.sort((a, b) => compareManuscriptTitles(a.title, b.title));
 }
 
-function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string>>): TimelineShareItem {
+/** Scene path → its chapter title, by the one chapter resolver, in manuscript order. */
+function chapterTitles(items: TimelineItem[], book: BuildTimelineSharePayloadParams['book']): Map<string, string> {
+    const scenes = buildTimelineChapterResolverItems(items).filter((item): item is TimelineItem & { path: string } => !!item.path);
+    const { chapters, chapterOf } = resolveChapters(scenes, bookChapterContext(book));
+    return new Map([...chapterOf].map(([path, index]) => [path, chapters[index].title]));
+}
+
+function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string>>, chapters: ReadonlyMap<string, string>): TimelineShareItem {
     const item = rows[0];
     const frontmatter = item.rawFrontmatter;
     const authoredSubplots = textList(frontmatter?.Subplot);
@@ -255,6 +272,7 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
     const synopsis = sharedText(item.synopsis ?? item.Summary);
     const title = sharedText(item.title);
     const act = sharedText(item.act);
+    const chapter = item.path ? sharedText(chapters.get(item.path)) : undefined;
     const status = Array.isArray(item.status) ? textList(item.status) : sharedText(item.status);
     const stage = sharedText(item['Publish Stage']);
 
@@ -266,6 +284,7 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
         ...(when ? { when } : item.date ? { date: item.date } : {}),
         ...(act ? { act } : {}),
         ...(item.actNumber !== undefined ? { actNumber: item.actNumber } : {}),
+        ...(chapter ? { chapter } : {}),
         ...(item.number !== undefined ? { number: item.number } : {}),
         ...(item.pov && isNarrationValue(item.pov) ? { pov: item.pov } : {}),
         ...(cast.length > 0 ? { Character: cast } : {}),
@@ -281,7 +300,8 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
  */
 export function buildTimelineSharePayload(params: BuildTimelineSharePayloadParams): TimelineSharePayload {
     const holders = params.sceneIdHolders ?? sceneIdHolders(params.items);
-    const items = scenesOf(params.items).map(rows => shareItem(rows, holders));
+    const chapters = chapterTitles(params.items, params.book);
+    const items = scenesOf(params.items).map(rows => shareItem(rows, holders, chapters));
     const title = sharedText(params.book.publicLabel) || sharedText(params.bookMeta?.title) || linkText(params.book.title); // SAFE: the public label is optional; the book's own title is always set
     const subtitle = sharedText(params.bookMeta?.subtitle);
     const author = sharedText(params.bookMeta?.author);

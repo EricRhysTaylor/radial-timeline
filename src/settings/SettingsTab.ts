@@ -254,13 +254,19 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         }
 
         window.requestAnimationFrame(() => {
-            const visibleAfterInitialPass = this.scrollToSettingsSection(sectionKey, { force: options.force });
-            if (visibleAfterInitialPass && !options.force) return;
-
-            this._pendingSectionRevealTimer = window.setTimeout(() => {
+            // Settings may still be opening (in its own window since Obsidian 1.15)
+            // or laying out around the section: scroll, then check, until the
+            // section's top is in view, for at most about two seconds.
+            let attempts = 0;
+            const attempt = (): void => {
                 this._pendingSectionRevealTimer = null;
-                this.scrollToSettingsSection(sectionKey, { force: true });
-            }, options.force ? 260 : 180);
+                const state = this.scrollToSettingsSection(sectionKey, { force: attempts === 0 && options.force });
+                attempts += 1;
+                if (state !== 'visible' && attempts < 12) {
+                    this._pendingSectionRevealTimer = window.setTimeout(attempt, 180);
+                }
+            };
+            attempt();
         });
     }
 
@@ -744,26 +750,28 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                     li.setAttr('role', 'button');
                     li.setAttr('tabindex', '0');
                     setAccessibleLabel(li, t('ui.settingsTab.jumpToAria', { section: feature.text }));
-                    this.plugin.registerDomEvent(li, 'click', () => this.scrollToSettingsSection(feature.targetSection!));
+                    this.plugin.registerDomEvent(li, 'click', () => this.revealSettingsSection(this._activeTab, feature.targetSection!));
                     this.plugin.registerDomEvent(li, 'keydown', (evt: KeyboardEvent) => {
                         if (evt.key !== 'Enter' && evt.key !== ' ') return;
                         evt.preventDefault();
-                        this.scrollToSettingsSection(feature.targetSection!);
+                        this.revealSettingsSection(this._activeTab, feature.targetSection!);
                     });
                 }
             });
         }
     }
 
+    /** The pane that scrolls: the settings page, never the tab's own (unscrolled, full-height) content box. */
     private findSettingsScrollHost(target: HTMLElement): HTMLElement | null {
-        const host = target.closest<HTMLElement>('.vertical-tab-content, .ert-settings-tab-content');
+        const host = target.closest<HTMLElement>('.ert-settings-scroll-host, .vertical-tab-content');
         return host?.instanceOf(HTMLElement) ? host : null;
     }
 
+    /** The section's top is in the pane's view (a tall section cannot fit whole). */
     private isSectionVisibleWithinHost(target: HTMLElement, host: HTMLElement): boolean {
         const hostRect = host.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
-        return targetRect.top >= hostRect.top + 8 && targetRect.bottom <= hostRect.bottom - 8;
+        return targetRect.top >= hostRect.top - 8 && targetRect.top <= hostRect.top + hostRect.height / 3;
     }
 
     private markSettingsSectionRevealed(target: HTMLElement): void {
@@ -781,19 +789,21 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         }, 1600);
     }
 
-    private scrollToSettingsSection(sectionKey: string, options: { force?: boolean } = {}): boolean {
+    /** Scroll a section into view: 'missing' (not drawn yet), 'visible' (already in view) or 'scrolled'. */
+    private scrollToSettingsSection(sectionKey: string, options: { force?: boolean } = {}): 'missing' | 'visible' | 'scrolled' {
         const target = (this.dashboardEl ?? this.containerEl).querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${sectionKey}"]`);
-        if (!target) return false;
+        if (!target) return 'missing';
         // A section kept closed until asked for (Publishing's Advanced configuration) opens when revealed.
         target.closest<HTMLElement>(`[${ERT_DATA.SECTION}].is-hidden`)?.removeClass('is-hidden');
+        // Not yet drawn in an open Settings window: nothing to scroll to.
+        if (!target.isShown()) return 'missing';
         const host = this.findSettingsScrollHost(target);
         if (!options.force && host && this.isSectionVisibleWithinHost(target, host)) {
             this.markSettingsSectionRevealed(target);
-            return true;
+            return 'visible';
         }
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        this.markSettingsSectionRevealed(target);
-        return true;
+        return 'scrolled';
     }
 
     private renderPublishingHero(containerEl: HTMLElement): void {

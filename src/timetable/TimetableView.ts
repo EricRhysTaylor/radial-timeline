@@ -136,6 +136,7 @@ import {
     storyImageFocus, storyImageStrategy, strategyChoices,
 } from './storyCardImages';
 import { PanelFocusModal } from './PanelFocusModal';
+import { showBeatOrderNotice } from './beatOrderNotice';
 import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder, timetableBeatDropIndex, type TimetableBeatOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
 import { bookPlacementItems } from './canvasBookCards';
@@ -432,7 +433,8 @@ export class TimetableView extends BasesView {
     private flippedScenePath: string | null = null;
     private readonly sceneReaderScroll = new Map<string, number>();
     private draggedScene: string | null = null;
-    private draggedBeat: { path: string; order: TimetableBeatOrder | null } | null = null;
+    /** `refusedAt`: the scene row the beat is over where its order forbids a drop. */
+    private draggedBeat: { path: string; order: TimetableBeatOrder | null; refusedAt?: string } | null = null;
     private draggedSketch: string | null = null;
     private sketchProblems = new Map<string, PlacementProblem>();
     private scenePlacementInProgress = false;
@@ -3542,6 +3544,8 @@ export class TimetableView extends BasesView {
             });
         });
         this.panelEvents?.registerDomEvent(grip, 'dragend', () => {
+            // Released over a row it may not go to: say why, and where the order is changed.
+            if (this.draggedBeat?.refusedAt) showBeatOrderNotice(this.plugin, t('ui.timetable.beatDragRefused'));
             this.draggedBeat = null;
             this.rootEl.querySelectorAll('.ert-timetable__drop-before, .ert-timetable__drop-after')
                 .forEach(el => el.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after'));
@@ -3560,16 +3564,21 @@ export class TimetableView extends BasesView {
             return timetableBeatDropIndex(drag.order.all, drag.path, path, after) === null ? null : after;
         };
         this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
-            if (!this.draggedBeat) return;
+            const drag = this.draggedBeat;
+            if (!drag) return;
             clear();
             const after = side(event);
+            if (drag.order) drag.refusedAt = after === null ? path : undefined;
             if (after === null) return;
             event.preventDefault();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
             row.addClass(after ? 'ert-timetable__drop-after' : 'ert-timetable__drop-before');
         });
         this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
-            if (this.draggedBeat && movesOutOf(row, event)) clear();
+            const drag = this.draggedBeat;
+            if (!drag || !movesOutOf(row, event)) return;
+            clear();
+            if (drag.refusedAt === path) drag.refusedAt = undefined;
         });
         this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
             if (!this.draggedBeat) return;

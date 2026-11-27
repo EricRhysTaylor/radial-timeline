@@ -84,7 +84,7 @@ The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar
 
 ### Move a beat in Narrative
 
-In the active book's Timetable, drag a beat by its grip to the top or bottom half of a scene row to place it before or after that scene. The move must stay within the same act and between the beat's existing neighbors, including any beats hidden by a filter. The confirmation shows the new beat number and how many notes will be renamed. To change the beat template's order or act assignments, use the template editor.
+In the active book's Timetable, drag a beat by its grip to the top or bottom half of a scene row to place it before or after that scene. The move must stay within the same act and between the beat's existing neighbors, including any beats hidden by a filter. The confirmation shows the new beat number and how many notes will be renamed. Drop it anywhere else and a notice explains the rule, with a link to **Settings → Core → Story beats**, where the beat system's order and act assignments are changed.
 
 ### Light up the table on the timeline
 

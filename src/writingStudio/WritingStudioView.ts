@@ -49,6 +49,8 @@ interface StudioState {
 const READING_LINE = 0.3;
 /** How long the reading position must rest before the source split follows it, in ms. */
 const FOLLOW_DELAY_MS = 300;
+/** After a keystroke in the source split, how long it holds its scene, in ms. */
+const TYPING_HOLD_MS = 2000;
 const MODEL_REFRESH_MS = 500;
 const PROSE_REFRESH_MS = 250;
 
@@ -112,6 +114,8 @@ export class WritingStudioView extends ItemView {
      */
     private sourceLeaf: WorkspaceLeaf | null = null;
     private followTimer: number | null = null;
+    /** The last keystroke in the source split (Date.now()). */
+    private sourceTypedAt = 0;
 
     constructor(leaf: WorkspaceLeaf, private plugin: RadialTimelinePlugin) {
         super(leaf);
@@ -221,8 +225,6 @@ export class WritingStudioView extends ItemView {
         for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) {
             this.registerDomEvent(this.mainEl, type, () => { this.pinned = null; }, { passive: true });
         }
-        // Back in the studio after writing in the source split: it catches up.
-        this.registerDomEvent(this.rootEl, 'pointerdown', () => this.scheduleFollow(), { passive: true });
     }
 
     private setNavOpen(open: boolean): void {
@@ -285,6 +287,13 @@ export class WritingStudioView extends ItemView {
     }
 
     private registerLiveUpdates(): void {
+        // Typing in the source split holds it on its scene: a pending switch is dropped.
+        this.registerEvent(this.app.workspace.on('editor-change', (_editor, info) => {
+            if (!(info instanceof MarkdownView) || info.leaf !== this.sourceLeaf) return;
+            this.sourceTypedAt = Date.now();
+            if (this.followTimer !== null) window.clearTimeout(this.followTimer);
+            this.followTimer = null;
+        }));
         const inBook = (path: string): boolean => !!this.sourceFolder && isPathInFolderScope(path, this.sourceFolder);
         this.registerEvent(this.app.metadataCache.on('changed', file => {
             if (!inBook(file.path)) return;
@@ -814,10 +823,11 @@ export class WritingStudioView extends ItemView {
     }
 
     /**
-     * Show the scene being read in the source split, without taking focus.
-     * Never while the author's cursor is in the split: it waits until they
-     * come back to the studio. Following ends when the split is closed or
-     * shows a note outside this book.
+     * Show the scene being read in the source split, without moving focus.
+     * Reading on in the studio moves it even when the cursor was left in the
+     * split; typing there holds it (TYPING_HOLD_MS) until the next scene
+     * change in the studio. Following ends when the split is closed or shows
+     * a note outside this book.
      */
     private async followSource(): Promise<void> {
         const leaf = this.sourceLeaf;
@@ -829,7 +839,7 @@ export class WritingStudioView extends ItemView {
             this.sourceLeaf = null;
             return;
         }
-        if (view.containerEl.contains(view.containerEl.ownerDocument.activeElement)) return;
+        if (Date.now() - this.sourceTypedAt < TYPING_HOLD_MS) return;
         const scene = book.scenes[this.current];
         if (!scene || scene.path === shown) return;
         const file = this.app.vault.getAbstractFileByPath(scene.path);

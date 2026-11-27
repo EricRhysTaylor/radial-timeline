@@ -101,7 +101,7 @@
   dominant-baseline: central;
 }
 
-.radial-timeline-container .ert-timeline-act-label[data-tooltip] {
+.radial-timeline-container .ert-timeline-act-label[data-rt-tip] {
   pointer-events: visiblePainted;
 }
 

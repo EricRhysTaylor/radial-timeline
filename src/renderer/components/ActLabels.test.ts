@@ -63,7 +63,7 @@ describe('Narrative Act labels', () => {
     const viewBoxHalf = 800;
     const angleDiff = (a: number, b: number): number => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
-    it.each([3, 4, 5, 7, 12])('fits ordinary labels in their own exterior pocket (%i acts)', numActs => {
+    it.each([3, 4, 5, 7, 8, 12])('fits ordinary labels in their own exterior pocket (%i acts)', numActs => {
         for (let act = 0; act < numActs; act++) {
             const angles = getSegmentBoundaries(act, numActs);
             const fontSize = 26;
@@ -83,6 +83,23 @@ describe('Narrative Act labels', () => {
                 }
             }
         }
+    });
+
+    it.each([3, 5])('nudges the bottom label toward the starting spoke (%i acts)', numActs => {
+        const act = (numActs - 1) / 2;
+        const title = 'Act ' + (act + 1);
+        const label = layoutNarrativeActLabel({
+            title,
+            ...getSegmentBoundaries(act, numActs),
+            fontSize: 26,
+            rim: 813,
+            viewBoxHalf,
+            measure: line => line.length * 14
+        });
+        expect(label.lines).toEqual([title]);
+        expect(label.inset).toBe(false);
+        expect(label.x).toBeGreaterThan(0);
+        expect(label.y).toBeGreaterThan(0);
     });
 
     it('wraps a long custom title while keeping its full wording', () => {

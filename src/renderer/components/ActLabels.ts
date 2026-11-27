@@ -53,8 +53,12 @@ function findLabelPosition(
 ): ActLabelPosition | undefined {
     const mid = (start + end) / 2;
     const step = (end - start) / 48;
+    // The label straddling six o'clock can fit on either side. Try the side
+    // nearer the starting spoke first at each distance from the midpoint.
+    const firstDirection = start < Math.PI / 2 && end > Math.PI / 2 ? -1 : 1;
     for (let i = 0; i < 48; i++) {
-        const angle = mid + Math.ceil(i / 2) * step * (i % 2 === 0 ? -1 : 1);
+        const direction = i % 2 === 0 ? -firstDirection : firstDirection;
+        const angle = mid + Math.ceil(i / 2) * step * direction;
         const dx = Math.cos(angle);
         const dy = Math.sin(angle);
         // Project the box onto the spoke and the two act boundaries to clear
@@ -161,7 +165,7 @@ export function renderNarrativeActLabels(params: {
         }).join('');
         const inset = layout.inset ? ' ert-timeline-act-label--inset' : '';
         const tooltip = layout.lines.join(' ') === title
-            ? '' : ' data-tooltip="' + escapeXml(title) + '" data-tooltip-placement="top"';
+            ? '' : ' data-rt-tip="' + escapeXml(title) + '" data-rt-tip-placement="top"';
         return '<text class="rt-act-label ert-timeline-act-label' + inset + '" data-act="' + act + '" fill="' + maxStageColor
             + '" font-size="' + formatNumber(layout.fontSize) + '"' + tooltip + '>' + lines + '</text>';
     }).join('');

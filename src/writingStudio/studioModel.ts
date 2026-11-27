@@ -20,6 +20,7 @@ import type { TimelineItem } from '../types';
 import { getMainPlotName } from '../utils/mainPlot';
 import { extractPrefixToken } from '../utils/prefixOrder';
 import { buildTimelineChapterResolverItems, readSharedChapterTitle } from '../utils/timelineChapters';
+import { isBeatNote, sortScenes } from '../utils/sceneHelpers';
 
 export interface StudioScene {
     /** Position in manuscript order, from 0. */
@@ -51,8 +52,20 @@ export interface StudioChapter {
     act: number;
 }
 
+/** A story beat note: a marker between scenes, with no prose of its own. */
+export interface StudioBeat {
+    path: string;
+    title: string;
+    name: string;
+    act: number;
+    /** The scene it follows in manuscript order, or -1 before the first scene. */
+    afterScene: number;
+}
+
 export interface StudioBook {
     scenes: StudioScene[];
+    /** Story beats in manuscript order. */
+    beats: StudioBeat[];
     chapters: StudioChapter[];
     /** The acts that hold scenes, ascending. */
     acts: number[];
@@ -90,7 +103,8 @@ function sameChapterTitle(a: string, b: string): boolean {
 /**
  * Build the studio's book from the timeline's scene data for one book.
  * `items` is what `getSceneData` returns: one item per scene per subplot,
- * plus beats, backdrops and matter, which the studio leaves out.
+ * plus beats (kept as markers between scenes), and backdrops and matter,
+ * which the studio leaves out.
  */
 export function buildStudioBook(items: TimelineItem[]): StudioBook {
     const ordered = buildTimelineChapterResolverItems(items).filter(item => !!item.path);
@@ -137,12 +151,83 @@ export function buildStudioBook(items: TimelineItem[]): StudioBook {
         });
     }
 
+    // Beats take their place in the same manuscript sort as the scenes, so
+    // each one follows the scene its order prefix follows ("1.01" after "1").
+    const beatItems = new Map<string, TimelineItem>();
+    for (const item of items) if (isBeatNote(item) && item.path && !beatItems.has(item.path)) beatItems.set(item.path, item);
+    const beats: StudioBeat[] = [];
+    let scenesSeen = -1;
+    for (const item of sortScenes([...ordered, ...beatItems.values()], false, false)) {
+        if (!isBeatNote(item)) { scenesSeen += 1; continue; }
+        const path = item.path as string; // SAFE: beatItems holds only items with a path
+        const title = (item.title ?? '').trim() || path.split('/').pop()!.replace(/\.md$/i, ''); // SAFE: split always yields one element
+        beats.push({ path, title, name: splitSceneTitle(title).name, act: actOf(item), afterScene: scenesSeen });
+    }
+
     const acts = [...new Set(scenes.map(scene => scene.act))].sort((a, b) => a - b);
     const seen = new Set<string>();
     for (const scene of scenes) for (const subplot of scene.subplots) seen.add(subplot);
     const subplots = [...seen].sort((a, b) => (a === mainPlot ? -1 : b === mainPlot ? 1 : 0));
 
-    return { scenes, chapters, acts, subplots };
+    return { scenes, beats, chapters, acts, subplots };
+}
+
+export type OutlineLeaf = { kind: 'scene'; scene: number } | { kind: 'beat'; beat: number };
+export type OutlineEntry = OutlineLeaf | {
+    kind: 'chapter';
+    chapter: number;
+    /** The chapter began in an earlier act and carries on here. */
+    continued: boolean;
+    children: OutlineLeaf[];
+};
+export interface OutlineAct {
+    act: number;
+    entries: OutlineEntry[];
+}
+
+/**
+ * The contents as an outline: acts, then chapters with their scenes, with
+ * scenes outside any chapter and story beats at act level. A beat sits inside
+ * a chapter only when the next scene after it in that act belongs to the same
+ * chapter, so a beat between two chapters stands between them.
+ */
+export function buildOutline(book: StudioBook): OutlineAct[] {
+    const sequence: Array<OutlineLeaf & { act: number }> = [];
+    const beatsAfter = (scene: number): void => {
+        book.beats.forEach((beat, index) => { if (beat.afterScene === scene) sequence.push({ kind: 'beat', beat: index, act: beat.act }); });
+    };
+    beatsAfter(-1);
+    for (const scene of book.scenes) {
+        sequence.push({ kind: 'scene', scene: scene.index, act: scene.act });
+        beatsAfter(scene.index);
+    }
+
+    const acts = [...new Set(sequence.map(item => item.act))].sort((a, b) => a - b);
+    const opened = new Set<number>();
+    return acts.map(act => {
+        const items = sequence.filter(item => item.act === act);
+        const entries: OutlineEntry[] = [];
+        let open: Extract<OutlineEntry, { kind: 'chapter' }> | null = null;
+        items.forEach((item, position) => {
+            const leaf: OutlineLeaf = item.kind === 'scene' ? { kind: 'scene', scene: item.scene } : { kind: 'beat', beat: item.beat };
+            if (item.kind === 'beat') {
+                const next = items.slice(position + 1).find(candidate => candidate.kind === 'scene');
+                const nextChapter = next && next.kind === 'scene' ? book.scenes[next.scene].chapter : null;
+                if (open && nextChapter === open.chapter) open.children.push(leaf);
+                else { open = null; entries.push(leaf); }
+                return;
+            }
+            const chapter = book.scenes[item.scene].chapter;
+            if (chapter === null) { open = null; entries.push(leaf); return; }
+            if (!open || open.chapter !== chapter) {
+                open = { kind: 'chapter', chapter, continued: opened.has(chapter), children: [] };
+                opened.add(chapter);
+                entries.push(open);
+            }
+            open.children.push(leaf);
+        });
+        return { act, entries };
+    });
 }
 
 /** The scenes the reading pane shows for a scope, around the current scene. */

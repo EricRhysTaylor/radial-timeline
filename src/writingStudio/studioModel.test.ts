@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { actStarts, buildStudioBook, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
+import { actStarts, buildOutline, buildStudioBook, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
 
 function scene(path: string, title: string, extra: Partial<TimelineItem> & { chapter?: string } = {}): TimelineItem {
     const { chapter, ...rest } = extra;
@@ -75,6 +75,51 @@ describe('Writing Studio book model', () => {
         expect(splitSceneTitle('3 First Ball')).toEqual({ prefix: '3', name: 'First Ball' });
         expect(splitSceneTitle('12.5 Interlude')).toEqual({ prefix: '12.5', name: 'Interlude' });
         expect(splitSceneTitle('Untitled')).toEqual({ prefix: null, name: 'Untitled' });
+    });
+});
+
+describe('Writing Studio contents outline', () => {
+    const beat = (path: string, title: string, actNumber: number): TimelineItem => ({ itemType: 'Beat', path, title, date: '', actNumber });
+    const book = buildStudioBook([
+        beat('B/0.md', '0.5 Opening Image', 1),
+        scene('S/1.md', '1 Prologue', { actNumber: 1 }),
+        scene('S/2.md', '2 Arrival', { actNumber: 1, chapter: 'The Arrival' }),
+        beat('B/2.md', '2.5 Catalyst', 1),
+        scene('S/3.md', '3 Docks', { actNumber: 1 }),
+        beat('B/3.md', '3.5 Break Into Two', 1),
+        scene('S/4.md', '4 Escape', { actNumber: 2, chapter: 'The Escape' }),
+        scene('S/5.md', '5 Bridge', { actNumber: 3 }),
+    ]);
+
+    it('places each beat after the scene its order prefix follows', () => {
+        expect(book.beats.map(b => [b.name, b.afterScene])).toEqual([
+            ['Opening Image', -1],
+            ['Catalyst', 1],
+            ['Break Into Two', 2],
+        ]);
+    });
+
+    it('nests scenes and in-chapter beats under chapters, inside acts', () => {
+        const outline = buildOutline(book);
+        expect(outline.map(act => act.act)).toEqual([1, 2, 3]);
+        expect(outline[0].entries).toEqual([
+            { kind: 'beat', beat: 0 },
+            { kind: 'scene', scene: 0 },
+            { kind: 'chapter', chapter: 0, continued: false, children: [
+                { kind: 'scene', scene: 1 },
+                { kind: 'beat', beat: 1 },
+                { kind: 'scene', scene: 2 },
+            ] },
+            // The last beat of the act has no next scene in its chapter here: it stands at act level.
+            { kind: 'beat', beat: 2 },
+        ]);
+        expect(outline[1].entries).toEqual([
+            { kind: 'chapter', chapter: 1, continued: false, children: [{ kind: 'scene', scene: 3 }] },
+        ]);
+        // A chapter running into the next act shows again there, marked as continued.
+        expect(outline[2].entries).toEqual([
+            { kind: 'chapter', chapter: 1, continued: true, children: [{ kind: 'scene', scene: 4 }] },
+        ]);
     });
 });
 

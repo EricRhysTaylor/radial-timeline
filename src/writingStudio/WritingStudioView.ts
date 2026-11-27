@@ -35,7 +35,7 @@ import { toRomanNumeral } from '../utils/romanNumerals';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { assignSubplotColors, bookOwnSubplotColors, subplotColorCss, subplotColorOn } from '../renderer/utils/subplotColors';
 import { WRITING_STUDIO_VIEW_TYPE } from './constants';
-import { actStarts, buildStudioBook, chapterAt, scopeRange, stepTarget, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
+import { actStarts, buildOutline, buildStudioBook, chapterAt, scopeRange, stepTarget, type OutlineLeaf, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
 import { buildStudioWheel, wheelSubplotOrder, type StudioWheelHandle } from './studioWheel';
 
 interface StudioState {
@@ -89,6 +89,8 @@ export class WritingStudioView extends ItemView {
     private detailsEl!: HTMLElement;
     private wheel: StudioWheelHandle | null = null;
     private hovered: number | null = null;
+    /** Chapters folded in the contents; kept while the view is open. */
+    private foldedChapters = new Set<number>();
 
     /** Set by a jump: the scene stays current until the author scrolls themselves. */
     private pinned: number | null = null;
@@ -338,39 +340,13 @@ export class WritingStudioView extends ItemView {
         this.wheelHostEl.appendChild(this.wheel.svg);
         this.wheel.setCurrent(this.current);
 
-        this.contentsEl.empty();
-        this.contentsEl.createEl('h2', { cls: 'ert-studio__contents-heading', text: t('ui.writingStudio.contents') });
-        const multiAct = book.acts.length > 1;
-        for (const act of book.acts) {
-            const section = this.contentsEl.createEl('section');
-            if (multiAct) section.createEl('h3', { cls: 'ert-studio__contents-act', text: actLabel(act) });
-            const list = section.createEl('ol', { cls: 'ert-studio__contents-list' });
-            let openChapter: number | null = null;
-            let chapterList: HTMLElement = list;
-            for (const scene of book.scenes.filter(item => item.act === act)) {
-                if (scene.chapter !== openChapter) {
-                    openChapter = scene.chapter;
-                    if (scene.chapter === null) {
-                        chapterList = list;
-                    } else {
-                        const chapter = book.chapters[scene.chapter];
-                        const item = list.createEl('li', { cls: 'ert-studio__contents-chapter' });
-                        const link = item.createEl('button', { cls: 'ert-studio__contents-link ert-studio__contents-link--chapter', attr: { type: 'button' } });
-                        link.dataset.sceneIndex = String(chapter.firstScene);
-                        link.dataset.chapterIndex = String(chapter.index);
-                        // No number column: scene numbers own it, and the reading header names the chapter's number.
-                        link.createSpan({ text: chapter.title });
-                        chapterList = item.createEl('ol', { cls: 'ert-studio__contents-list ert-studio__contents-list--scenes' });
-                    }
-                }
-                const item = chapterList.createEl('li');
-                const link = item.createEl('button', { cls: 'ert-studio__contents-link', attr: { type: 'button' } });
-                link.dataset.sceneIndex = String(scene.index);
-                link.createSpan({ cls: 'ert-studio__contents-num', text: scene.prefix ?? String(scene.index + 1) });
-                link.createSpan({ text: scene.name });
-            }
-        }
+        this.renderContents(book);
         this.contentsEl.onclick = event => {
+            const fold = (event.target as Element).closest<HTMLElement>('.ert-studio__toc-fold');
+            if (fold) {
+                this.toggleChapterFold(Number(fold.dataset.chapterIndex));
+                return;
+            }
             const link = (event.target as Element).closest<HTMLElement>('[data-scene-index]');
             if (!link) return;
             this.setNavOpen(false);
@@ -378,6 +354,69 @@ export class WritingStudioView extends ItemView {
         };
         this.markContents();
         this.renderCaption();
+    }
+
+    /**
+     * The contents as an outline (buildOutline): act headings; chapters with
+     * a book-mark icon, their scene count and a fold control, their scenes and
+     * beats indented on a guide line; scenes outside a chapter and story beats
+     * between chapters at act level. Beats have no prose, so they are quiet
+     * markers rather than links.
+     */
+    private renderContents(book: StudioBook): void {
+        this.contentsEl.empty();
+        this.contentsEl.createEl('h2', { cls: 'ert-studio__contents-heading', text: t('ui.writingStudio.contents') });
+        const leaf = (list: HTMLElement, entry: OutlineLeaf): void => {
+            if (entry.kind === 'beat') {
+                const beat = book.beats[entry.beat];
+                const item = list.createEl('li', { cls: 'ert-studio__toc-beat' });
+                setIcon(item.createSpan({ cls: 'ert-studio__toc-icon' }), 'milestone');
+                item.createSpan({ cls: 'ert-studio__toc-beat-name', text: beat.name });
+                return;
+            }
+            const scene = book.scenes[entry.scene];
+            const link = list.createEl('li').createEl('button', { cls: 'ert-studio__contents-link', attr: { type: 'button' } });
+            link.dataset.sceneIndex = String(scene.index);
+            link.createSpan({ cls: 'ert-studio__contents-num', text: scene.prefix ?? String(scene.index + 1) });
+            link.createSpan({ cls: 'ert-studio__contents-name', text: scene.name });
+        };
+        for (const act of buildOutline(book)) {
+            const section = this.contentsEl.createEl('section', { cls: 'ert-studio__toc-act' });
+            section.createDiv({ cls: 'ert-studio__toc-act-head', text: actLabel(act.act) });
+            const list = section.createEl('ol', { cls: 'ert-studio__toc' });
+            for (const entry of act.entries) {
+                if (entry.kind !== 'chapter') { leaf(list, entry); continue; }
+                const chapter = book.chapters[entry.chapter];
+                const item = list.createEl('li', { cls: 'ert-studio__toc-chapter' });
+                item.dataset.chapterIndex = String(chapter.index);
+                item.toggleClass('is-folded', this.foldedChapters.has(chapter.index));
+                const row = item.createDiv({ cls: 'ert-studio__toc-chapter-row' });
+                const fold = row.createEl('button', { cls: 'clickable-icon ert-studio__toc-fold', attr: { type: 'button' } });
+                fold.dataset.chapterIndex = String(chapter.index);
+                setIcon(fold, 'chevron-down');
+                setTooltip(fold, this.foldedChapters.has(chapter.index) ? t('ui.writingStudio.unfoldChapter') : t('ui.writingStudio.foldChapter'));
+                const firstScene = entry.children.find(child => child.kind === 'scene');
+                const link = row.createEl('button', { cls: 'ert-studio__contents-link ert-studio__contents-link--chapter', attr: { type: 'button' } });
+                link.dataset.sceneIndex = String(firstScene && firstScene.kind === 'scene' ? firstScene.scene : chapter.firstScene);
+                link.dataset.chapterIndex = String(chapter.index);
+                setIcon(link.createSpan({ cls: 'ert-studio__toc-icon' }), 'bookmark');
+                link.createSpan({ cls: 'ert-studio__contents-name', text: entry.continued ? t('ui.writingStudio.chapterContinued', { title: chapter.title }) : chapter.title });
+                link.createSpan({ cls: 'ert-studio__toc-count', text: String(entry.children.filter(child => child.kind === 'scene').length) });
+                const children = item.createEl('ol', { cls: 'ert-studio__toc ert-studio__toc--children' });
+                for (const child of entry.children) leaf(children, child);
+            }
+        }
+    }
+
+    private toggleChapterFold(chapter: number): void {
+        if (this.foldedChapters.has(chapter)) this.foldedChapters.delete(chapter);
+        else this.foldedChapters.add(chapter);
+        const folded = this.foldedChapters.has(chapter);
+        this.contentsEl.querySelectorAll<HTMLElement>(`.ert-studio__toc-chapter[data-chapter-index="${chapter}"]`).forEach(item => {
+            item.toggleClass('is-folded', folded);
+            const fold = item.querySelector<HTMLElement>('.ert-studio__toc-fold');
+            if (fold) setTooltip(fold, folded ? t('ui.writingStudio.unfoldChapter') : t('ui.writingStudio.foldChapter'));
+        });
     }
 
     private markContents(): void {

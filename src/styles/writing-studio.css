@@ -166,13 +166,18 @@
 
 /* ── Contents ────────────────────────────────────────────────────────── */
 
+/* An outline in four levels (buildOutline):
+   Act      small caps with a rule running out to the edge
+   Chapter  fold chevron, book-mark icon, title, scene count
+   Scene    number and name; inside a chapter, indented on a guide line
+   Beat     milestone icon and name, faint italic, not a link */
+
 .ert-studio__contents {
   margin-top: var(--size-4-4);
 }
 
-.ert-studio__contents-heading,
-.ert-studio__contents-act {
-  margin: var(--size-4-3) 0 var(--size-2-2);
+.ert-studio__contents-heading {
+  margin: 0 0 var(--size-2-2);
   font-size: var(--font-ui-smaller);
   font-weight: var(--font-semibold);
   letter-spacing: 0.08em;
@@ -180,23 +185,87 @@
   color: var(--text-faint);
 }
 
-.ert-studio__contents-heading {
-  margin-top: 0;
+.ert-studio__toc-act + .ert-studio__toc-act {
+  margin-top: var(--size-4-3);
 }
 
-.ert-studio__contents-list {
+.ert-studio__toc-act-head {
+  display: flex;
+  gap: var(--size-4-2);
+  align-items: center;
+  margin: var(--size-4-2) 0 var(--size-2-2);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ert-studio__toc-act-head::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border);
+}
+
+.ert-studio__toc {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.ert-studio__contents-list--scenes {
-  padding-inline-start: var(--size-4-4);
+/* A chapter's scenes and beats hang from a guide line under its chevron. */
+.ert-studio__toc--children {
+  margin-inline-start: 11px;
+  padding-inline-start: var(--size-4-2);
+  border-inline-start: 1px solid var(--background-modifier-border);
+}
+
+.ert-studio__toc-chapter.is-folded > .ert-studio__toc--children {
+  display: none;
+}
+
+.ert-studio__toc-chapter-row {
+  display: flex;
+  align-items: center;
+  margin-top: var(--size-2-1);
+}
+
+.ert-studio__toc-fold.ert-studio__toc-fold {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--text-faint);
+}
+
+.ert-studio__toc-fold svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 120ms ease;
+}
+
+.ert-studio__toc-chapter.is-folded .ert-studio__toc-fold svg {
+  transform: rotate(-90deg);
+}
+
+.ert-studio__toc-icon {
+  flex: none;
+  display: inline-flex;
+  align-self: center;
+  color: var(--text-faint);
+}
+
+.ert-studio__toc-icon svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* Doubled class: outranks Obsidian's default button chrome. */
 .ert-studio__contents-link.ert-studio__contents-link {
   display: flex;
+  flex: 1;
+  min-width: 0;
   justify-content: flex-start;
   gap: var(--size-4-2);
   align-items: baseline;
@@ -219,17 +288,24 @@
   color: var(--text-normal);
 }
 
-.ert-studio__contents-link--chapter {
+.ert-studio__contents-link.ert-studio__contents-link--chapter {
+  gap: var(--size-2-3);
+  padding-inline-start: var(--size-2-1);
   color: var(--text-normal);
-  font-weight: var(--font-medium);
+  font-weight: var(--font-semibold);
 }
 
-.ert-studio__contents-link.is-current {
+.ert-studio__contents-link.ert-studio__contents-link.is-current {
+  color: var(--text-accent);
+}
+
+.ert-studio__contents-link.is-current .ert-studio__toc-icon {
   color: var(--text-accent);
 }
 
 .ert-studio__contents-link.ert-studio__contents-link[aria-current="location"] {
   background: var(--background-modifier-active-hover);
+  box-shadow: inset 2px 0 0 var(--interactive-accent);
 }
 
 .ert-studio__contents-num {
@@ -237,6 +313,35 @@
   min-width: 1.8em;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
+}
+
+.ert-studio__contents-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ert-studio__toc-count {
+  margin-inline-start: auto;
+  padding-inline-start: var(--size-2-3);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-normal);
+  font-variant-numeric: tabular-nums;
+}
+
+.ert-studio__toc-beat {
+  display: flex;
+  gap: var(--size-2-3);
+  align-items: center;
+  padding: var(--size-2-1) var(--size-2-3);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-style: italic;
+}
+
+.ert-studio__toc-beat .ert-studio__toc-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* ── Reading column ──────────────────────────────────────────────────── */

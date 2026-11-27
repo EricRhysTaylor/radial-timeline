@@ -19,7 +19,7 @@ export function showBeatOrderNotice(plugin: RadialTimelinePlugin, message: strin
     fragment.createEl('br');
     const link = fragment.createEl('a', { text: t('ui.timetable.beatOrderSettings'), href: '#' });
     const notice = new Notice(fragment, 10000);
-    link.addEventListener('click', event => {
+    link.onClickEvent(event => {
         event.preventDefault();
         notice.hide();
         plugin.settingsTab?.setActiveTab('core');

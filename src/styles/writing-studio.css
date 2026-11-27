@@ -49,12 +49,6 @@
   margin: 0 auto;
 }
 
-.ert-studio-wheel-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 /* A quiet wheel (Eric, 2026-11-26): every scene is one muted gray and only the
    scene being read wears its subplot's timeline color (--ert-wedge-color, set
    by studioWheel.ts). No outlines. Three kinds of space never look alike:
@@ -62,6 +56,9 @@
      void cell    the placeholder gray, darker than any scene cell
      empty ring   the timeline's placeholder ring: inset band inside an outline */
 .ert-studio-wheel-svg {
+  display: block;
+  width: 100%;
+  height: auto;
   --ert-studio-muted-cell: color-mix(in srgb, var(--text-normal) 20%, var(--background-primary));
 }
 

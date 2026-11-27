@@ -71,7 +71,7 @@ export function wheelPaddingRings(book: StudioBook): number {
 export function wheelAngles(book: StudioBook): Array<{ start: number; end: number }> {
     const actCount = Math.max(1, book.acts.length);
     const actSpan = TAU / actCount;
-    const spans: Array<{ start: number; end: number }> = new Array(book.scenes.length);
+    const spans = new Array<{ start: number; end: number }>(book.scenes.length);
     book.acts.forEach((act, actIndex) => {
         const members = book.scenes.filter(scene => scene.act === act);
         const share = actSpan / Math.max(1, members.length);

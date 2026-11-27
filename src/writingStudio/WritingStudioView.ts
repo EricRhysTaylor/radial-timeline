@@ -166,7 +166,7 @@ export class WritingStudioView extends ItemView {
         if (this.modelTimer !== null) window.clearTimeout(this.modelTimer);
         for (const timer of this.proseTimers.values()) window.clearTimeout(timer);
         this.proseTimers.clear();
-        if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame);
+        if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
     }
 
     // ── Shell ────────────────────────────────────────────────────────────
@@ -772,7 +772,7 @@ export class WritingStudioView extends ItemView {
 
     private scheduleSpy(): void {
         if (this.scrollFrame) return;
-        this.scrollFrame = requestAnimationFrame(() => {
+        this.scrollFrame = window.requestAnimationFrame(() => {
             this.scrollFrame = 0;
             if (this.pinned !== null) return;
             const index = this.sceneAtReadingLine();

@@ -1,7 +1,7 @@
 import type { TimelineItem } from '../types';
 import { buildRippleRenamePlan } from '../services/SceneReorderService';
 import type { OuterRingOrderEntry } from '../view/interactions/OuterRingDragController';
-import { extractPrefixToken } from '../utils/prefixOrder';
+import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
 import { fileStem } from '../utils/paths';
 import { timelineItemAct } from '../utils/acts';
 import type { TimelineModeState } from './timetableRegistry';
@@ -58,4 +58,45 @@ export function timetableNarrativeOrder(items: TimelineItem[], beatModel?: strin
         return [{ sceneId: path, path, basename, numberText: extractPrefixToken(basename) ?? '', // SAFE: an unnumbered file has no prefix text
             act: timelineItemAct(item) - 1, ring: 0, itemType: item.itemType, startAngle: index }];
     });
+}
+
+export interface TimetableBeatOrder {
+    all: OuterRingOrderEntry[];
+    active: OuterRingOrderEntry[];
+}
+
+/** The index in the order after removing the source. Only a scene can anchor a drop. */
+export function timetableBeatDropIndex(
+    order: readonly OuterRingOrderEntry[], source: string, target: string, after: boolean
+): number | null {
+    const from = order.findIndex(entry => entry.path === source && entry.itemType === 'Beat');
+    const to = order.findIndex(entry => entry.path === target && entry.itemType === 'Scene');
+    if (from < 0 || to < 0 || order[from].act !== order[to].act) return null;
+    const gap = to + Number(after);
+    const insert = gap - Number(from < gap);
+    if (insert === from) return null;
+    const crossed = order.slice(Math.min(from + 1, gap), Math.max(from, gap));
+    return crossed.every(entry => entry.act === order[from].act && entry.itemType === 'Scene') ? insert : null;
+}
+
+/** An inactive beat keeps its filename when the active manuscript is renumbered.
+ * Check that the proposed prefixes preserve its side of the moved beat too. */
+export function timetableBeatKeepsOrder(
+    order: readonly OuterRingOrderEntry[], source: string, numbers: ReadonlyMap<string, string>
+): boolean {
+    const from = order.findIndex(entry => entry.path === source);
+    const number = numbers.get(source);
+    if (from < 0 || !number) return false;
+    return order.every((entry, index) => {
+        if (index === from || entry.itemType !== 'Beat' || entry.act !== order[from].act) return true;
+        const otherNumber = numbers.get(entry.path) ?? (entry.numberText || null);
+        return Math.sign(comparePrefixTokens(number, otherNumber)) === Math.sign(from - index);
+    });
+}
+
+export function sameTimetableBeatOrder(before: TimetableBeatOrder, after: TimetableBeatOrder): boolean {
+    const same = (a: OuterRingOrderEntry[], b: OuterRingOrderEntry[]): boolean =>
+        a.length === b.length && a.every((entry, index) =>
+            entry.path === b[index].path && entry.act === b[index].act && entry.itemType === b[index].itemType);
+    return same(before.all, after.all) && same(before.active, after.active);
 }

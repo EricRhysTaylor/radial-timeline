@@ -136,7 +136,7 @@ import {
     storyImageFocus, storyImageStrategy, strategyChoices,
 } from './storyCardImages';
 import { PanelFocusModal } from './PanelFocusModal';
-import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
+import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder, timetableBeatDropIndex, type TimetableBeatOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
 import { bookPlacementItems } from './canvasBookCards';
 import { readSceneId } from '../utils/sceneIds';
@@ -432,6 +432,7 @@ export class TimetableView extends BasesView {
     private flippedScenePath: string | null = null;
     private readonly sceneReaderScroll = new Map<string, number>();
     private draggedScene: string | null = null;
+    private draggedBeat: { path: string; order: TimetableBeatOrder | null } | null = null;
     private draggedSketch: string | null = null;
     private sketchProblems = new Map<string, PlacementProblem>();
     private scenePlacementInProgress = false;
@@ -1935,6 +1936,7 @@ export class TimetableView extends BasesView {
         }
         this.renderDeferred = false;
         this.panelEvents?.unload();
+        this.draggedBeat = null;
         this.panelEvents = new Component();
         this.panelEvents.load();
         this.rowEls.clear();
@@ -2727,7 +2729,7 @@ export class TimetableView extends BasesView {
     private attachOutlineDocumentDrop(bar: HTMLElement, bookId: string, existing: string[]): void {
         const clear = () => bar.removeClass('is-drag-over');
         this.panelEvents?.registerDomEvent(bar, 'dragover', (event: DragEvent) => {
-            if (this.draggedScene || this.draggedSketch) return;
+            if (this.draggedScene || this.draggedSketch || this.draggedBeat) return;
             event.preventDefault(); event.stopPropagation();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             bar.addClass('is-drag-over');
@@ -2736,7 +2738,7 @@ export class TimetableView extends BasesView {
             if (movesOutOf(bar, event)) clear();
         });
         this.panelEvents?.registerDomEvent(bar, 'drop', (event: DragEvent) => {
-            if (this.draggedScene || this.draggedSketch) return;
+            if (this.draggedScene || this.draggedSketch || this.draggedBeat) return;
             event.preventDefault(); event.stopPropagation(); clear();
             const { app } = this.plugin;
             const files: TFile[] = [];
@@ -2908,7 +2910,7 @@ export class TimetableView extends BasesView {
         row.setAttr(OUTLINE_TEXT_ROW_ATTRIBUTE, 'true');
         const clear = () => row.removeClass('ert-outline-text-drop');
         this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
-            if (!this.draggedSelection() || this.draggedScene || this.draggedSketch) return;
+            if (!this.draggedSelection() || this.draggedScene || this.draggedSketch || this.draggedBeat) return;
             event.preventDefault(); event.stopPropagation();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             row.addClass('ert-outline-text-drop');
@@ -2918,7 +2920,7 @@ export class TimetableView extends BasesView {
         });
         this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
             const dragged = this.draggedSelection();
-            if (!dragged || this.draggedScene || this.draggedSketch) return;
+            if (!dragged || this.draggedScene || this.draggedSketch || this.draggedBeat) return;
             event.preventDefault(); event.stopPropagation(); clear();
             void this.createOutlineSketch(dragged.text, dragged.source.path, target);
         });
@@ -3097,6 +3099,8 @@ export class TimetableView extends BasesView {
                     }
                     // With no cover (None), the drag grip joins the scene's buttons, so the title starts at the edge.
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, sceneActions ?? header, row.path, mode.state);
+                if (row.kind === 'beat') this.attachBeatDrag(header, row.path, mode.state);
+                if (row.kind === 'scene') this.attachBeatDrop(panel, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSketchDrag(panel, header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSceneActDrop(panel, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
                 if (row.kind === 'sketch') this.renderSketchProblem(header, item);
@@ -3482,6 +3486,119 @@ export class TimetableView extends BasesView {
             }).catch(error => { console.error('Timetable scene placement failed', error); new Notice(t('ui.timetable.panelDragUnavailable')); });
         });
         return handle;
+    }
+
+    private beatDropBook(path: string, state = this.config.get('outline') === true
+        ? timetableModeState('narrative', null, 'narrative') : this.modeState()) {
+        if (state.mode !== 'narrative' || !modeAllowsSceneDrag(state) || this.config.getSort().length > 0
+            || getTimelineScope(this.plugin.settings) !== 'book') return null;
+        const book = getActiveBook(this.plugin.settings);
+        return book && getBookIdForPath(this.plugin.settings.books, path) === book.id ? book : null;
+    }
+
+    private async readBeatDropOrder(path: string, target?: string): Promise<TimetableBeatOrder | null> {
+        const book = this.beatDropBook(path);
+        if (!book || (target && getBookIdForPath(this.plugin.settings.books, target) !== book.id)) return null;
+        const beatModel = resolveSelectedBeatModelFromSettings(this.plugin.settings);
+        const items = await this.plugin.getSceneData({ sourcePath: book.sourceFolder, filterBeatsBySystem: false });
+        const currentBook = this.beatDropBook(path);
+        if (currentBook?.id !== book.id || currentBook.sourceFolder !== book.sourceFolder
+            || beatModel !== resolveSelectedBeatModelFromSettings(this.plugin.settings)
+            || (target && getBookIdForPath(this.plugin.settings.books, target) !== book.id)) return null;
+        const bookItems = items.filter(item => item.path && getBookIdForPath(this.plugin.settings.books, item.path) === book.id);
+        const all = timetableNarrativeOrder(bookItems);
+        return { all, active: beatModel ? timetableNarrativeOrder(bookItems, beatModel) : all };
+    }
+
+    private attachBeatDrag(host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement | null {
+        if (state.mode !== 'narrative') return null;
+        const enabled = this.beatDropBook(path, state) !== null;
+        const grip = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: String(enabled), type: 'button' } });
+        const label = t(enabled ? 'ui.timetable.beatDrag' : 'ui.timetable.beatDragHint');
+        setAccessibleLabel(grip, label);
+        setTooltip(grip, label);
+        setIcon(grip, 'grip-vertical');
+        if (!enabled) {
+            grip.addClass('is-unavailable');
+            grip.setAttr('aria-disabled', 'true');
+            return grip;
+        }
+        this.panelEvents?.registerDomEvent(grip, 'dragstart', (event: DragEvent) => {
+            if (!event.dataTransfer || this.scenePlacementInProgress || !this.beatDropBook(path)) {
+                event.preventDefault();
+                return;
+            }
+            const drag: NonNullable<TimetableView['draggedBeat']> = { path, order: null };
+            this.draggedBeat = drag;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-radial-timeline-beat', path);
+            void this.readBeatDropOrder(path).then(order => {
+                if (this.draggedBeat !== drag) return;
+                if (order?.active.some(entry => entry.path === path && entry.itemType === 'Beat')) drag.order = order;
+                else new Notice(t('ui.timetable.beatDragUnavailable'));
+            }).catch(error => {
+                console.error('Could not read the Timetable beat order', error);
+                if (this.draggedBeat === drag) new Notice(t('ui.timetable.beatDragUnavailable'));
+            });
+        });
+        this.panelEvents?.registerDomEvent(grip, 'dragend', () => {
+            this.draggedBeat = null;
+            this.rootEl.querySelectorAll('.ert-timetable__drop-before, .ert-timetable__drop-after')
+                .forEach(el => el.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after'));
+        });
+        return grip;
+    }
+
+    private attachBeatDrop(row: HTMLElement, path: string, state: TimelineModeState): void {
+        if (!this.beatDropBook(path, state)) return;
+        const clear = () => row.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after');
+        const side = (event: DragEvent): boolean | null => {
+            const drag = this.draggedBeat;
+            if (!drag?.order) return null;
+            const bounds = row.getBoundingClientRect();
+            const after = event.clientY >= bounds.top + bounds.height / 2;
+            return timetableBeatDropIndex(drag.order.all, drag.path, path, after) === null ? null : after;
+        };
+        this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
+            if (!this.draggedBeat) return;
+            clear();
+            const after = side(event);
+            if (after === null) return;
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+            row.addClass(after ? 'ert-timetable__drop-after' : 'ert-timetable__drop-before');
+        });
+        this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
+            if (this.draggedBeat && movesOutOf(row, event)) clear();
+        });
+        this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
+            if (!this.draggedBeat) return;
+            const source = this.draggedBeat.path;
+            const after = side(event);
+            event.preventDefault();
+            event.stopPropagation();
+            clear();
+            this.draggedBeat = null;
+            if (after !== null) void this.placeTimetableBeat(source, path, after);
+        });
+    }
+
+    private async placeTimetableBeat(source: string, target: string, after: boolean): Promise<void> {
+        if (this.scenePlacementInProgress) return;
+        this.scenePlacementInProgress = true;
+        try {
+            const svg = this.rootEl.doc.win.createSvg('svg');
+            const renderScope = new Component();
+            const onRefresh = () => { this.plugin.refreshTimelineIfNeeded(null, 100); this.refresh(); };
+            const controller = new OuterRingDragController({ plugin: this.plugin, renderScope }, svg, { onRefresh, mode: 'narrative' });
+            const handled = await controller.placeBeatFromTimetable(source, target, after, () => this.readBeatDropOrder(source, target));
+            if (!handled) new Notice(t('ui.timetable.beatDragStale'));
+        } catch (error) {
+            console.error('Timetable beat placement failed', error);
+            new Notice(t('ui.timetable.beatDragUnavailable'));
+        } finally {
+            this.scenePlacementInProgress = false;
+        }
     }
 
     private attachSketchDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement {
@@ -3880,7 +3997,15 @@ export class TimetableView extends BasesView {
             }
         }
 
+        if (row.kind === 'scene') this.attachBeatDrop(tr, row.path, mode.state);
         if (row.kind === 'beat') {
+            const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
+            const grip = wrap ? this.attachBeatDrag(wrap, row.path, mode.state) : null;
+            if (grip && wrap) {
+                wrap.addClass('has-drag');
+                grip.addClass('ert-timetable__chip-drag');
+                sizeNumberChip(wrap.querySelector<SVGSVGElement>('svg'), row.prefix);
+            }
             // Beats run across the table as quiet dividers, as on the wheel.
             const cell = tr.createEl('td', { cls: 'ert-timetable__beat' });
             cell.colSpan = columnCount - 1;

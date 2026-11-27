@@ -13,6 +13,7 @@ const ICON_ARROW_RIGHT = `<svg xmlns="http://www.w3.org/2000/svg" width="24" hei
 export interface DragConfirmCurrentMoveSummary {
     actionSummary: string;
     renameCount: number;
+    newBeatNumber?: string;
     contextChange?: string;
     rippleRename?: boolean;
     /** Files the ripple rename will rename beyond the move's own renames. */
@@ -120,6 +121,9 @@ export class DragConfirmModal extends ErtModal {
         this.renderMoveSummary(actionSummary, this.currentMove.actionSummary);
 
         const impactGrid = currentMoveSection.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
+        if (this.currentMove.newBeatNumber) {
+            this.createImpactCard(impactGrid, t('ui.dragConfirmModal.newBeatNumber'), this.currentMove.newBeatNumber, ICON_LIST_ORDERED);
+        }
         if (this.currentMove.showRenameImpact !== false) {
             this.createImpactCard(impactGrid, t('ui.dragConfirmModal.renameImpactLabel'), this.formatRenameImpact(this.currentMove.renameCount), ICON_LIST_ORDERED);
         }

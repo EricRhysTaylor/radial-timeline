@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
 import { t } from '../i18n';
-import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
+import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder, timetableBeatDropIndex, timetableBeatKeepsOrder, sameTimetableBeatOrder } from './timetablePlacement';
 
 describe('standalone timetable placement order', () => {
     it('uses the full book, deduplicates paths, and orders beats with scenes by act', () => {
@@ -83,5 +83,45 @@ describe('the sort notice beside Mode', () => {
         for (const mode of ['narrative', 'chronologue', 'progress', 'gossamer']) {
             for (const key of sortNoticeHelpKeys(state(mode), 'book')) expect(t(key)).not.toMatch(/^\[missing:/);
         }
+    });
+});
+
+describe('Timetable beat placement', () => {
+    const item = (path: string, itemType: 'Scene' | 'Beat', actNumber = 1, model?: string): TimelineItem => ({
+        path, itemType, actNumber, date: '', 'Beat Model': model
+    });
+    const a = item('1 Opening.md', 'Scene');
+    const previous = item('1.01 Previous beat.md', 'Beat', 1, 'Save The Cat');
+    const b = item('2 Next scene.md', 'Scene');
+    const source = item('2.01 Moved beat.md', 'Beat', 1, 'Save The Cat');
+    const c = item('3 Later scene.md', 'Scene');
+    const hidden = item('3.01 Other beat model.md', 'Beat', 1, "Hero's Journey");
+    const d = item('4 Last scene.md', 'Scene');
+    const e = item('5 Next act.md', 'Scene', 2);
+    const items = [a, previous, b, source, c, hidden, d, e];
+    const all = timetableNarrativeOrder(items);
+    const active = timetableNarrativeOrder(items, 'Save The Cat');
+
+    it('places a beat on either side of a scene while preserving its two neighboring beats', () => {
+        expect(timetableBeatDropIndex(all, source.path!, b.path!, false)).toBe(2);
+        expect(timetableBeatDropIndex(all, source.path!, c.path!, true)).toBe(4);
+        expect(timetableBeatDropIndex(all, source.path!, b.path!, true)).toBeNull();
+        expect(timetableBeatDropIndex(all, source.path!, c.path!, false)).toBeNull();
+    });
+
+    it('blocks other acts, beat rows, and intervening classified beats even when filtered out', () => {
+        expect(timetableBeatDropIndex(all, source.path!, e.path!, false)).toBeNull();
+        expect(timetableBeatDropIndex(all, source.path!, previous.path!, true)).toBeNull();
+        expect(timetableBeatDropIndex(all, source.path!, a.path!, true)).toBeNull();
+        expect(timetableBeatDropIndex(active, source.path!, d.path!, false)).not.toBeNull();
+        expect(timetableBeatDropIndex(all, source.path!, d.path!, false)).toBeNull();
+    });
+
+    it('checks the final prefix against other beat systems and recognizes a stale preview', () => {
+        expect(timetableBeatKeepsOrder(all, source.path!, new Map([[source.path!, '3.01']]))).toBe(false);
+        expect(timetableBeatKeepsOrder(all, source.path!, new Map([[source.path!, '3.01'], [hidden.path!, '3.02']]))).toBe(true);
+        expect(sameTimetableBeatOrder({ all, active }, { all: [...all], active: [...active] })).toBe(true);
+        expect(sameTimetableBeatOrder({ all, active }, { all: active, active })).toBe(false);
+        expect(sameTimetableBeatOrder({ all, active }, { all, active: all })).toBe(false);
     });
 });

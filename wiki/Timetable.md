@@ -82,6 +82,10 @@ The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar
 | **Progress** | Each heading counts complete scenes, words, and overdue scenes; overdue Due cells stand out. |
 | **Gossamer** | Beats come forward with their latest score for the selected signal, its change since the previous run, the expected range (flagged when a score is outside it), and the justification. Other rows recede. |
 
+### Move a beat in Narrative
+
+In the active book's Timetable, drag a beat by its grip to the top or bottom half of a scene row to place it before or after that scene. The move must stay within the same act and between the beat's existing neighbors, including any beats hidden by a filter. The confirmation shows the new beat number and how many notes will be renamed. To change the beat template's order or act assignments, use the template editor.
+
 ### Light up the table on the timeline
 
 Turn on the lens in the Timetable’s corner, or as a view option saved in the `.base` file. The table’s scenes stay lit on the wheel and the rest recedes, as in Chronologue’s Shift mode: scenes outside the table, their numbers and titles, void cells and spokes fade, and the subplot ring titles hide. Hovering a receded scene still shows it. A pill names the view, with a button that turns the lens off. Any Bases filter becomes a pattern on the wheel, so a saved view is a saved lens.

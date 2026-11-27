@@ -27,6 +27,7 @@ import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 import { t } from '../../i18n';
 import { askAboutAttachedSketches, applyAttachedSketchMove, runSceneMoveWithSketches } from '../../timetable/sketchSceneMove';
 import { listenOnOwnerWindow } from '../../utils/pressListeners';
+import { sameTimetableBeatOrder, timetableBeatDropIndex, timetableBeatKeepsOrder, type TimetableBeatOrder } from '../../timetable/timetablePlacement';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -314,6 +315,32 @@ export class OuterRingDragController {
         this.sourcePath = source;
         this.sourceItemType = 'Scene';
         await this.finishDropOnScene({ type: 'scene', sceneId: to.sceneId, act: to.act, ring: to.ring }, order);
+        return true;
+    }
+
+    /** Place an active beat within its act and its existing neighbours in the full book. */
+    async placeBeatFromTimetable(
+        source: string, target: string, after: boolean, readOrder: () => Promise<TimetableBeatOrder | null>
+    ): Promise<boolean> {
+        if (this.confirming || this.dragging || this.options.mode !== 'narrative') return false;
+        const snapshot = await readOrder();
+        if (!snapshot || timetableBeatDropIndex(snapshot.all, source, target, after) === null) return false;
+        const insertionIndex = timetableBeatDropIndex(snapshot.active, source, target, after);
+        if (insertionIndex === null) return false;
+        const from = snapshot.active.find(entry => entry.path === source);
+        const to = snapshot.active.find(entry => entry.path === target);
+        if (!from || !to) return false;
+
+        this.sourceSceneId = from.sceneId;
+        this.sourcePath = source;
+        this.sourceItemType = 'Beat';
+        await this.finishDropOnScene({ type: 'scene', sceneId: to.sceneId, act: to.act, ring: to.ring }, snapshot.active, {
+            insertionIndex, after, all: snapshot.all,
+            stillCurrent: async () => {
+                const latest = await readOrder();
+                return latest !== null && sameTimetableBeatOrder(snapshot, latest);
+            },
+        });
         return true;
     }
 
@@ -726,7 +753,11 @@ export class OuterRingDragController {
         await this.finishDropOnScene(target);
     }
 
-    private async finishDropOnScene(target: { type: 'scene'; sceneId: string; act: number; ring: number }, orderOverride?: OuterRingOrderEntry[]): Promise<void> {
+    private async finishDropOnScene(
+        target: { type: 'scene'; sceneId: string; act: number; ring: number },
+        orderOverride?: OuterRingOrderEntry[],
+        beatDrop?: { insertionIndex: number; after: boolean; all: OuterRingOrderEntry[]; stillCurrent: () => Promise<boolean> }
+    ): Promise<void> {
         const targetId = target.sceneId;
         if (!this.sourceSceneId || !targetId || this.sourceSceneId === targetId) {
             this.resetState();
@@ -750,11 +781,10 @@ export class OuterRingDragController {
             reordered = reorderScenesPreservingBeatGaps(order, sourceSceneId, targetId);
             isNoOpReorder = reordered.every((entry, index) => entry.path === order[index]?.path);
         } else {
-            // Always insert before the drop target.
-            // When moving forward (fromIdx < toIdx), the target shifts left after removal.
-            const insertionIndex = fromIdx < toIdx ? Math.max(0, toIdx - 1) : toIdx;
+            // Wheel drops insert before the target, accounting for the removed source.
+            // Timetable beat drops already carry their checked before/after position.
+            const insertionIndex = beatDrop?.insertionIndex ?? (fromIdx < toIdx ? toIdx - 1 : toIdx);
             isNoOpReorder = insertionIndex === fromIdx;
-            reordered = [...order];
             if (!isNoOpReorder) {
                 reordered.splice(fromIdx, 1);
                 reordered.splice(insertionIndex, 0, moved);
@@ -762,6 +792,12 @@ export class OuterRingDragController {
         }
 
         const { updates: renumberUpdates, nextNumberByPath } = this.buildRenumberDiff(reordered, isNoOpReorder);
+        const newBeatNumber = beatDrop ? nextNumberByPath.get(moved.path) : undefined;
+        if (beatDrop && (!newBeatNumber || !timetableBeatKeepsOrder(beatDrop.all, moved.path, nextNumberByPath))) {
+            new Notice(t('ui.timetable.beatDragBoundary'));
+            this.resetState();
+            return;
+        }
         const updates: SceneUpdate[] = [...renumberUpdates];
         const expectedOrderedPaths = reordered.map(entry => entry.path);
         const expectedNumbersByPath = Object.fromEntries(nextNumberByPath);
@@ -790,7 +826,11 @@ export class OuterRingDragController {
         const sourceOriginalNumber = order[fromIdx]?.numberText ?? '';
         const sourceLabel = sourceType === 'Beat' ? 'beat' : 'scene';
         const sourceDescriptor = this.formatItemDescriptor(moved);
-        const targetDescriptor = this.formatItemDescriptor(order[toIdx]);
+        const targetDescriptor = this.formatItemDescriptor(targetEntry);
+        const moveDescription = t(beatDrop?.after ? 'ui.timetable.beatMoveAfter' : 'ui.outerRingDragController.movedBefore', {
+            source: sourceDescriptor, target: targetDescriptor
+        });
+        const actionSummary = beatDrop ? moveDescription : sourceDescriptor + ' | ' + targetDescriptor;
         // Narrative-mode reorders happen on the "All Scenes" outer ring, where
         // every group carries the ring's subplot-index (0 = Main Plot), not the
         // note's real YAML Subplot. A reorder here never changes a scene's
@@ -825,17 +865,19 @@ export class OuterRingDragController {
             });
         }
 
-        const rippleRenameOtherCount = rippleRename ? await this.countRippleRenamesAfter(updates) : undefined;
+        // The Timetable's placement already plans every active item in the book.
+        const followWithRipple = rippleRename && !beatDrop;
+        const rippleRenameOtherCount = followWithRipple ? await this.countRippleRenamesAfter(updates) : undefined;
 
         this.confirming = true;
         const modal = new DragConfirmModal(
             this.view.plugin.app,
             {
-                // "source | target": DragConfirmModal draws the arrow between the two parts in any language.
-                actionSummary: `${sourceDescriptor} | ${targetDescriptor}`,
+                actionSummary,
+                newBeatNumber,
                 renameCount: renumberUpdates.length,
                 ...(contextChange ? { contextChange } : {}),
-                rippleRename,
+                rippleRename: followWithRipple,
                 ...(rippleRenameOtherCount !== undefined ? { rippleRenameOtherCount } : {}),
             },
             recentMoves,
@@ -857,6 +899,10 @@ export class OuterRingDragController {
         }
         let reorderApplied = false;
         try {
+            if (beatDrop && !await beatDrop.stillCurrent()) {
+                await modal.finishWithDismiss(t('ui.timetable.beatDragStale'), true);
+                return;
+            }
             this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType });
             await runSceneMoveWithSketches(() => applySceneNumberUpdates(this.view.plugin.app, updates, {
                     onProgress: (progress) => {
@@ -872,8 +918,6 @@ export class OuterRingDragController {
                         new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                     },
                 }), () => applyAttachedSketchMove(this.view.plugin.app, this.view.plugin.sketchPlacements, sketchMove), () => { reorderApplied = true; });
-            const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
-            const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,
@@ -881,13 +925,13 @@ export class OuterRingDragController {
                 itemLabel: this.getLabelFromBasename(moved.basename, sourceType),
                 sourceContext,
                 destinationContext,
-                summary: historySummary,
+                summary: actionSummary,
                 renameCount: renumberUpdates.length,
                 crossedActs: actChanged,
                 rippleRename,
             });
-            new Notice(noticeText, 2000);
-            await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
+            new Notice(moveDescription, 2000);
+            if (!beatDrop) await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
             modal.updateProgress(t('ui.outerRingDragController.refreshing'));
             // Small delay to allow Obsidian's metadata cache to update before refresh
             await sleep(100);

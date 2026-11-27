@@ -5704,7 +5704,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "rippleRenamePrefix": "Ondulación Cambiar nombre",
             "progressNoRenames": "{{prefix}}: No se necesitan renombres de nombre de archivo.",
             "progressPlanning": "{{prefix}}: Planificación {{count}} Renombre(s) de archivo...",
-            "progressStaging": "{{prefix}}: Estadificación {{staged}}/{{total}} Archivos...",
             "progressRenamed": "{{prefix}}: renombrado {{renamed}}/{{total}} archivos.",
             "rippleAlreadyNormalized": "Ripple Rename: ya normalizado (solo nombres de archivo; no hay ediciones de contenido).",
             "rippleNeedRename": "Ripple Rename: {{count}} Archivo(s) necesita cambiar el nombre ({{checked}} marcado, solo nombres de archivo).",

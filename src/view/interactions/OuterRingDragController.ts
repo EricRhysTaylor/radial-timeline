@@ -28,6 +28,7 @@ import { t } from '../../i18n';
 import { askAboutAttachedSketches, applyAttachedSketchMove, runSceneMoveWithSketches } from '../../timetable/sketchSceneMove';
 import { listenOnOwnerWindow } from '../../utils/pressListeners';
 import { sameTimetableBeatOrder, timetableBeatDropIndex, timetableBeatKeepsOrder, type TimetableBeatOrder } from '../../timetable/timetablePlacement';
+import { showBeatOrderNotice } from '../../timetable/beatOrderNotice';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -794,7 +795,7 @@ export class OuterRingDragController {
         const { updates: renumberUpdates, nextNumberByPath } = this.buildRenumberDiff(reordered, isNoOpReorder);
         const newBeatNumber = beatDrop ? nextNumberByPath.get(moved.path) : undefined;
         if (beatDrop && (!newBeatNumber || !timetableBeatKeepsOrder(beatDrop.all, moved.path, nextNumberByPath))) {
-            new Notice(t('ui.timetable.beatDragBoundary'));
+            showBeatOrderNotice(this.view.plugin, t('ui.timetable.beatDragBoundary'));
             this.resetState();
             return;
         }
@@ -1115,9 +1116,6 @@ export class OuterRingDragController {
         if (progress.phase === 'scan') {
             if (progress.totalFiles === 0) return t('ui.outerRingDragController.progressNoRenames', { prefix });
             return t('ui.outerRingDragController.progressPlanning', { prefix, count: progress.totalFiles });
-        }
-        if (progress.phase === 'stage') {
-            return t('ui.outerRingDragController.progressStaging', { prefix, staged: progress.stagedFiles, total: progress.totalFiles });
         }
         if (progress.phase === 'rename') {
             return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.renamedFiles, total: progress.totalFiles });

@@ -5697,7 +5697,6 @@ export const de: DeepPartial<TranslationKeys> = {
             rippleRenamePrefix: 'Ripple-Umbenennung',
             progressNoRenames: '{{prefix}}: keine Dateiumbenennungen nötig.',
             progressPlanning: '{{prefix}}: {{count}} Dateiumbenennung(en) werden geplant...',
-            progressStaging: '{{prefix}}: {{staged}}/{{total}} Dateien werden vorbereitet...',
             progressRenamed: '{{prefix}}: {{renamed}}/{{total}} Dateien umbenannt.',
             rippleAlreadyNormalized: 'Ripple-Umbenennung: bereits normalisiert (nur Dateinamen; keine Inhaltsänderungen).',
             rippleNeedRename: 'Ripple-Umbenennung: {{count}} Datei(en) müssen umbenannt werden ({{checked}} geprüft, nur Dateinamen).',

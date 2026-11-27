@@ -5704,7 +5704,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "rippleRenamePrefix": "đổi tên gợn sóng",
             "progressNoRenames": "{{prefix}}: Không cần đổi tên tệp.",
             "progressPlanning": "{{prefix}}: lập kế hoạch {{count}} đổi tên tệp (s) ...",
-            "progressStaging": "{{prefix}}: Giai đoạn {{staged}}/{{total}} file...",
             "progressRenamed": "{{prefix}}: Đã đổi tên tệp {{renamed}} / {{total}}.",
             "rippleAlreadyNormalized": "Ripple Rename: Đã được chuẩn hóa (chỉ tên tệp; không có nội dung chỉnh sửa).",
             "rippleNeedRename": "Rename Ripple: (các) tệp {{count}} cần đổi tên ({{checked}} được kiểm tra, chỉ tên tệp).",

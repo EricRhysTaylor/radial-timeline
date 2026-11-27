@@ -5699,7 +5699,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             rippleRenamePrefix: '波纹重命名',
             progressNoRenames: '{{prefix}}：无需重命名文件。',
             progressPlanning: '{{prefix}}：正在规划 {{count}} 个文件重命名...',
-            progressStaging: '{{prefix}}：正在暂存 {{staged}}/{{total}} 个文件...',
             progressRenamed: '{{prefix}}：已重命名 {{renamed}}/{{total}} 个文件。',
             rippleAlreadyNormalized: '波纹重命名：已规范化（仅文件名；未编辑内容）。',
             rippleNeedRename: '波纹重命名：{{count}} 个文件需要重命名（已检查 {{checked}} 个，仅文件名）。',

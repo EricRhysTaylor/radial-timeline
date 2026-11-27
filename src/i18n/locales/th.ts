@@ -5704,7 +5704,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "rippleRenamePrefix": "ระลอกคลื่นเปลี่ยนชื่อ",
             "progressNoRenames": "{{prefix}}: ไม่จำเป็นต้องเปลี่ยนชื่อไฟล์",
             "progressPlanning": "{{prefix}}: การวางแผน {{count}} เปลี่ยนชื่อไฟล์...",
-            "progressStaging": "{{prefix}}: staging {{staged}}/{{total}}ไฟล์...",
             "progressRenamed": "{{prefix}}: เปลี่ยนชื่อไฟล์ {{renamed}}/{{total}}",
             "rippleAlreadyNormalized": "Ripple เปลี่ยนชื่อ: ถูกทำให้เป็นมาตรฐานแล้ว (ชื่อไฟล์เท่านั้น ไม่มีการแก้ไขเนื้อหา)",
             "rippleNeedRename": "ระลอกคลื่นเปลี่ยนชื่อ: {{count}} ไฟล์ต้องเปลี่ยนชื่อ ({{checked}} ตรวจสอบแล้ว ชื่อไฟล์เท่านั้น)",

@@ -30,12 +30,11 @@ export interface RippleRenamePlanOptions {
     beatModel?: string;
 }
 
-export type SceneReorderProgressPhase = 'scan' | 'stage' | 'rename' | 'done';
+export type SceneReorderProgressPhase = 'scan' | 'rename' | 'done';
 
 export interface SceneReorderProgress {
     phase: SceneReorderProgressPhase;
     totalFiles: number;
-    stagedFiles: number;
     renamedFiles: number;
 }
 
@@ -75,10 +74,43 @@ function reportProgress(
     }
 }
 
+export interface RenameStep {
+    from: string;
+    to: string;
+}
+
 /**
- * Apply scene updates - updates frontmatter and renames files.
- * Uses two-phase rename: ALL files go through temp namespace first.
- * This is the safest approach - never rename directly from old to new.
+ * Order a set of renames so each note moves straight to its new name: a note
+ * goes once its new name is free, so a run of renumbered notes is renamed
+ * from the far end. Only a loop of notes trading names (a moved note closing
+ * the run, or two notes swapping) parks one note per loop under its temporary
+ * name. Each rename is one Obsidian rename, and one link update.
+ */
+export function planRenameSteps(moves: ReadonlyArray<{ from: string; to: string; temp: string }>): RenameStep[] {
+    const pending = new Map<string, { to: string; temp: string }>(moves.map(move => [move.from, { to: move.to, temp: move.temp }]));
+    const steps: RenameStep[] = [];
+    while (pending.size > 0) {
+        let moved = false;
+        for (const [from, move] of pending) {
+            if (pending.has(move.to)) continue;
+            steps.push({ from, to: move.to });
+            pending.delete(from);
+            moved = true;
+        }
+        if (moved) continue;
+        // Every note left waits on another's name: park one to open the loop.
+        const [from, move] = pending.entries().next().value as [string, { to: string; temp: string }];
+        steps.push({ from, to: move.temp });
+        pending.delete(from);
+        pending.set(move.temp, { to: move.to, temp: move.temp });
+    }
+    return steps;
+}
+
+/**
+ * Apply scene updates: update frontmatter, then rename each file once, in an
+ * order where its new name is already free (planRenameSteps). A file takes a
+ * temporary name only to break a loop of files trading names.
  */
 export async function applySceneNumberUpdates(
     app: App,
@@ -122,7 +154,7 @@ export async function applySceneNumberUpdates(
         if (finalBasename !== currentBasename) {
             const parentPath = file.parent?.path ?? '';
             const prefix = parentPath ? `${parentPath}/` : '';
-            // Simple temp name: z + final basename (sorts to end, easy to spot)
+            // Temporary name for breaking a loop: z + final basename (sorts to end, easy to spot)
             const tempBasename = `z${finalBasename}`;
             
             renameOps.push({ 
@@ -135,37 +167,26 @@ export async function applySceneNumberUpdates(
     }
 
     const totalFiles = renameOps.length;
-    reportProgress(options, { phase: 'scan', totalFiles, stagedFiles: 0, renamedFiles: 0 });
+    reportProgress(options, { phase: 'scan', totalFiles, renamedFiles: 0 });
     if (totalFiles === 0) {
-        reportProgress(options, { phase: 'done', totalFiles, stagedFiles: 0, renamedFiles: 0 });
+        reportProgress(options, { phase: 'done', totalFiles, renamedFiles: 0 });
         return;
     }
-    
-    // Phase 1: Rename ALL files to temp namespace
-    // This clears ALL original positions
-    let stagedFiles = 0;
-    for (const op of renameOps) {
-        const file = app.vault.getAbstractFileByPath(op.originalPath);
-        if (file instanceof TFile) {
-            await app.fileManager.renameFile(file, op.tempPath);
-            stagedFiles += 1;
-            reportProgress(options, { phase: 'stage', totalFiles, stagedFiles, renamedFiles: 0 });
-        }
-    }
-    
-    // Phase 2: Rename ALL files from temp to final
-    // All target positions are now guaranteed free
+
+    const finalPaths = new Set(renameOps.map(op => op.finalPath));
+    const steps = planRenameSteps(renameOps.map(op => ({ from: op.originalPath, to: op.finalPath, temp: op.tempPath })));
     let renamedFiles = 0;
-    for (const op of renameOps) {
-        const file = app.vault.getAbstractFileByPath(op.tempPath);
-        if (file instanceof TFile) {
-            await app.fileManager.renameFile(file, op.finalPath);
+    for (const step of steps) {
+        const file = app.vault.getAbstractFileByPath(step.from);
+        if (!(file instanceof TFile)) continue;
+        await app.fileManager.renameFile(file, step.to);
+        if (finalPaths.has(step.to)) {
             renamedFiles += 1;
-            reportProgress(options, { phase: 'rename', totalFiles, stagedFiles: totalFiles, renamedFiles });
+            reportProgress(options, { phase: 'rename', totalFiles, renamedFiles });
         }
     }
 
-    reportProgress(options, { phase: 'done', totalFiles, stagedFiles: totalFiles, renamedFiles: totalFiles });
+    reportProgress(options, { phase: 'done', totalFiles, renamedFiles: totalFiles });
 
     if (options?.verification) {
         const verificationFailure = await verifySceneReorderResult(app, renameOps, expectedReferenceIds, options.verification);

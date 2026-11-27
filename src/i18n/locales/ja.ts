@@ -5698,7 +5698,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             rippleRenamePrefix: 'リップルリネーム',
             progressNoRenames: '{{prefix}}：ファイル名の変更は不要です。',
             progressPlanning: '{{prefix}}：{{count}} 件のファイル名変更を計画中...',
-            progressStaging: '{{prefix}}：{{staged}}/{{total}} ファイルを準備中...',
             progressRenamed: '{{prefix}}：{{renamed}}/{{total}} ファイルの名前を変更しました。',
             rippleAlreadyNormalized: 'リップルリネーム：すでに正規化されています（ファイル名のみ。内容は編集しません）。',
             rippleNeedRename: 'リップルリネーム：{{count}} 件のファイル名の変更が必要です（{{checked}} 件を確認、ファイル名のみ）。',

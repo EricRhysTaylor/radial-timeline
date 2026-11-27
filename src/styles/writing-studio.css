@@ -55,47 +55,39 @@
   height: auto;
 }
 
+/* Every wheel color is the timeline's own: subplot palette fills, scene edges
+   in --rt-color-empty, the placeholder gray for empty cells, the chapter-marker
+   color for chapters. No theme accent, and no dimming: every scene keeps its
+   timeline color, and the scene being read is outlined. */
 .ert-studio-wedge {
-  stroke: var(--background-primary);
-  stroke-width: 0.6;
+  stroke: var(--rt-color-empty);
+  stroke-width: 0.5;
   cursor: pointer;
-  transition: opacity 120ms ease;
-}
-
-.ert-studio-wheel-svg.has-current .ert-studio-wedge {
-  opacity: 0.38;
-}
-
-.ert-studio-wheel-svg .ert-studio-wedge:hover,
-.ert-studio-wheel-svg.has-current .ert-studio-wedge.is-current {
-  opacity: 1;
 }
 
 .ert-studio-wedge.is-current {
-  stroke: var(--text-normal);
-  stroke-width: 1.4;
+  stroke-width: 2.4;
 }
 
-/* A subplot ring's empty stretches: the timeline's sequence-layout void cell,
-   its stroke matching its fill so a run reads as one quiet field. */
+/* A subplot ring's empty stretches: the timeline's placeholder-ring gray (as a
+   new vault's empty timeline shows it), edged in the placeholder outline. */
 .ert-studio-void {
-  fill: var(--rt-color-empty-recessed);
-  stroke: var(--rt-color-empty-recessed);
-  stroke-width: 0.6;
+  fill: var(--rt-placeholder-fill);
+  stroke: var(--rt-placeholder-outline);
+  stroke-width: 0.5;
   pointer-events: none;
 }
 
 /* Chapters around the rim, in the timeline's chapter-marker color. */
 .ert-studio-chapter {
-  fill: var(--rt-max-publish-stage-color, var(--text-normal));
-  opacity: 0.35;
+  fill: var(--rt-max-publish-stage-color);
+  stroke: var(--rt-color-empty);
+  stroke-width: 0;
   cursor: pointer;
-  transition: opacity 120ms ease;
 }
 
-.ert-studio-chapter:hover,
 .ert-studio-chapter.is-current {
-  opacity: 1;
+  stroke-width: 1.6;
 }
 
 .ert-studio-spokes line {
@@ -126,14 +118,17 @@
   color: var(--text-muted);
 }
 
+/* The number chip wears the named scene's own wedge color (its primary
+   subplot's timeline color, --ert-studio-chip-color, set by the view):
+   solid for the scene being read, outlined for the scene under the pointer. */
 .ert-studio__caption-num {
   flex: none;
   min-width: 1.8em;
   padding: 0 var(--size-2-2);
-  border: 1px solid var(--interactive-accent);
+  border: 1px solid var(--ert-studio-chip-color);
   border-radius: var(--radius-s);
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  background: var(--ert-studio-chip-color);
+  color: var(--background-primary);
   font-weight: var(--font-semibold);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -141,7 +136,7 @@
 
 .ert-studio__caption.is-target .ert-studio__caption-num {
   background: transparent;
-  color: var(--interactive-accent);
+  color: var(--ert-studio-chip-color);
 }
 
 .ert-studio__caption-body {
@@ -295,17 +290,21 @@
   font-weight: var(--font-semibold);
 }
 
+/* The chapter being read: the timeline's chapter-marker color, as on the
+   wheel's chapter band. */
 .ert-studio__contents-link.ert-studio__contents-link.is-current {
-  color: var(--text-accent);
+  color: var(--rt-max-publish-stage-color);
 }
 
 .ert-studio__contents-link.is-current .ert-studio__toc-icon {
-  color: var(--text-accent);
+  color: var(--rt-max-publish-stage-color);
 }
 
+/* The scene being read: its own wedge color (--ert-studio-scene-color). */
 .ert-studio__contents-link.ert-studio__contents-link[aria-current="location"] {
-  background: var(--background-modifier-active-hover);
-  box-shadow: inset 2px 0 0 var(--interactive-accent);
+  background: color-mix(in srgb, var(--ert-studio-scene-color) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--ert-studio-scene-color);
+  color: var(--ert-studio-scene-color);
 }
 
 .ert-studio__contents-num {
@@ -438,7 +437,7 @@
 }
 
 .ert-studio__kicker {
-  color: var(--text-accent);
+  color: var(--rt-max-publish-stage-color);
   font-weight: var(--font-semibold);
 }
 

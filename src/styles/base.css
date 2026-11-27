@@ -604,10 +604,15 @@ body.rt-modal-open .radial-timeline-container * {
   display: block;
   position: relative;
   z-index: 2;
-  /* Placeholder rings (room for a subplot not yet written): a quiet neutral
-     outline and a fill band a touch off the view background, mixed from the
-     theme so light and dark both follow it (the Community's placeholder
-     look). Set here, not on :root: Obsidian's theme colours live on body. */
+}
+
+/* Placeholder rings (room for a subplot not yet written): a quiet neutral
+   outline and a fill band a touch off the view background, mixed from the
+   theme so light and dark both follow it (the Community's placeholder
+   look). Set here, not on :root: Obsidian's theme colours live on body.
+   The Writing Studio wheel paints its empty subplot cells with them too. */
+.radial-timeline-svg,
+.ert-studio-wheel-svg {
   --rt-placeholder-outline: color-mix(in srgb, var(--text-normal) 18%, var(--background-primary));
   --rt-placeholder-fill: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary));
   --rt-placeholder-outline-width: 2px;

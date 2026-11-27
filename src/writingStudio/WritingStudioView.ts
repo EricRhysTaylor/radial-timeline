@@ -89,6 +89,10 @@ export class WritingStudioView extends ItemView {
     private detailsEl!: HTMLElement;
     private wheel: StudioWheelHandle | null = null;
     private hovered: number | null = null;
+    /** A scene's wedge color: its primary subplot's timeline color. Set with the wheel. */
+    private sceneColor: (scene: StudioScene) => string = () => {
+        throw new Error('Writing Studio: a scene color was read before the wheel was built.');
+    };
     /** Chapters folded in the contents; kept while the view is open. */
     private foldedChapters = new Set<number>();
 
@@ -329,6 +333,8 @@ export class WritingStudioView extends ItemView {
         if (!book) return;
         const colors = assignSubplotColors(wheelSubplotOrder(book), bookOwnSubplotColors(profile));
         const colorFor = (subplot: string): string => subplotColorCss(subplotColorOn(colors, subplot));
+        this.sceneColor = (scene: StudioScene): string => colorFor(scene.subplots[0]);
+        this.paintSceneColor();
 
         this.wheelHostEl.empty();
         this.wheel = buildStudioWheel(this.contentEl.ownerDocument, book, colorFor, index => {
@@ -441,6 +447,7 @@ export class WritingStudioView extends ItemView {
         const scene = book.scenes[target ? this.hovered! : this.current]; // SAFE: target implies hovered is non-null
         if (!scene) return;
         this.captionEl.toggleClass('is-target', target);
+        this.captionEl.style.setProperty('--ert-studio-chip-color', this.sceneColor(scene)); // SAFE: CSS custom property carrying the scene's timeline color into writing-studio.css
         this.captionEl.createSpan({ cls: 'ert-studio__caption-num', text: scene.prefix ?? String(scene.index + 1) });
         const body = this.captionEl.createSpan({ cls: 'ert-studio__caption-body' });
         body.createSpan({ cls: 'ert-studio__caption-title', text: scene.name });
@@ -738,11 +745,18 @@ export class WritingStudioView extends ItemView {
         this.mainEl.scrollTop = index === this.range.first ? 0 : Math.max(0, top);
     }
 
+    /** The scene being read, in its own wedge color, for the contents highlight. */
+    private paintSceneColor(): void {
+        const scene = this.book?.scenes[this.current];
+        if (scene) this.rootEl.style.setProperty('--ert-studio-scene-color', this.sceneColor(scene)); // SAFE: CSS custom property carrying the scene's timeline color into writing-studio.css
+    }
+
     private setCurrent(index: number): void {
         if (!this.book) return;
         const changed = index !== this.current;
         this.current = index;
         this.wheel?.setCurrent(index);
+        this.paintSceneColor();
         this.markContents();
         this.renderCaption();
         this.renderHeader();

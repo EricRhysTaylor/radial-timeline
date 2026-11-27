@@ -7,18 +7,21 @@
  * ---------------------------------
  * The book's timeline at navigator size, beside the manuscript, ringed as
  * Narrative mode rings it: one ring per subplot, the outermost (the main
- * plot's) drawn as All Scenes, each scene in its primary subplot's color, and
- * every other subplot ring inside it with each scene at the same angle as on
- * the outer ring (the timeline's sequence layout). Like every timeline, it has
- * at least three rings: ring 1 is All Scenes, rings 2 and 3 a subplot or an
- * empty ring (placeholderRingCount). Acts divide the circle. A
- * subplot ring's empty stretches are the timeline's placeholder gray, one cell
- * per unbroken run within an act. Colors are the timeline's own (subplot
- * palette, chapter-marker color, scene edges), never the theme accent.
+ * plot's) drawn as All Scenes, and every other subplot ring inside it with
+ * each scene at the same angle as on the outer ring (the timeline's sequence
+ * layout). Like every timeline, it has at least three rings: ring 1 is All
+ * Scenes, rings 2 and 3 a subplot or an empty ring (placeholderRingCount).
+ * Acts divide the circle.
  *
- * Chapters run around the rim as a thin band, one arc per chapter over its
- * scenes, in the color of the timeline's chapter markers. The chapter being
- * read is lit; pressing an arc goes to the chapter's opening scene.
+ * Deliberately quieter than the timeline (Eric, 2026-11-26): every scene is
+ * one muted gray and only the scene being read wears its subplot's palette
+ * color. Three kinds of space stay distinct: scene cells (muted gray), a
+ * subplot ring's voids (the placeholder gray, one cell per unbroken run within
+ * an act), and empty padding rings (drawn as the timeline's placeholder rings).
+ *
+ * Chapters run around the rim as a thin gray band, one arc per chapter over
+ * its scenes; the chapter being read wears the timeline's chapter-marker
+ * color. Pressing an arc goes to the chapter's opening scene.
  *
  * The wheel draws no text: the caption under it names the scene. It marks
  * the scene being read and reports a press on any wedge or chapter arc.
@@ -28,6 +31,7 @@ import { sceneArcPath } from '../renderer/components/SceneArcs';
 import { SVG_NS } from '../inquiry/minimap/svgUtils';
 import { compareSubplotOrder } from '../renderer/utils/Precompute';
 import { placeholderRingCount } from '../renderer/modules/ModeRenderingHelpers';
+import { placeholderRingGeometry } from '../renderer/components/PlaceholderRings';
 import { TimelineMode } from '../modes/ModeDefinition';
 import type { StudioBook } from './studioModel';
 
@@ -100,10 +104,18 @@ export function wheelVoidRuns(book: StudioBook, subplot: string): Array<{ first:
     return runs;
 }
 
+/** The timeline's wheel radius (hub 200, rim 766), for placeholder proportions. */
+const TIMELINE_RIM = 766;
+
+/**
+ * Draw the wheel. `subplotColor` is the timeline's palette color for a
+ * subplot; only the scene being read wears it (writing-studio.css), every
+ * other scene is one quiet gray.
+ */
 export function buildStudioWheel(
     doc: Document,
     book: StudioBook,
-    colorFor: (subplot: string) => string,
+    subplotColor: (subplot: string) => string,
     onActivate: (index: number) => void,
 ): StudioWheelHandle {
     const make = <K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] => doc.createElementNS(SVG_NS, tag);
@@ -132,18 +144,19 @@ export function buildStudioWheel(
         return path;
     };
 
-    const addWedge = (parent: SVGGElement, index: number, inner: number, outer: number, fill: string): void => {
+    // A wedge carries its ring's subplot color; CSS shows it only on the scene being read.
+    const addWedge = (parent: SVGGElement, index: number, inner: number, outer: number, subplot: string): void => {
         const span = angles[index];
         if (!span) return;
         const path = arc(parent, inner, outer, span.start, span.end, 'ert-studio-wedge');
-        path.setAttribute('fill', fill);
+        path.style.setProperty('--ert-wedge-color', subplotColor(subplot)); // SAFE: CSS custom property carrying the timeline's subplot color to writing-studio.css
         path.dataset.sceneIndex = String(index);
         wedgesByScene[index].push(path);
     };
 
     const outerRing = make('g');
     outerRing.classList.add('ert-studio-ring', 'ert-studio-ring--all');
-    for (const scene of book.scenes) addWedge(outerRing, scene.index, outerInner, scenesR, colorFor(scene.subplots[0]));
+    for (const scene of book.scenes) addWedge(outerRing, scene.index, outerInner, scenesR, scene.subplots[0]);
     svg.appendChild(outerRing);
 
     // The other subplots, inward, in ring order; the first subplot's ring is All Scenes.
@@ -157,19 +170,29 @@ export function buildStudioWheel(
         for (const run of wheelVoidRuns(book, subplot)) {
             arc(ring, inner, outer, angles[run.first].start, angles[run.last].end, 'ert-studio-void');
         }
-        const fill = colorFor(subplot);
-        for (const scene of book.scenes) if (scene.subplots.includes(subplot)) addWedge(ring, scene.index, inner, outer, fill);
+        for (const scene of book.scenes) if (scene.subplots.includes(subplot)) addWedge(ring, scene.index, inner, outer, subplot);
         svg.appendChild(ring);
     });
 
-    // Padding rings: room for a subplot not yet written, empty all the way round.
+    // Padding rings: room for a subplot not yet written. Drawn as the
+    // timeline draws its placeholder rings (an inset band inside an outline
+    // ring, at the timeline's proportions), so an empty ring never reads as a
+    // muted subplot ring.
+    const scale = TIMELINE_RIM / VIEW_R;
     for (let pad = 0; pad < paddingRings; pad++) {
         const position = subplots.length + pad;
         const outer = scenesR - position * ringBand - RING_GAP / 2;
         const inner = outer - ringBand + RING_GAP;
+        const g = placeholderRingGeometry({ innerR: inner * scale, outerR: outer * scale });
         const ring = make('g');
         ring.classList.add('ert-studio-ring', 'ert-studio-ring--empty');
-        arc(ring, inner, outer, START, START + TAU, 'ert-studio-void');
+        arc(ring, g.bandInnerR / scale, g.bandOuterR / scale, START, START + TAU, 'ert-studio-placeholder-band');
+        for (const r of [g.outlineInnerR / scale, g.outlineOuterR / scale]) {
+            const circle = make('circle');
+            circle.setAttribute('r', String(r));
+            circle.classList.add('ert-studio-placeholder-outline');
+            ring.appendChild(circle);
+        }
         svg.appendChild(ring);
     }
 
@@ -224,13 +247,7 @@ export function buildStudioWheel(
             if (index === current) return;
             if (current !== null) for (const wedge of wedgesByScene[current] ?? []) wedge.classList.remove('is-current');
             current = index;
-            if (index !== null) {
-                for (const wedge of wedgesByScene[index] ?? []) {
-                    wedge.classList.add('is-current');
-                    // Raise the lit wedge so its outline is not hidden by its neighbours.
-                    wedge.parentNode?.appendChild(wedge);
-                }
-            }
+            if (index !== null) for (const wedge of wedgesByScene[index] ?? []) wedge.classList.add('is-current');
             const scene = index !== null ? book.scenes[index] : undefined;
             for (const chapterArc of chapterArcs) {
                 chapterArc.classList.toggle('is-current', !!scene && scene.chapter === Number(chapterArc.dataset.chapterIndex));

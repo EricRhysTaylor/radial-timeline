@@ -55,39 +55,54 @@
   height: auto;
 }
 
-/* Every wheel color is the timeline's own: subplot palette fills, scene edges
-   in --rt-color-empty, the placeholder gray for empty cells, the chapter-marker
-   color for chapters. No theme accent, and no dimming: every scene keeps its
-   timeline color, and the scene being read is outlined. */
+/* A quiet wheel (Eric, 2026-11-26): every scene is one muted gray and only the
+   scene being read wears its subplot's timeline color (--ert-wedge-color, set
+   by studioWheel.ts). No outlines. Three kinds of space never look alike:
+     scene cell   the muted gray, edged by gaps
+     void cell    the placeholder gray, darker than any scene cell
+     empty ring   the timeline's placeholder ring: inset band inside an outline */
+.ert-studio-wheel-svg {
+  --ert-studio-muted-cell: color-mix(in srgb, var(--text-normal) 20%, var(--background-primary));
+}
+
 .ert-studio-wedge {
-  stroke: var(--rt-color-empty);
-  stroke-width: 0.5;
+  fill: var(--ert-studio-muted-cell);
+  stroke: var(--background-primary);
+  stroke-width: 0.6;
   cursor: pointer;
 }
 
 .ert-studio-wedge.is-current {
-  stroke-width: 2.4;
+  fill: var(--ert-wedge-color);
 }
 
-/* A subplot ring's empty stretches: the timeline's placeholder-ring gray (as a
-   new vault's empty timeline shows it), edged in the placeholder outline. */
+/* A subplot ring's empty stretches: the timeline's placeholder gray. */
 .ert-studio-void {
   fill: var(--rt-placeholder-fill);
-  stroke: var(--rt-placeholder-outline);
-  stroke-width: 0.5;
   pointer-events: none;
 }
 
-/* Chapters around the rim, in the timeline's chapter-marker color. */
+/* Padding rings, drawn as the timeline draws its placeholder rings. */
+.ert-studio-placeholder-band {
+  fill: var(--rt-placeholder-fill);
+  pointer-events: none;
+}
+
+.ert-studio-placeholder-outline {
+  fill: none;
+  stroke: var(--rt-placeholder-outline);
+  stroke-width: 0.8;
+  pointer-events: none;
+}
+
+/* Chapters around the rim: quiet, the chapter being read in the timeline's chapter-marker color. */
 .ert-studio-chapter {
-  fill: var(--rt-max-publish-stage-color);
-  stroke: var(--rt-color-empty);
-  stroke-width: 0;
+  fill: var(--ert-studio-muted-cell);
   cursor: pointer;
 }
 
 .ert-studio-chapter.is-current {
-  stroke-width: 1.6;
+  fill: var(--rt-max-publish-stage-color);
 }
 
 .ert-studio-spokes line {

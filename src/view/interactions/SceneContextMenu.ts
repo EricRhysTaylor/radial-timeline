@@ -5,6 +5,7 @@ import { normalizeStatus } from '../../utils/text';
 import { applySceneInsertionPlan, planSceneInsertion } from '../../services/SceneInsertService';
 import { resolveSelectedBeatModelFromSettings } from '../../utils/beatSystemState';
 import { openOrRevealFile } from '../../utils/fileUtils';
+import { openWritingStudio } from '../../writingStudio/openWritingStudio';
 import type { RadialTimelineSettings, TimelineItem } from '../../types';
 import { AddSceneConfirmModal } from '../../modals/AddSceneConfirmModal';
 import { buildChapterContainerSummaries, SetChapterModal } from '../../modals/SetChapterModal';
@@ -668,6 +669,12 @@ export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarge
     const menu = new Menu();
 
     if (target.itemType === 'Scene') {
+        menu.addItem(item => {
+            item.setIcon('book-open-text');
+            item.setTitle(t('ui.sceneContextMenu.readInStudio'));
+            item.onClick(() => { void openWritingStudio(view.plugin.app, file.path); });
+        });
+        menu.addSeparator();
         menu.addItem(item => {
             item.setIcon('file-plus-2');
             item.setTitle(t('ui.sceneContextMenu.addScene'));

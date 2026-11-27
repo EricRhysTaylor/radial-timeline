@@ -790,7 +790,7 @@ export async function getSceneFilesByOrder(
 }
 
 /** A scene's When for the outline and data exports; a BCE date names its era (`Jun 14, 1184 BCE`). */
-function formatExportWhen(date: Date): string {
+export function formatExportWhen(date: Date): string {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
   return date.getFullYear() > 0 ? date.toLocaleDateString(undefined, options) : formatStoryDate(date, options);
 }

@@ -61,6 +61,7 @@ import { registerCanvasSketches } from '../timetable/CanvasSketchEntry';
 import { registerFormattingKey } from '../view/interactions/FormattingKey';
 import { getMainPlotName } from '../utils/mainPlot';
 import { CompressedPreviewModal } from '../chronologue/CompressedPreviewModal';
+import { openWritingStudio } from '../writingStudio/openWritingStudio';
 
 export class CommandRegistrar {
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
@@ -116,6 +117,13 @@ export class CommandRegistrar {
             name: t('commands.openInquiry'),
             callback: () => {
                 void this.plugin.getInquiryService().activateView();
+            },
+        });
+        this.plugin.addCommand({
+            id: 'open-writing-studio',
+            name: t('commands.openWritingStudio'),
+            callback: () => {
+                void openWritingStudio(this.app);
             },
         });
         if (this.plugin.betaFeatures) {

@@ -30,6 +30,8 @@ import { InquiryService } from './inquiry/InquiryService';
 import { InquiryEstimateService } from './inquiry/services/inquiryEstimateService';
 import { OutputProfileStore } from './ai/cost/outputProfile';
 import { INQUIRY_BRIEFING_VIEW_TYPE, INQUIRY_VIEW_TYPE } from './inquiry/constants';
+import { WRITING_STUDIO_VIEW_TYPE } from './writingStudio/constants';
+import { WritingStudioView } from './writingStudio/WritingStudioView';
 import { InquiryBriefingPaneView } from './inquiry/briefing/InquiryBriefingPaneView';
 import { RendererService } from './services/RendererService';
 import { RadialTimelineSettingsTab } from './settings/SettingsTab';
@@ -814,6 +816,11 @@ export default class RadialTimelinePlugin extends Plugin {
         this.registerView(
             INQUIRY_BRIEFING_VIEW_TYPE,
             (leaf: WorkspaceLeaf) => new InquiryBriefingPaneView(leaf)
+        );
+        // Writing Studio: the book as one continuous manuscript, read from its scene notes.
+        this.registerView(
+            WRITING_STUDIO_VIEW_TYPE,
+            (leaf: WorkspaceLeaf) => new WritingStudioView(leaf, this)
         );
         // Timetable: a Bases view of the book, beside the timeline.
         this.timetableService = new TimetableService(this);

@@ -1,6 +1,8 @@
 # Writing Studio for Obsidian
 
-**High priority · Planned** · Obsidian plugin · November 25, 2026
+**High priority · In progress** · Obsidian plugin · November 25, 2026
+
+> **Stage 1 built (November 26, 2026), not released.** Reading View in `src/writingStudio/`: the three-column studio with the compact wheel, contents and scene details; the narrow-pane strip; continuous Markdown from the scene notes, re-rendered in place on edit; whole book, chapter or scene scope; scene and chapter stepping; act jumps; **Open source note**. It opens from the **Writing Studio open** command and from **Read in Writing Studio** on a scene's right-click menu. Chapters use the scene property only, with a repeated title continuing its chapter as Publish documents it. Not yet built: Timetable Outline chapter headings and **Read chapter**, the per-book **Chapter source** setting and Folder mode, and opening from Timetable.
 
 Authors can draft a chapter across several scene notes and still want to read it as a chapter. Give them a live, continuous Markdown view of the book inside Obsidian that they can open during a writing session without running an export. Use the original scene notes as the source of the prose, and let readers return directly to the scene they want to revise.
 

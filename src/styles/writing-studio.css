@@ -76,6 +76,28 @@
   stroke-width: 1.4;
 }
 
+/* A subplot ring's empty stretches: the timeline's sequence-layout void cell,
+   its stroke matching its fill so a run reads as one quiet field. */
+.ert-studio-void {
+  fill: var(--rt-color-empty-recessed);
+  stroke: var(--rt-color-empty-recessed);
+  stroke-width: 0.6;
+  pointer-events: none;
+}
+
+/* Chapters around the rim, in the timeline's chapter-marker color. */
+.ert-studio-chapter {
+  fill: var(--rt-max-publish-stage-color, var(--text-normal));
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.ert-studio-chapter:hover,
+.ert-studio-chapter.is-current {
+  opacity: 1;
+}
+
 .ert-studio-spokes line {
   stroke: var(--text-faint);
   stroke-width: 0.8;

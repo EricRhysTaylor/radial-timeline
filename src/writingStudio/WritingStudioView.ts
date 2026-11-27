@@ -74,6 +74,8 @@ export class WritingStudioView extends ItemView {
     private pendingScenePath: string | null = null;
     private loadToken = 0;
     private rendered = new Map<number, RenderedScene>();
+    /** Listeners on controls inside a region that is rebuilt; replaced with the region. */
+    private regionEvents = new Map<'head' | 'details' | 'text', Component>();
     private range = { first: 0, last: -1 };
 
     private rootEl!: HTMLElement;
@@ -180,30 +182,36 @@ export class WritingStudioView extends ItemView {
         this.stripKickerEl = stripText.createSpan({ cls: 'ert-studio__strip-kicker' });
         this.stripTitleEl = stripText.createSpan({ cls: 'ert-studio__strip-title' });
         this.stripActionEl = strip.createSpan({ cls: 'ert-studio__strip-action', text: t('ui.writingStudio.stripTimeline') });
-        strip.addEventListener('click', () => this.setNavOpen(this.rootEl.dataset.navOpen !== 'true'));
+        this.registerDomEvent(strip, 'click', () => this.setNavOpen(this.rootEl.dataset.navOpen !== 'true'));
 
         const panel = this.navEl.createDiv({ cls: 'ert-studio__nav-panel' });
         this.wheelHostEl = panel.createDiv({ cls: 'ert-studio__wheel' });
-        this.wheelHostEl.addEventListener('pointerover', event => {
+        this.registerDomEvent(this.wheelHostEl, 'pointerover', event => {
             const index = Number((event.target as Element).closest('[data-scene-index]')?.getAttribute('data-scene-index'));
             this.hovered = Number.isInteger(index) ? index : null;
             this.renderCaption();
         });
-        this.wheelHostEl.addEventListener('pointerleave', () => { this.hovered = null; this.renderCaption(); });
+        this.registerDomEvent(this.wheelHostEl, 'pointerleave', () => { this.hovered = null; this.renderCaption(); });
+        this.registerDomEvent(this.wheelHostEl, 'click', (event: MouseEvent) => {
+            const index = Number((event.target as Element).closest('[data-scene-index]')?.getAttribute('data-scene-index'));
+            if (!Number.isInteger(index)) return;
+            this.setNavOpen(false);
+            this.goTo(index);
+        });
         this.captionEl = panel.createDiv({ cls: 'ert-studio__caption' });
         this.contentsEl = panel.createDiv({ cls: 'ert-studio__contents' });
 
         this.mainEl = this.rootEl.createDiv({ cls: 'ert-studio__main' });
         this.headEl = this.mainEl.createEl('header', { cls: 'ert-studio__head' });
         this.textEl = this.mainEl.createEl('article', { cls: 'ert-studio__text' });
-        this.textEl.addEventListener('click', event => this.followLink(event));
+        this.registerDomEvent(this.textEl, 'click', (event: MouseEvent) => this.followLink(event));
 
         this.detailsEl = setAccessibleLabel(this.rootEl.createEl('aside', { cls: 'ert-studio__details' }), t('ui.writingStudio.details'));
 
-        this.mainEl.addEventListener('scroll', () => this.scheduleSpy(), { passive: true });
+        this.registerDomEvent(this.mainEl, 'scroll', () => this.scheduleSpy(), { passive: true });
         // Any reading gesture of the author's own releases a jump's pin.
         for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) {
-            this.mainEl.addEventListener(type, () => { this.pinned = null; }, { passive: true });
+            this.registerDomEvent(this.mainEl, type, () => { this.pinned = null; }, { passive: true });
         }
     }
 
@@ -343,10 +351,7 @@ export class WritingStudioView extends ItemView {
         this.paintSceneColor();
 
         this.wheelHostEl.empty();
-        this.wheel = buildStudioWheel(this.contentEl.ownerDocument, book, colorFor, index => {
-            this.setNavOpen(false);
-            this.goTo(index);
-        });
+        this.wheel = buildStudioWheel(this.contentEl.ownerDocument, book, colorFor);
         this.wheel.svg.setAttribute('role', 'img');
         setAccessibleLabel(this.wheel.svg, t('ui.writingStudio.wheelLabel', { book: this.bookTitle }));
         this.wheelHostEl.appendChild(this.wheel.svg);
@@ -469,11 +474,21 @@ export class WritingStudioView extends ItemView {
         this.rendered.clear();
     }
 
+    /** A fresh owner for a region's listeners, dropping the ones on its old controls. */
+    private regionEventsFor(region: 'head' | 'details' | 'text'): Component {
+        const old = this.regionEvents.get(region);
+        if (old) this.removeChild(old);
+        const events = this.addChild(new Component());
+        this.regionEvents.set(region, events);
+        return events;
+    }
+
     private async renderManuscript(token: number): Promise<void> {
         const book = this.book;
         if (!book) return;
         this.unloadRendered();
         this.textEl.empty();
+        const textEvents = this.regionEventsFor('text');
         this.range = scopeRange(book, this.readingScope, this.current);
         this.renderHeader();
         this.renderDetails();
@@ -501,7 +516,7 @@ export class WritingStudioView extends ItemView {
             this.rendered.set(index, { section, prose, component: null, words: null });
         }
         if (this.range.last < book.scenes.length - 1 || this.range.first > 0) {
-            this.renderScopeEnd();
+            this.renderScopeEnd(textEvents);
         }
 
         // The scene being read first, so the author can start at once; then the rest in order.
@@ -525,10 +540,10 @@ export class WritingStudioView extends ItemView {
     }
 
     /** At the end of a narrowed scope: a way back to the whole book. */
-    private renderScopeEnd(): void {
+    private renderScopeEnd(events: Component): void {
         const end = this.textEl.createDiv({ cls: 'ert-studio__scope-end' });
         const button = end.createEl('button', { cls: 'mod-cta ert-studio__whole-book', text: t('ui.writingStudio.readWholeBook'), attr: { type: 'button' } });
-        button.addEventListener('click', () => this.setScope('book'));
+        events.registerDomEvent(button, 'click', () => this.setScope('book'));
     }
 
     private async renderProse(scene: StudioScene, entry: RenderedScene): Promise<void> {
@@ -585,6 +600,7 @@ export class WritingStudioView extends ItemView {
     private renderHeader(): void {
         const book = this.book;
         this.headEl.empty();
+        const events = this.regionEventsFor('head');
         if (!book) return;
         const scene = book.scenes[this.current];
         const chapter = chapterAt(book, this.current);
@@ -598,28 +614,28 @@ export class WritingStudioView extends ItemView {
             const button = unit.createEl('button', { text: label, attr: { type: 'button', 'aria-pressed': String(this.unit === value) } });
             button.toggleClass('is-active', this.unit === value);
             button.disabled = disabled;
-            button.addEventListener('click', () => { this.unit = value; this.renderHeader(); this.app.workspace.requestSaveLayout(); });
+            events.registerDomEvent(button, 'click', () => { this.unit = value; this.renderHeader(); this.app.workspace.requestSaveLayout(); });
         };
         unitButton('scene', t('ui.writingStudio.unitScene'), false);
         unitButton('chapter', t('ui.writingStudio.unitChapter'), book.chapters.length === 0);
 
         const pager = controls.createDiv({ cls: 'ert-studio__pager' });
-        this.pagerButton(pager, -1);
-        this.pagerButton(pager, 1);
+        this.pagerButton(pager, -1, events);
+        this.pagerButton(pager, 1, events);
 
         const scope = setAccessibleLabel(controls.createEl('select', { cls: 'dropdown ert-studio__scope' }), t('ui.writingStudio.scopeLabel'));
         for (const [value, label] of [['book', t('ui.writingStudio.scopeBook')], ['chapter', t('ui.writingStudio.scopeChapter')], ['scene', t('ui.writingStudio.scopeScene')]] as const) {
             scope.createEl('option', { value, text: label });
         }
         scope.value = this.readingScope;
-        scope.addEventListener('change', () => this.setScope(scope.value as StudioScope));
+        events.registerDomEvent(scope, 'change', () => this.setScope(scope.value as StudioScope));
 
         const starts = actStarts(book);
         if (starts.length > 1) {
             const acts = setAccessibleLabel(controls.createEl('select', { cls: 'dropdown ert-studio__acts' }), t('ui.writingStudio.actJump'));
             acts.createEl('option', { value: '', text: t('ui.writingStudio.actJump') });
             for (const start of starts) acts.createEl('option', { value: String(start.scene), text: actLabel(start.act) });
-            acts.addEventListener('change', () => {
+            events.registerDomEvent(acts, 'change', () => {
                 if (acts.value !== '') this.goTo(Number(acts.value));
                 acts.value = '';
             });
@@ -628,7 +644,7 @@ export class WritingStudioView extends ItemView {
         const toggle = controls.createEl('button', { cls: 'clickable-icon ert-studio__details-toggle', attr: { type: 'button', 'aria-expanded': String(this.rootEl.dataset.detailsOpen === 'true') } });
         setIcon(toggle, 'panel-right');
         setTooltip(toggle, t('ui.writingStudio.details'));
-        toggle.addEventListener('click', () => this.setDetailsOpen(this.rootEl.dataset.detailsOpen !== 'true'));
+        events.registerDomEvent(toggle, 'click', () => this.setDetailsOpen(this.rootEl.dataset.detailsOpen !== 'true'));
 
         const location = this.headEl.createDiv({ cls: 'ert-studio__location' });
         location.createSpan({ cls: 'ert-studio__kicker', text: chapter ? t('ui.writingStudio.chapterNumber', { n: String(chapter.index + 1) }) : t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
@@ -641,7 +657,7 @@ export class WritingStudioView extends ItemView {
         this.stripTitleEl.setText(scene.name);
     }
 
-    private pagerButton(parent: HTMLElement, direction: -1 | 1): void {
+    private pagerButton(parent: HTMLElement, direction: -1 | 1, events: Component): void {
         const book = this.book;
         if (!book) return;
         const target = stepTarget(book, this.unit, this.current, direction);
@@ -658,12 +674,13 @@ export class WritingStudioView extends ItemView {
             ? (direction < 0 ? 'ui.writingStudio.previousChapter' : 'ui.writingStudio.nextChapter')
             : (direction < 0 ? 'ui.writingStudio.previousScene' : 'ui.writingStudio.nextScene');
         setTooltip(button, t(key, { name }));
-        button.addEventListener('click', () => this.goTo(target));
+        events.registerDomEvent(button, 'click', () => this.goTo(target));
     }
 
     private renderDetails(): void {
         const book = this.book;
         this.detailsEl.empty();
+        const events = this.regionEventsFor('details');
         if (!book) return;
         const scene = book.scenes[this.current];
         if (!scene) return;
@@ -696,7 +713,7 @@ export class WritingStudioView extends ItemView {
         const icon = open.createSpan({ cls: 'ert-studio__open-icon' });
         setIcon(icon, 'file-pen-line');
         open.createSpan({ text: t('ui.writingStudio.openSource') });
-        open.addEventListener('click', event => { void this.openSource(scene, Keymap.isModEvent(event) !== false); });
+        events.registerDomEvent(open, 'click', (event: MouseEvent) => { void this.openSource(scene, Keymap.isModEvent(event) !== false); });
     }
 
     /**

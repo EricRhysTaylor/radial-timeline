@@ -110,13 +110,13 @@ const TIMELINE_RIM = 766;
 /**
  * Draw the wheel. `subplotColor` is the timeline's palette color for a
  * subplot; only the scene being read wears it (writing-studio.css), every
- * other scene is one quiet gray.
+ * other scene is one quiet gray. Wedges and chapter arcs carry
+ * `data-scene-index`; the host listens for clicks on it.
  */
 export function buildStudioWheel(
     doc: Document,
     book: StudioBook,
     subplotColor: (subplot: string) => string,
-    onActivate: (index: number) => void,
 ): StudioWheelHandle {
     const make = <K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] => doc.createElementNS(SVG_NS, tag);
     const svg = make('svg');
@@ -233,12 +233,6 @@ export function buildStudioWheel(
     centerText.setAttribute('text-anchor', 'middle');
     centerText.setAttribute('dominant-baseline', 'central');
     svg.appendChild(centerText);
-
-    svg.addEventListener('click', event => {
-        const target = (event.target as Element).closest('[data-scene-index]');
-        const index = target ? Number(target.getAttribute('data-scene-index')) : NaN;
-        if (Number.isInteger(index)) onActivate(index);
-    });
 
     let current: number | null = null;
     return {

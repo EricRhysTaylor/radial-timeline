@@ -3802,7 +3802,7 @@ export class TimetableView extends BasesView {
         setIcon(toggle.createSpan({ cls: 'ert-timetable__chapter-icon' }), 'bookmark');
         toggle.createSpan({ cls: 'ert-timetable__chapter-title', text: line.continued ? t('ui.timetable.chapterContinued', { title: line.title }) : line.title });
         toggle.createSpan({ cls: 'ert-timetable__group-count', text: String(line.sceneCount) });
-        toggle.addEventListener('click', () => {
+        this.panelEvents?.registerDomEvent(toggle, 'click', () => {
             if (this.foldedChapters.has(line.chapter)) this.foldedChapters.delete(line.chapter);
             else this.foldedChapters.add(line.chapter);
             this.render();
@@ -3810,7 +3810,7 @@ export class TimetableView extends BasesView {
         const read = bar.createEl('button', { cls: 'ert-timetable__chapter-read', attr: { type: 'button' } });
         setIcon(read.createSpan({ cls: 'ert-timetable__chapter-read-icon' }), 'book-open-text');
         read.createSpan({ text: t('ui.timetable.readChapter') });
-        read.addEventListener('click', () => { void openWritingStudio(this.app, line.firstPath); });
+        this.panelEvents?.registerDomEvent(read, 'click', () => { void openWritingStudio(this.app, line.firstPath); });
     }
 
     private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number, bookId: string | undefined, progress: boolean): void {

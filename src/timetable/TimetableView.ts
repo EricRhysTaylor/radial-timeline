@@ -106,13 +106,18 @@ import {
     steppedDue,
     toggledPicks,
     withActDividers,
+    withChapterHeadings,
     withDayDividers,
     wordBar,
     type DueStatus,
     type RingLayout,
+    type TimetableChapterLine,
     type TimetableLine,
     type TimetableRow,
 } from './timetableModel';
+import { bookChapterContext, resolveChapters, type ChapterResolution } from '../utils/timelineChapters';
+import { compareManuscriptTitles } from '../utils/sceneHelpers';
+import { openWritingStudio } from '../writingStudio/openWritingStudio';
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
@@ -389,6 +394,8 @@ export class TimetableView extends BasesView {
     private keyButton: HTMLButtonElement | null = null;
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
     private readonly collapsed = new Set<string>();
+    /** Chapters folded in the Narrative outline, by chapter index; kept while the view is open. */
+    private readonly foldedChapters = new Set<number>();
     private readonly outlineCollapsed = new Set<string>();
     private outlineWorkspacePane: WorkspaceLeaf | null = null;
     private outlineWorkspaceDirection: 'vertical' | 'horizontal' = 'vertical';
@@ -2026,6 +2033,8 @@ export class TimetableView extends BasesView {
         const isProgress = state.mode === 'progress';
         const showGroupHeaders = !chronologue && (groups.length > 1 || groups[0].label !== null || isProgress);
         const openDrawers = new Set<string>();
+        // Narrative outline: chapter headings over their scenes, resolved once for the whole table.
+        const chapters = state.mode === 'narrative' && !chronologue ? this.resolveTableChapters(groups) : null;
         for (const group of groups) {
             const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
             const collapsed = this.collapsed.has(group.id);
@@ -2040,8 +2049,15 @@ export class TimetableView extends BasesView {
             }
             if (collapsed) continue;
             const byPath = new Map(group.items.map(item => [item.row.path, item]));
-            const lines = chronologue ? chronologue.lines : withActDividers(group.items.map(item => item.row));
+            const baseLines = chronologue ? chronologue.lines : withActDividers(group.items.map(item => item.row));
+            const lines = chapters ? withChapterHeadings(baseLines, chapters.chapterOf, chapters.chapters) : baseLines;
             for (const line of lines) {
+                if (line.type === 'chapter') {
+                    this.renderChapterHeading(body, line, columnCount);
+                    continue;
+                }
+                // A folded chapter hides its rows.
+                if (line.type === 'row' && line.chapter != null && this.foldedChapters.has(line.chapter)) continue;
                 if (line.type === 'act') {
                     const divider = body.createEl('tr', { cls: 'ert-timetable__act' });
                     const cell = divider.createEl('td');
@@ -3754,6 +3770,47 @@ export class TimetableView extends BasesView {
         notice.createSpan({ text: t('ui.timetable.bookMismatch', { table: shown.title, timeline: active.title }) });
         const button = notice.createEl('button', { text: t('ui.timetable.showOnTimeline', { book: shown.title }) });
         button.dataset.bookId = shown.id;
+    }
+
+    /**
+     * The table's chapters, from the one chapter resolver with the book's
+     * Chapter source. Headings follow manuscript order, so a table sorted any
+     * other way gets none (they would split a chapter into pieces).
+     */
+    private resolveTableChapters(groups: TableGroup[]): ChapterResolution | null {
+        const items = groups.flatMap(group => group.items);
+        const scenes = items.filter(item => item.row.kind === 'scene');
+        if (scenes.length === 0) return null;
+        const inManuscriptOrder = scenes.every((item, index) => index === 0 || compareManuscriptTitles(scenes[index - 1].row.basename, item.row.basename) <= 0);
+        if (!inManuscriptOrder) return null;
+        const bookId = this.singleBook(items);
+        const book = bookId ? this.plugin.settings.books.find(candidate => candidate.id === bookId) ?? null : getActiveBook(this.plugin.settings);
+        const resolution = resolveChapters(scenes.map(item => ({ path: item.row.path, rawFrontmatter: item.frontmatter })), bookChapterContext(book));
+        return resolution.chapters.length > 0 ? resolution : null;
+    }
+
+    /** A chapter heading: fold its rows, or read it in Writing Studio. */
+    private renderChapterHeading(body: HTMLElement, line: TimetableChapterLine, columnCount: number): void {
+        const folded = this.foldedChapters.has(line.chapter);
+        const row = body.createEl('tr', { cls: 'ert-timetable__chapter' });
+        row.toggleClass('is-folded', folded);
+        const cell = row.createEl('td');
+        cell.colSpan = columnCount;
+        const bar = cell.createDiv({ cls: 'ert-timetable__chapter-line' });
+        const toggle = bar.createEl('button', { cls: 'ert-timetable__chapter-toggle', attr: { type: 'button', 'aria-expanded': String(!folded) } });
+        setIcon(toggle.createSpan({ cls: 'ert-timetable__group-chevron' }), folded ? 'chevron-right' : 'chevron-down');
+        setIcon(toggle.createSpan({ cls: 'ert-timetable__chapter-icon' }), 'bookmark');
+        toggle.createSpan({ cls: 'ert-timetable__chapter-title', text: line.continued ? t('ui.timetable.chapterContinued', { title: line.title }) : line.title });
+        toggle.createSpan({ cls: 'ert-timetable__group-count', text: String(line.sceneCount) });
+        toggle.addEventListener('click', () => {
+            if (this.foldedChapters.has(line.chapter)) this.foldedChapters.delete(line.chapter);
+            else this.foldedChapters.add(line.chapter);
+            this.render();
+        });
+        const read = bar.createEl('button', { cls: 'ert-timetable__chapter-read', attr: { type: 'button' } });
+        setIcon(read.createSpan({ cls: 'ert-timetable__chapter-read-icon' }), 'book-open-text');
+        read.createSpan({ text: t('ui.timetable.readChapter') });
+        read.addEventListener('click', () => { void openWritingStudio(this.app, line.firstPath); });
     }
 
     private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number, bookId: string | undefined, progress: boolean): void {

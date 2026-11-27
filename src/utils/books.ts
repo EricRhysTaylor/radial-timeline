@@ -91,6 +91,17 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
         .filter(entry => entry.length > 0)
     : undefined;
 
+  // Chapter source: only a folder choice is stored; absent means the Chapter
+  // property, the long-standing default. A depth that is not a positive whole
+  // number cannot be followed, so it is not kept.
+  const storedChapterSource: unknown = profile.chapterSource;
+  const chapterSource = typeof storedChapterSource === 'object' && storedChapterSource !== null
+    && (storedChapterSource as { kind?: unknown }).kind === 'folder'
+    && Number.isInteger((storedChapterSource as { depth?: unknown }).depth)
+    && ((storedChapterSource as { depth: number }).depth) >= 1
+    ? { kind: 'folder' as const, depth: (storedChapterSource as { depth: number }).depth }
+    : undefined;
+
   // Publishing target dates: keep every valid YYYY-MM-DD entry. Dropping this
   // field here once wiped all target dates on every settings load.
   const normalizedStageTargetDates: NonNullable<BookProfile['stageTargetDates']> = {};
@@ -122,7 +133,8 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     ...(Object.keys(normalizedLayoutOptions).length > 0 ? { layoutOptions: normalizedLayoutOptions } : {}),
     ...(normalizeBeatWorkspace(profile.beatWorkspace) ? { beatWorkspace: normalizeBeatWorkspace(profile.beatWorkspace) } : {}),
     ...(normalizeRecentStructuralMoves(profile.recentStructuralMoves) ? { recentStructuralMoves: normalizeRecentStructuralMoves(profile.recentStructuralMoves) } : {}),
-    ...(normalizedBookPageOrder && normalizedBookPageOrder.length > 0 ? { bookPageOrder: normalizedBookPageOrder } : {})
+    ...(normalizedBookPageOrder && normalizedBookPageOrder.length > 0 ? { bookPageOrder: normalizedBookPageOrder } : {}),
+    ...(chapterSource ? { chapterSource } : {})
   };
 }
 

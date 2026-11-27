@@ -2,7 +2,9 @@
 
 **High priority · In progress** · Obsidian plugin · November 25, 2026
 
-> **Stage 1 built (November 26, 2026), not released.** Reading View in `src/writingStudio/`: the three-column studio with the compact wheel, contents and scene details; the narrow-pane strip; continuous Markdown from the scene notes, re-rendered in place on edit; whole book, chapter or scene scope; scene and chapter stepping; act jumps; **Open source note**. It opens from the **Writing Studio open** command and from **Read in Writing Studio** on a scene's right-click menu. Chapters use the scene property only, with a repeated title continuing its chapter as Publish documents it. Not yet built: Timetable Outline chapter headings and **Read chapter**, the per-book **Chapter source** setting and Folder mode, and opening from Timetable.
+> **Stage 1 built (November 26, 2026), not released.** Reading View in `src/writingStudio/`: the three-column studio with the compact wheel (quiet gray, only the current scene in color), contents outline (acts, chapters, scenes, beats) and scene details; the narrow-pane strip; continuous Markdown from the scene notes, re-rendered in place on edit; whole book, chapter or scene scope; scene and chapter stepping; act jumps; **Open source note**. It opens from the **Writing Studio open** command and from **Read in Writing Studio** on a scene's right-click menu.
+>
+> **Stage 2 built (November 27, 2026), not released.** One chapter resolver (`resolveChapters` in `src/utils/timelineChapters.ts`) now feeds the timeline's chapter markers, Publish, the Set chapter modal, Writing Studio and Timetable. The per-book **Chapter source** (Settings → Advanced, under Chapter markers) chooses the `Chapter` property or a folder level, lists example folder names per level, and names split folders. **Timetable → Narrative** shows collapsible chapter headings with **Read chapter**. Behavior change: a repeated `Chapter` title now continues its chapter everywhere, as the publishing docs always said; before, Publish and the timeline started a new chapter at each repeat.
 
 Authors can draft a chapter across several scene notes and still want to read it as a chapter. Give them a live, continuous Markdown view of the book inside Obsidian that they can open during a writing session without running an export. Use the original scene notes as the source of the prose, and let readers return directly to the scene they want to revise.
 
@@ -50,6 +52,6 @@ If scene 04 belongs to **The Arrival** again, keep the order 01, 02, 03, 04. Sho
 
 ## Open questions
 
-- Confirm how authors already use the `Chapter` property. The [publishing docs](../../../wiki/Publishing.md#the-chapter-field) describe repeated values collapsing to one heading, while the [current resolver](../../../src/utils/timelineChapters.ts) emits a marker for each scene with a value. Verify the behavior before sharing the resolver with Publish.
+- ~~Confirm how authors already use the `Chapter` property.~~ Resolved November 27, 2026: the shared resolver follows the [publishing docs](../../../wiki/Publishing.md#the-chapter-field) (a repeated title continues its chapter). Eric to confirm no vault relies on the old repeat-starts-a-chapter output.
 - Confirm whether authors who write in beats keep draft prose in separate scene notes or also expect prose from beat notes to appear in the reader.
 - Consider a chapter grouping mode on the main timeline separately if authors also want to plan at chapter scale.

@@ -83,6 +83,7 @@ import { hasActiveAlerts, type PendingNoteMigrations } from '../settings/refacto
 import { buildTimelineSegments } from './utils/TimelineSegments';
 import { getActiveBook, getTimelineScope } from '../utils/books';
 import {
+    bookChapterContext,
     buildTimelineChapterResolverItems,
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
@@ -709,7 +710,7 @@ export function createTimelineSVG(
     if (showChapterMarkers && ringRenderContext.outerRingChapterBoundaryGeometry) {
         const chapterResolverItems = buildTimelineChapterResolverItems(scenes);
         const chapterMarkers = collapseTimelineChapterMarkersByResolvedBoundary(
-            resolveTimelineChapterMarkers(chapterResolverItems)
+            resolveTimelineChapterMarkers(chapterResolverItems, bookChapterContext(getActiveBook(settings)))
         );
         const activeNovelLayout = resolveActiveNovelPandocLayout(settings);
         const partMarkers = buildNarrativePartMarkers({

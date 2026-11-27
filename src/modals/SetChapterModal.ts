@@ -1,7 +1,7 @@
 import { App, ButtonComponent, Notice, Setting, TextComponent, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type { TimelineItem } from '../types';
-import { buildTimelineChapterResolverItems, readSharedChapterTitle } from '../utils/timelineChapters';
+import { buildTimelineChapterResolverItems, PROPERTY_CHAPTER_CONTEXT, resolveChapters } from '../utils/timelineChapters';
 import { t, tCount } from '../i18n';
 
 export interface ChapterContainerSummary {
@@ -24,18 +24,26 @@ function sceneLabel(start: number, end: number): string {
         : t('ui.setChapterModal.sceneRange', { start, end });
 }
 
+/**
+ * The book's chapters as the Set chapter modal lists them. The modal edits the
+ * `Chapter` property, so it always reads chapters from that property, through
+ * the one resolver (a repeated title continues its chapter).
+ */
 export function buildChapterContainerSummaries(scenes: TimelineItem[]): ChapterContainerSummary[] {
-    const orderedScenes = buildTimelineChapterResolverItems(scenes);
+    const orderedScenes = buildTimelineChapterResolverItems(scenes).filter((scene): scene is TimelineItem & { path: string } => !!scene.path);
+    const { chapters, chapterOf } = resolveChapters(orderedScenes, PROPERTY_CHAPTER_CONTEXT);
     const summaries: ChapterContainerSummary[] = [];
     let current: ChapterContainerSummary | undefined;
+    let currentChapter: number | undefined;
 
     orderedScenes.forEach((scene, index) => {
         const position = index + 1;
-        const chapterTitle = readSharedChapterTitle(scene.rawFrontmatter);
+        const chapterIndex = chapterOf.get(scene.path);
 
-        if (chapterTitle) {
+        if (chapterIndex !== undefined && chapterIndex !== currentChapter) {
+            currentChapter = chapterIndex;
             current = {
-                title: chapterTitle,
+                title: chapters[chapterIndex].title,
                 start: position,
                 end: position,
                 sceneCount: 0,

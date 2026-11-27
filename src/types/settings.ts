@@ -662,7 +662,22 @@ export interface BookProfile {
      * pipeline consumes this field when assembling front/back matter.
      */
     bookPageOrder?: string[];
+    /**
+     * Where this book's chapters come from (utils/timelineChapters). Absent
+     * means the `Chapter` scene property, the long-standing behavior.
+     */
+    chapterSource?: ChapterSource;
 }
+
+/**
+ * Where a book's chapters come from.
+ * - property: the `Chapter` field on a scene opens a chapter; the scenes after
+ *   it continue in that chapter until the next marker.
+ * - folder: the folder `depth` levels under the book's manuscript folder is
+ *   the chapter (1 = folders directly in it, 2 = folders inside those, as
+ *   with Act/Chapter folders); its name is the chapter's title.
+ */
+export type ChapterSource = { kind: 'property' } | { kind: 'folder'; depth: number };
 
 export interface BookLayoutOptions {
     partEpigraphs?: string[];

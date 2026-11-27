@@ -10,7 +10,7 @@ import { getScenePrefixNumber, countWords } from './text';
 import { getActiveBookExportContext } from './exportContext';
 import { normalizeMatterBodyMode, parseMatterMetaFromFrontmatter, type MatterBodyMode } from './matterMeta';
 import { extractFrontmatterObject } from './frontmatter';
-import { groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
+import { bookChapterContext, groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
 import { readPartMarker, resolveTimelinePartMarkers } from './timelineParts';
 import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
 import { stripEditorialistReviewBlocks } from './manuscriptSanitize';
@@ -701,9 +701,14 @@ export async function getSceneFilesByOrder(
     return [...frontMatter, ...sceneItems, ...backMatter];
   })();
 
+  // The exported book's own Chapter source. A folder that is no book's has
+  // no Chapter source setting, so it reads the Chapter property, as before.
+  const exportedFolder = sourceFolder ?? exportContext.sourceFolder;
+  const exportedBook = (plugin.settings.books ?? []).find(book => book.sourceFolder === exportedFolder) ?? null; // SAFE: pre-Book-Manager vaults have no books array
   const chapterMarkersByScenePath = groupTimelineChapterMarkersByScenePath(
     resolveTimelineChapterMarkers(
-      sortedScenes.filter((item) => item.itemType === 'Scene' || !item.itemType)
+      sortedScenes.filter((item) => item.itemType === 'Scene' || !item.itemType),
+      bookChapterContext(exportedBook)
     )
   );
 

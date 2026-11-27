@@ -30,6 +30,7 @@ import { resolveManuscriptOutputFolder } from '../../utils/aiOutput';
 import { systemFolderPath } from '../../utils/systemFolder';
 import { updateBookMetaField, type EditableBookMetaFieldKey } from '../../utils/bookMetaEditing';
 import {
+    bookChapterContext,
     buildTimelineChapterResolverItems,
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
@@ -941,7 +942,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const resolverItems = buildTimelineChapterResolverItems(sceneItems);
             cachedBookPartMarkerCount = resolveTimelinePartMarkers(resolverItems).length;
             const uniqueMarkers = collapseTimelineChapterMarkersByResolvedBoundary(
-                resolveTimelineChapterMarkers(resolverItems)
+                resolveTimelineChapterMarkers(resolverItems, bookChapterContext(getActiveBook(plugin.settings)))
             );
             cachedBookChapterFieldCount = uniqueMarkers.length;
             cachedBookChapterTitlePopulatedCount = uniqueMarkers.filter(m => {

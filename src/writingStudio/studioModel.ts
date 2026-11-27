@@ -9,17 +9,15 @@
  * sort, never File Explorer's), the chapters they fall into, and the acts.
  * Reading View, the wheel and the contents all read this one model.
  *
- * Chapters come from the `Chapter` field on scene notes, as Publish reads
- * it: a value opens a chapter, and the scenes after it continue in that
- * chapter until the next marker. The same title repeated on the very next
- * marker continues the chapter ("first occurrence wins", wiki/Publishing.md).
- * Scenes before the first marker belong to no chapter and stay readable.
+ * Chapters come from the one chapter resolver (utils/timelineChapters) with
+ * the book's Chapter source: the `Chapter` property or chapter folders.
+ * Scenes in no chapter stay readable in their place.
  */
 
 import type { TimelineItem } from '../types';
 import { getMainPlotName } from '../utils/mainPlot';
 import { extractPrefixToken } from '../utils/prefixOrder';
-import { buildTimelineChapterResolverItems, readSharedChapterTitle } from '../utils/timelineChapters';
+import { buildTimelineChapterResolverItems, PROPERTY_CHAPTER_CONTEXT, resolveChapters, type ChapterContext } from '../utils/timelineChapters';
 import { isBeatNote, sortScenes } from '../utils/sceneHelpers';
 
 export interface StudioScene {
@@ -96,18 +94,16 @@ export function splitSceneTitle(title: string): { prefix: string | null; name: s
     return { prefix, name: rest.length > 0 ? rest : title.trim() };
 }
 
-function sameChapterTitle(a: string, b: string): boolean {
-    return a.localeCompare(b, undefined, { sensitivity: 'base' }) === 0;
-}
-
 /**
  * Build the studio's book from the timeline's scene data for one book.
  * `items` is what `getSceneData` returns: one item per scene per subplot,
  * plus beats (kept as markers between scenes), and backdrops and matter,
- * which the studio leaves out.
+ * which the studio leaves out. Chapters come from the one resolver, with
+ * the book's Chapter source (`context`).
  */
-export function buildStudioBook(items: TimelineItem[]): StudioBook {
-    const ordered = buildTimelineChapterResolverItems(items).filter(item => !!item.path);
+export function buildStudioBook(items: TimelineItem[], context: ChapterContext = PROPERTY_CHAPTER_CONTEXT): StudioBook {
+    const ordered = buildTimelineChapterResolverItems(items).filter((item): item is TimelineItem & { path: string } => !!item.path);
+    const resolution = resolveChapters(ordered, context);
     const mainPlot = getMainPlotName();
 
     const subplotsByPath = new Map<string, string[]>();
@@ -120,17 +116,21 @@ export function buildStudioBook(items: TimelineItem[]): StudioBook {
     }
 
     const scenes: StudioScene[] = [];
-    const chapters: StudioChapter[] = [];
-    let current: StudioChapter | null = null;
+    const indexOfPath = new Map(ordered.map((item, index) => [item.path, index]));
+    // A resolved chapter is one unbroken run of scenes, so its first and last paths bound it.
+    const chapters: StudioChapter[] = resolution.chapters.map(chapter => {
+        const firstScene = indexOfPath.get(chapter.scenePaths[0]) as number; // SAFE: the resolver only saw `ordered`
+        return {
+            index: chapter.index,
+            title: chapter.title,
+            firstScene,
+            lastScene: indexOfPath.get(chapter.scenePaths[chapter.scenePaths.length - 1]) as number, // SAFE: as above
+            act: actOf(ordered[firstScene]),
+        };
+    });
 
     for (const [index, item] of ordered.entries()) {
-        const path = item.path as string; // SAFE: filtered to items with a path above
-        const marker = readSharedChapterTitle(item.rawFrontmatter);
-        if (marker && !(current && sameChapterTitle(current.title, marker))) {
-            current = { index: chapters.length, title: marker, firstScene: index, lastScene: index, act: actOf(item) };
-            chapters.push(current);
-        }
-        if (current) current.lastScene = index;
+        const path = item.path;
         const title = (item.title ?? '').trim() || path.split('/').pop()!.replace(/\.md$/i, ''); // SAFE: split always yields one element
         const { prefix, name } = splitSceneTitle(title);
         const primary = item.subplot && item.subplot.trim().length > 0 ? item.subplot.trim() : mainPlot;
@@ -147,7 +147,7 @@ export function buildStudioBook(items: TimelineItem[]): StudioBook {
             when: item.when instanceof Date && !Number.isNaN(item.when.getTime()) ? item.when : null,
             status: firstString(item.status),
             stage: firstString(item['Publish Stage']),
-            chapter: current ? current.index : null,
+            chapter: resolution.chapterOf.get(path) ?? null,
         });
     }
 

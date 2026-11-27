@@ -560,6 +560,84 @@
   font-weight: var(--font-normal);
 }
 
+/* Narrative outline: a chapter heading above its scenes, between the act divider and the rows.
+   Quieter than a group header, louder than a row. Its color is the timeline's chapter-marker color. */
+.ert-timetable__chapter td {
+  padding: var(--size-2-3) var(--size-4-2) var(--size-2-1);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-timetable__chapter-line {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-width: 0;
+}
+
+/* Doubled class: outranks Obsidian's default button chrome. */
+.ert-timetable__chapter-toggle.ert-timetable__chapter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+  cursor: var(--cursor);
+}
+
+.ert-timetable__chapter-icon {
+  display: inline-flex;
+  color: var(--rt-max-publish-stage-color);
+}
+
+.ert-timetable__chapter-icon svg,
+.ert-timetable__chapter-read-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.ert-timetable__chapter-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ert-timetable__chapter-read.ert-timetable__chapter-read {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  margin-inline-start: auto;
+  height: auto;
+  padding: var(--size-2-1) var(--size-2-3);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  cursor: var(--cursor);
+}
+
+.ert-timetable__chapter:hover .ert-timetable__chapter-read,
+.ert-timetable__chapter-read:focus-visible {
+  opacity: 1;
+}
+
+.ert-timetable__chapter-read.ert-timetable__chapter-read:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timetable__chapter-read-icon {
+  display: inline-flex;
+}
+
 .ert-timetable__act td {
   padding-top: var(--size-4-3);
   color: var(--text-muted);

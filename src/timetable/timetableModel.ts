@@ -139,9 +139,71 @@ export function compareManuscriptRows(a: TimetableRow, b: TimetableRow): number 
 
 /** A row, or a divider drawn before the first row of a new act (or, in Chronologue order, a new day). */
 export type TimetableLine =
-    | { type: 'row'; row: TimetableRow }
+    /** `chapter`: the chapter the row sits under (Narrative outline), or null outside any. */
+    | { type: 'row'; row: TimetableRow; chapter?: number | null }
     | { type: 'act'; act: number | null }
-    | { type: 'day'; day: Date | null };
+    | { type: 'day'; day: Date | null }
+    | TimetableChapterLine;
+
+/** A chapter heading in the Narrative outline, above its first scene row in each act. */
+export interface TimetableChapterLine {
+    type: 'chapter';
+    chapter: number;
+    title: string;
+    /** The chapter began before this act's divider and carries on here. */
+    continued: boolean;
+    /** The chapter's opening scene, where Read chapter starts. */
+    firstPath: string;
+    sceneCount: number;
+}
+
+/**
+ * Add a chapter heading above the first scene row of each chapter (and again
+ * after an act divider when a chapter runs into the next act). Each row is
+ * tagged with the chapter it sits under, so a folded chapter can hide its
+ * rows. A beat, sketch or note sits under the open chapter only when the next
+ * scene in its act belongs to that chapter, so a beat between two chapters
+ * stands between them, as in Writing Studio's contents. A scene in no chapter
+ * ends the open one. Rows keep their order; headings only interleave.
+ */
+export function withChapterHeadings(
+    lines: TimetableLine[],
+    chapterOf: ReadonlyMap<string, number>,
+    chapters: readonly { title: string; scenePaths: readonly string[] }[],
+): TimetableLine[] {
+    const result: TimetableLine[] = [];
+    const seen = new Set<number>();
+    let open: number | null = null;
+    /** The chapter of the next scene row before the next act divider, or null. */
+    const nextSceneChapter = (from: number): number | null => {
+        for (let i = from + 1; i < lines.length; i++) {
+            const next = lines[i];
+            if (next.type === 'act') return null;
+            if (next.type === 'row' && next.row.kind === 'scene') return chapterOf.get(next.row.path) ?? null;
+        }
+        return null;
+    };
+    for (const [position, line] of lines.entries()) {
+        if (line.type === 'act') { open = null; result.push(line); continue; }
+        if (line.type !== 'row') { result.push(line); continue; }
+        if (line.row.kind !== 'scene') {
+            result.push({ ...line, chapter: open !== null && nextSceneChapter(position) === open ? open : null });
+            continue;
+        }
+        const chapter = chapterOf.get(line.row.path) ?? null;
+        if (chapter !== null && chapter !== open) {
+            const resolved = chapters[chapter];
+            result.push({
+                type: 'chapter', chapter, title: resolved.title, continued: seen.has(chapter),
+                firstPath: resolved.scenePaths[0], sceneCount: resolved.scenePaths.length,
+            });
+            seen.add(chapter);
+        }
+        open = chapter;
+        result.push({ ...line, chapter: open });
+    }
+    return result;
+}
 
 /**
  * Insert act dividers between rows when a group spans more than one act.

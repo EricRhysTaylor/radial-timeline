@@ -27,6 +27,7 @@ import { Component, ItemView, Keymap, MarkdownRenderer, MarkdownView, TFile, get
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { getActiveBook } from '../utils/books';
+import { bookChapterContext } from '../utils/timelineChapters';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { stripEditorialistReviewBlocks } from '../utils/manuscriptSanitize';
 import { extractCountableBodyText, formatExportWhen } from '../utils/manuscript';
@@ -138,6 +139,11 @@ export class WritingStudioView extends ItemView {
         await super.setState(state, result);
     }
 
+    /** Re-read the book and its chapters, staying at the scene being read. */
+    refreshBook(): void {
+        void this.reload();
+    }
+
     /** Open at a scene of the book being read (from the timeline or Timetable). */
     showScene(path: string): void {
         this.pendingScenePath = path;
@@ -243,7 +249,7 @@ export class WritingStudioView extends ItemView {
         const keepPath = this.pendingScenePath ?? this.book?.scenes[this.current]?.path ?? null;
         const items = await this.plugin.getSceneData({ sourcePath: profile.sourceFolder });
         if (token !== this.loadToken) return;
-        const book = buildStudioBook(items);
+        const book = buildStudioBook(items, bookChapterContext(profile));
         this.bookTitle = profile.title;
         this.sourceFolder = profile.sourceFolder;
         // The tab title names the book.
@@ -305,7 +311,7 @@ export class WritingStudioView extends ItemView {
         const token = this.loadToken;
         const items = await this.plugin.getSceneData({ sourcePath: profile.sourceFolder });
         if (token !== this.loadToken || !this.book) return;
-        const book = buildStudioBook(items);
+        const book = buildStudioBook(items, bookChapterContext(profile));
         if (book.scenes.length === 0 || this.structureKey(book) !== this.structureKey(this.book)) {
             await this.reload();
             return;

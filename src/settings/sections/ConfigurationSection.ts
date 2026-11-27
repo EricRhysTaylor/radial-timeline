@@ -1,4 +1,4 @@
-import { App, Setting as Settings, setIcon } from 'obsidian';
+import { App, Setting as Settings, setIcon, type DropdownComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { ReadabilityScale } from '../../types/settings';
 import { clearFontMetricsCaches } from '../../renderer/utils/FontMetricsCache';
@@ -14,10 +14,16 @@ import { IMPACT_FULL } from '../SettingImpact';
 import { countContentLogFiles, resolveLogsRoot } from '../../ai/log';
 import { renderMetadataSection } from './MetadataSection';
 import {
+    bookChapterContext,
     buildTimelineChapterResolverItems,
+    chapterFolderLevels,
     collapseTimelineChapterMarkersByResolvedBoundary,
+    parseChapterSourceOption,
+    resolveChapters,
     resolveTimelineChapterMarkers
 } from '../../utils/timelineChapters';
+import { getActiveBook } from '../../utils/books';
+import { refreshWritingStudios } from '../../writingStudio/openWritingStudio';
 
 export function renderConfigurationSection(params: { app: App; plugin: RadialTimelinePlugin; containerEl: HTMLElement }): void {
     const { app, plugin, containerEl } = params;
@@ -222,6 +228,68 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         }
     });
 
+    // Chapter source (per book): the Chapter property, or a folder level under
+    // the book's folder. Every chapter surface resolves chapters from it.
+    let chapterSourceDropdown: DropdownComponent | null = null;
+    const chapterSourceSetting = createDenseRow(displayContainer, {
+        title: t('settings.configuration.chapterSource.name'),
+        description: t('settings.configuration.chapterSource.desc'),
+        icon: 'folder-tree',
+        control: (setting) => {
+            setting.addDropdown(drop => {
+                chapterSourceDropdown = drop;
+                drop.selectEl.addClass('ert-input', 'ert-input--sm', 'ert-setting-dropdown');
+                drop.onChange(async (value) => {
+                    const book = getActiveBook(plugin.settings);
+                    if (!book) return;
+                    book.chapterSource = parseChapterSourceOption(value);
+                    await plugin.saveSettings();
+                    plugin.onSettingChanged(IMPACT_FULL);
+                    refreshWritingStudios(plugin.app);
+                    void refreshChapterMarkerStatus();
+                    void refreshChapterSource();
+                });
+            });
+        }
+    });
+
+    /** Fill the Chapter source choices for the active book: the property, then each folder level with example names. */
+    const refreshChapterSource = async () => {
+        const drop = chapterSourceDropdown;
+        if (!drop) return;
+        const book = getActiveBook(plugin.settings);
+        drop.selectEl.empty();
+        if (!book || !book.sourceFolder) {
+            drop.addOption('property', t('settings.configuration.chapterSource.property'));
+            drop.setDisabled(true);
+            chapterSourceSetting.setDesc(t('settings.configuration.chapterSource.noBook'));
+            return;
+        }
+        drop.setDisabled(false);
+        const scenes = buildTimelineChapterResolverItems(await plugin.getSceneData({ sourcePath: book.sourceFolder }))
+            .filter((scene): scene is typeof scene & { path: string } => !!scene.path);
+        const levels = chapterFolderLevels(scenes.map(scene => scene.path), book.sourceFolder);
+        drop.addOption('property', t('settings.configuration.chapterSource.property'));
+        levels.forEach((names, index) => {
+            const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ', …' : '');
+            drop.addOption(`folder:${index + 1}`, t('settings.configuration.chapterSource.folderLevel', { level: index + 1, examples: shown }));
+        });
+        const source = book.chapterSource ?? { kind: 'property' as const };
+        const value = source.kind === 'property' ? 'property' : `folder:${source.depth}`;
+        // A chosen level the book no longer has stays visible as chosen, so nothing changes silently.
+        if (source.kind === 'folder' && source.depth > levels.length) {
+            drop.addOption(value, t('settings.configuration.chapterSource.folderLevel', { level: source.depth, examples: t('settings.configuration.chapterSource.noFolders') }));
+        }
+        drop.setValue(value);
+        const split = source.kind === 'folder'
+            ? [...new Set(resolveChapters(scenes, bookChapterContext(book)).chapters.filter(chapter => chapter.split).map(chapter => chapter.title))]
+            : [];
+        chapterSourceSetting.setDesc(split.length > 0
+            ? t('settings.configuration.chapterSource.splitWarning', { desc: t('settings.configuration.chapterSource.desc'), chapters: split.join(', ') })
+            : t('settings.configuration.chapterSource.desc'));
+    };
+    void refreshChapterSource();
+
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.recentMovesName'),
         description: t('ui.configurationSection.recentMovesDesc'),
@@ -261,7 +329,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         try {
             const chapterResolverItems = buildTimelineChapterResolverItems(await plugin.getSceneData());
             const chapterCount = collapseTimelineChapterMarkersByResolvedBoundary(
-                resolveTimelineChapterMarkers(chapterResolverItems)
+                resolveTimelineChapterMarkers(chapterResolverItems, bookChapterContext(getActiveBook(plugin.settings)))
             ).length;
             chapterMarkerSetting.setDesc(buildChapterMarkerDescription(
                 chapterCount > 0

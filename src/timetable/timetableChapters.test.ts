@@ -32,4 +32,16 @@ describe('Timetable chapter headings', () => {
             ['The Escape', true, '4'],
         ]);
     });
+
+    it('counts only the scenes under each heading, as Writing Studio\'s contents do', () => {
+        const longChapters = [{ title: 'The Long Road', scenePaths: ['a', 'b', 'c'] }];
+        const longOf = new Map([['a', 0], ['b', 0], ['c', 0]]);
+        const lines = withChapterHeadings([row('a'), row('beat', 'beat'), row('b'), { type: 'act', act: 2 }, row('c')], longOf, longChapters);
+        expect(lines.flatMap(line => line.type === 'chapter' ? [[line.continued, line.sceneCount]] : [])).toEqual([[false, 2], [true, 1]]);
+    });
+
+    it('marks a chapter continued when its act is laid out on its own, as a table grouped by act is', () => {
+        const actTwoOnly = withChapterHeadings([row('5')], chapterOf, chapters);
+        expect(actTwoOnly.flatMap(line => line.type === 'chapter' ? [[line.title, line.continued, line.firstPath]] : [])).toEqual([['The Escape', true, '4']]);
+    });
 });

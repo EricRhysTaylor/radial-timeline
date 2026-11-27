@@ -154,6 +154,7 @@ export interface TimetableChapterLine {
     continued: boolean;
     /** The chapter's opening scene, where Read chapter starts. */
     firstPath: string;
+    /** The scenes under this heading: the part of the chapter in this act, as Writing Studio's contents count it. */
     sceneCount: number;
 }
 
@@ -172,8 +173,8 @@ export function withChapterHeadings(
     chapters: readonly { title: string; scenePaths: readonly string[] }[],
 ): TimetableLine[] {
     const result: TimetableLine[] = [];
-    const seen = new Set<number>();
     let open: number | null = null;
+    let heading: TimetableChapterLine | null = null;
     /** The chapter of the next scene row before the next act divider, or null. */
     const nextSceneChapter = (from: number): number | null => {
         for (let i = from + 1; i < lines.length; i++) {
@@ -184,7 +185,7 @@ export function withChapterHeadings(
         return null;
     };
     for (const [position, line] of lines.entries()) {
-        if (line.type === 'act') { open = null; result.push(line); continue; }
+        if (line.type === 'act') { open = null; heading = null; result.push(line); continue; }
         if (line.type !== 'row') { result.push(line); continue; }
         if (line.row.kind !== 'scene') {
             result.push({ ...line, chapter: open !== null && nextSceneChapter(position) === open ? open : null });
@@ -193,12 +194,16 @@ export function withChapterHeadings(
         const chapter = chapterOf.get(line.row.path) ?? null;
         if (chapter !== null && chapter !== open) {
             const resolved = chapters[chapter];
-            result.push({
-                type: 'chapter', chapter, title: resolved.title, continued: seen.has(chapter),
-                firstPath: resolved.scenePaths[0], sceneCount: resolved.scenePaths.length,
-            });
-            seen.add(chapter);
+            heading = {
+                // Continued: the chapter opened before this scene, in an earlier act
+                // (the table may render each act's group on its own).
+                type: 'chapter', chapter, title: resolved.title, continued: resolved.scenePaths[0] !== line.row.path,
+                firstPath: resolved.scenePaths[0], sceneCount: 0,
+            };
+            result.push(heading);
         }
+        if (chapter === null) heading = null;
+        if (heading) heading.sceneCount += 1;
         open = chapter;
         result.push({ ...line, chapter: open });
     }

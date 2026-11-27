@@ -99,6 +99,25 @@ describe('applySceneNumberUpdates rename count', () => {
         // "06 Five" never collides with "06 Six": a number can be shared for a moment, a file name cannot.
         expect(renames.sort()).toEqual(['Book/06 Five.md', 'Book/07 Six.md']);
     });
+
+    it('normalizes an inserted decimal scene beside one with the same title, far end first', async () => {
+        // "Add scene" makes "4.5 New scene"; the next drag or ripple makes it 5,
+        // and the existing "5 New scene" must move to 6 first.
+        const app = createInMemoryApp({
+            'Book/4.5 New scene.md': 'Inserted',
+            'Book/5 New scene.md': 'Older',
+        });
+        const renames: string[] = [];
+        const rename = app.fileManager.renameFile.bind(app.fileManager);
+        app.fileManager.renameFile = async (file: TFile, path: string) => { renames.push(path); await rename(file, path); };
+        await applySceneNumberUpdates(app as never, [
+            { path: 'Book/4.5 New scene.md', newNumber: '5' },
+            { path: 'Book/5 New scene.md', newNumber: '6' },
+        ]);
+        expect(renames).toEqual(['Book/6 New scene.md', 'Book/5 New scene.md']);
+        expect(await app.vault.read(app.vault.getAbstractFileByPath('Book/5 New scene.md') as TFile)).toBe('Inserted');
+        expect(await app.vault.read(app.vault.getAbstractFileByPath('Book/6 New scene.md') as TFile)).toBe('Older');
+    });
 });
 
 describe('countRippleRenamesAfterUpdates', () => {

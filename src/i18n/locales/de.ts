@@ -2723,7 +2723,6 @@ export const de: DeepPartial<TranslationKeys> = {
             backward: 'Rückwärts',
             excluded: 'Ausgeschlossen',
             declaredDuration: 'Angegebene Dauer',
-            durationOver: 'Text läuft darüber hinaus · gestrichelt bis bestätigt',
             durationShort: 'Text bleibt darunter · grau ohne Zeitangaben',
         },
         cue: {
@@ -2745,7 +2744,6 @@ export const de: DeepPartial<TranslationKeys> = {
             storyClock: 'Erzähluhr {{clock}}',
             estimatedStoryClock: 'Geschätzte Erzähluhr {{clock}}',
             durationUsedUp: 'Dauer {{duration}} hier aufgebraucht · Zeithinweise reichen bis {{reached}}',
-            dashedUntilConfirmed: 'Gestrichelt, bis bestätigte Zeit allein darüber hinausgeht',
             durationShortfall: 'Dauer {{duration}} · Zeithinweise erreichen {{reached}} · {{missing}} im Text nicht belegt',
             durationUnquantified: 'Dauer {{duration}} · noch keine Zeitangaben beziffern sie; Text kann Zeit verbrauchen, ohne sie zu nennen',
             sceneStart: 'Szenenbeginn · verstrichen 0',

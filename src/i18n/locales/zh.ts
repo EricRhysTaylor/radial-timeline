@@ -2725,7 +2725,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             backward: '回溯',
             excluded: '已排除',
             declaredDuration: '声明的时长',
-            durationOver: '正文超出 · 确认前显示为虚线',
             durationShort: '正文不足 · 无时间短语时显示为灰色',
         },
         cue: {
@@ -2747,7 +2746,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             storyClock: '故事时钟 {{clock}}',
             estimatedStoryClock: '估算故事时钟 {{clock}}',
             durationUsedUp: '时长 {{duration}} 在此用尽 · 时间线索延续至 {{reached}}',
-            dashedUntilConfirmed: '仅凭已确认时间超出之前显示为虚线',
             durationShortfall: '时长 {{duration}} · 时间线索达到 {{reached}} · 正文中有 {{missing}} 未交代',
             durationUnquantified: '时长 {{duration}} · 尚无时间短语将其量化；正文可以不点明时间而消耗时间',
             sceneStart: '场景开始 · 经过 0',

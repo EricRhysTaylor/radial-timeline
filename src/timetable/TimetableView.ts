@@ -3228,8 +3228,8 @@ export class TimetableView extends BasesView {
                     const purpose = readBeatPurpose(frontmatter ?? null);
                     if (purpose) panel.createDiv({ cls: 'ert-timetable-panels__purpose', text: purpose });
                 } else if (row.kind === 'scene') {
+                    // The Publish Stage is the portrait frame's color (see the Timetable key), never text beside the subplots.
                     const vitals = sceneVitals(frontmatter, this.plugin.settings, new Date());
-                    meta.createSpan({ text: vitals.stage });
                     const synopsis = panel.createEl('button', { cls: 'ert-timetable-panels__synopsis', text: vitals.synopsis ?? t('ui.timetable.panelAddSynopsis') });
                     synopsis.toggleClass('is-empty', vitals.synopsis === null);
                     this.panelEvents?.registerDomEvent(synopsis, 'click', evt => { evt.stopPropagation(); this.editPanelSynopsis(item, synopsis); });

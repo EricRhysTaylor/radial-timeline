@@ -2730,7 +2730,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "backward": "ล้าหลัง",
             "excluded": "ไม่รวม",
             "declaredDuration": "ระยะเวลาที่ประกาศ",
-            "durationOver": "ร้อยแก้ววิ่งผ่านมัน · พุ่งจนกว่าจะได้รับการยืนยัน",
             "durationShort": "ร้อยแก้วสั้น · สีเทาไม่มีวลีเวลา"
         },
         "cue": {
@@ -2752,7 +2751,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "storyClock": "นาฬิกาเรื่อง {{clock}}",
             "estimatedStoryClock": "นาฬิกาเรื่องโดยประมาณ {{clock}}",
             "durationUsedUp": "ระยะเวลา {{duration}} ใช้ที่นี่ · ตัวชี้นำเวลายังคง {{reached}}",
-            "dashedUntilConfirmed": "ประจนเวลายืนยันคนเดียววิ่งผ่านมัน",
             "durationShortfall": "Duration {{duration}} · ตัวชี้นำเวลาถึง {{reached}} · {{missing}} ไม่นับในร้อยแก้ว",
             "durationUnquantified": "ระยะเวลา {{duration}} · ยังไม่มีวลีเกี่ยวกับเวลา ร้อยแก้วสามารถใช้เวลาโดยไม่ต้องตั้งชื่อ",
             "sceneStart": "เริ่มฉาก · ผ่านไปแล้ว 0",

@@ -2724,7 +2724,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             backward: '過去',
             excluded: '除外',
             declaredDuration: '宣言された所要時間',
-            durationOver: '本文が超過 · 確定まで破線',
             durationShort: '本文が不足 · 時間表現がなければ灰色',
         },
         cue: {
@@ -2746,7 +2745,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             storyClock: '物語の時刻 {{clock}}',
             estimatedStoryClock: '推定される物語の時刻 {{clock}}',
             durationUsedUp: '所要時間 {{duration}} はここで使い切られます · 時間キューは {{reached}} まで続きます',
-            dashedUntilConfirmed: '確定済みの時間だけで超過するまで破線',
             durationShortfall: '所要時間 {{duration}} · 時間キューは {{reached}} に到達 · {{missing}} は本文で示されていません',
             durationUnquantified: '所要時間 {{duration}} · まだ数値化する時間表現がありません。本文は時間を明示せずに時間を使うことがあります',
             sceneStart: 'シーン開始 · 経過 0',

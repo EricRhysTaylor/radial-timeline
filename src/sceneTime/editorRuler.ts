@@ -45,7 +45,7 @@ export function createDurationLine(parent: HTMLElement, segment: DurationSegment
         line.addClass('ert-time-duration-stop');
         line.dataset.stopFrom = String(stop.from);
         const cap = line.createSpan({ cls: 'ert-time-duration-cap' });
-        setTooltip(cap, `${t('sceneTime.ruler.durationUsedUp', { duration: planned, reached: elapsedLabel(segment.reached) })}${segment.confirmed ? '' : ` · ${t('sceneTime.ruler.dashedUntilConfirmed')}`} · ${t('sceneTime.ruler.clickToReview')}`);
+        setTooltip(cap, `${t('sceneTime.ruler.durationUsedUp', { duration: planned, reached: elapsedLabel(segment.reached) })}${segment.confirmed ? '' : ` · ${t('sceneTime.ruler.hollowUntilConfirmed')}`} · ${t('sceneTime.ruler.clickToReview')}`);
         cap.addEventListener('click', event => review(event, stop.key));
     }
     if (segment.arrow) {

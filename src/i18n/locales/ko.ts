@@ -2723,7 +2723,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             backward: '과거',
             excluded: '제외됨',
             declaredDuration: '선언된 소요 시간',
-            durationOver: '본문이 초과 · 확정 전까지 점선',
             durationShort: '본문이 부족 · 시간 표현이 없으면 회색',
         },
         cue: {
@@ -2745,7 +2744,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             storyClock: '이야기 시각 {{clock}}',
             estimatedStoryClock: '추정 이야기 시각 {{clock}}',
             durationUsedUp: '소요 시간 {{duration}}이(가) 여기서 소진됨 · 시간 단서는 {{reached}}까지 이어짐',
-            dashedUntilConfirmed: '확정된 시간만으로 초과할 때까지 점선',
             durationShortfall: '소요 시간 {{duration}} · 시간 단서 도달 {{reached}} · {{missing}}은(는) 본문에서 설명되지 않음',
             durationUnquantified: '소요 시간 {{duration}} · 아직 이를 수치화하는 시간 표현이 없음. 본문은 시간을 명시하지 않고도 시간을 쓸 수 있음',
             sceneStart: '장면 시작 · 경과 0',

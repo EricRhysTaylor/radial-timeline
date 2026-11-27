@@ -84,31 +84,32 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     left: 18px;
     pointer-events: auto;
 }
-/* Declared YAML Duration: 3px inside the left edge of the 10px rail, broken between paragraphs like the rail. */
+/* Declared YAML Duration: one quiet line, 3px inside the left edge of the 10px rail, broken between paragraphs like the rail.
+   It never changes color: the only signal is a single mark where the duration runs out (or an arrow when the prose falls short). */
 .ert-time-duration {
     position: absolute;
     left: -10px;
     top: 0;
     bottom: 0;
     width: 3px;
-    background: var(--text-muted);
+    background: var(--text-faint);
     pointer-events: none;
 }
-.ert-time-duration.ert-time-duration-over { background: var(--color-yellow); }
-/* Unconfirmed overage: dashes let the gray rail show through until confirmed time alone runs past the duration. */
-.ert-time-duration.ert-time-duration-provisional { background: repeating-linear-gradient(to bottom, var(--color-yellow) 0 4px, transparent 4px 7px); }
 .ert-time-duration.ert-time-duration-stop { bottom: auto; height: var(--ert-time-duration-stop, 0px); }
+/* Where the duration is used up: solid once confirmed time alone runs past it, hollow until then. */
 .ert-time-duration-cap {
     position: absolute;
     top: 100%;
     left: 0;
     width: 10px;
-    height: 3px;
-    margin-top: -3px;
+    height: 4px;
+    margin-top: -4px;
+    box-sizing: border-box;
     background: var(--color-yellow);
     pointer-events: auto;
     cursor: pointer;
 }
+.ert-time-duration-provisional .ert-time-duration-cap { background: transparent; border: 1px solid var(--color-yellow); }
 .ert-time-duration-cap::after { content: ''; position: absolute; inset: -5px -2px; }
 .ert-time-duration-arrow {
     position: absolute;
@@ -123,9 +124,9 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 .ert-time-duration-arrow.ert-time-duration-arrow-unquantified { color: var(--text-faint); }
 
 .ert-ui .ert-time-duration-key { display: inline-flex; flex-shrink: 0; }
-.ert-ui .ert-time-duration-key-line { width: 3px; height: 14px; background: var(--text-muted); }
-.ert-ui .ert-time-duration-key-over { width: 3px; height: 14px; background: var(--color-yellow); }
-.ert-ui .ert-time-duration-key-provisional { width: 3px; height: 14px; background: repeating-linear-gradient(to bottom, var(--color-yellow) 0 4px, transparent 4px 7px); }
+.ert-ui .ert-time-duration-key-line { width: 3px; height: 14px; background: var(--text-faint); }
+.ert-ui .ert-time-duration-key-over { align-self: center; width: 10px; height: 4px; background: var(--color-yellow); }
+.ert-ui .ert-time-duration-key-provisional { align-self: center; width: 10px; height: 4px; box-sizing: border-box; border: 1px solid var(--color-yellow); }
 .ert-ui .ert-time-duration-key-arrow { color: var(--text-error); }
 .ert-ui .ert-time-duration-key-arrow-unquantified { color: var(--text-faint); }
 .ert-ui .ert-time-duration-key svg { width: 14px; height: 14px; stroke-width: 3; }

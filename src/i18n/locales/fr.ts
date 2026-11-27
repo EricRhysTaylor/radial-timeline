@@ -2730,7 +2730,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "backward": "Arriéré",
             "excluded": "Exclu",
             "declaredDuration": "Durée déclarée",
-            "durationOver": "La prose passe devant elle · Associée jusqu'à ce qu'elle soit confirmée",
             "durationShort": "Prose échoue · Gris sans phrases de temps"
         },
         "cue": {
@@ -2752,7 +2751,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "storyClock": "Horloge d'histoire {{clock}}",
             "estimatedStoryClock": "Horloge d'histoire estimée {{clock}}",
             "durationUsedUp": "Durée {{duration}} utilisé ici · Les signaux de temps continuent à {{reached}}",
-            "dashedUntilConfirmed": "s'est écrasé jusqu'à ce que le temps confirmé seul le dépasse",
             "durationShortfall": "Durée {{duration}} · Les signaux de temps atteignent {{reached}} · {{missing}} Non pris en compte dans la prose",
             "durationUnquantified": "Durée {{duration}} · Aucune phrase temporelle ne le quantifie pour le moment ; La prose peut utiliser le temps sans le nommer",
             "sceneStart": "Démarrage de la scène · écoulé 0",

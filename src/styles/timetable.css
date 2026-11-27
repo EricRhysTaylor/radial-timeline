@@ -1508,16 +1508,17 @@
     color: var(--text-normal); background: var(--background-primary);
 }
 .ert-timetable .ert-timetable-panels__reader-bar { display: flex; justify-content: flex-end; align-items: center; gap: var(--size-4-2); }
-.ert-timetable .ert-timetable-panels__reader-frame { position: relative; flex: 1 1 auto; min-height: 0; }
-.ert-timetable .ert-timetable-panels__reader-text { position: relative; z-index: 1; height: 100%; min-height: 0; overflow: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text; }
-.ert-timetable .ert-timetable-panels__reader-scale { position: absolute; inset: 0 0 0 auto; width: 24px; border-radius: 4px; background: var(--background-modifier-border); opacity: 0; pointer-events: none; }
+/* The scroll scale sits left of the native scrollbar's lane, and the text stops before the scale. */
+.ert-timetable .ert-timetable-panels__reader-frame { --ert-reader-scrollbar-room: 14px; --ert-reader-scale-width: 24px; position: relative; flex: 1 1 auto; min-height: 0; }
+.ert-timetable .ert-timetable-panels__reader-text { position: relative; z-index: 1; height: 100%; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-inline-end: calc(var(--ert-reader-scrollbar-room) + var(--ert-reader-scale-width) + var(--size-4-2)); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text; }
+.ert-timetable .ert-timetable-panels__reader-scale { position: absolute; inset: 0 var(--ert-reader-scrollbar-room) 0 auto; width: var(--ert-reader-scale-width); border-radius: 4px; background: var(--background-modifier-border); opacity: 0; pointer-events: none; }
 .ert-timetable .ert-timetable-panels__reader-scale.is-visible { opacity: .22; }
 .ert-timetable .ert-timetable-panels__reader-scale-position { position: absolute; inset-inline: 0; top: var(--ert-reader-scale-top); height: var(--ert-reader-scale-size); border-radius: 4px; background: var(--text-normal); }
 .ert-timetable .ert-timetable-panels__reader-tick { position: absolute; right: 0; width: 9px; height: 1px; background: var(--text-normal); }
 .ert-timetable .ert-timetable-panels__reader-tick.is-start { top: 0; }
 .ert-timetable .ert-timetable-panels__reader-tick.is-middle { top: 50%; }
 .ert-timetable .ert-timetable-panels__reader-tick.is-end { bottom: 0; }
-.ert-timetable .ert-timetable-panels__reader-scroll-cue { position: absolute; z-index: 2; right: 28px; bottom: 4px; padding: 2px 6px; border-radius: var(--radius-s); color: var(--text-muted); background: var(--background-secondary); font-size: var(--font-ui-smaller); opacity: 0; pointer-events: none; }
+.ert-timetable .ert-timetable-panels__reader-scroll-cue { position: absolute; z-index: 2; right: calc(var(--ert-reader-scrollbar-room) + var(--ert-reader-scale-width) + 4px); bottom: 4px; padding: 2px 6px; border-radius: var(--radius-s); color: var(--text-muted); background: var(--background-secondary); font-size: var(--font-ui-smaller); opacity: 0; pointer-events: none; }
 .ert-timetable .ert-timetable-panels__reader-frame.is-scrollable:hover .ert-timetable-panels__reader-scroll-cue, .ert-timetable .ert-timetable-panels__reader-frame.is-scrollable:focus-within .ert-timetable-panels__reader-scroll-cue { opacity: .9; }
 ::highlight(ert-reader-sentence) { background: color-mix(in srgb, var(--interactive-accent) 25%, transparent); }
 .ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__reader { padding: var(--size-4-3); }

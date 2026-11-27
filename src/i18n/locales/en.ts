@@ -2436,7 +2436,7 @@ export const en = {
             backward: 'Backward',
             excluded: 'Excluded',
             declaredDuration: 'Declared duration',
-            durationOver: 'Prose runs past it · dashed until confirmed',
+            durationOver: 'Prose runs past it here · hollow until confirmed',
             durationShort: 'Prose falls short · gray with no time phrases',
         },
         cue: {
@@ -2458,7 +2458,7 @@ export const en = {
             storyClock: 'Story clock {{clock}}',
             estimatedStoryClock: 'Estimated story clock {{clock}}',
             durationUsedUp: 'Duration {{duration}} used up here · time cues continue to {{reached}}',
-            dashedUntilConfirmed: 'Dashed until confirmed time alone runs past it',
+            hollowUntilConfirmed: 'Hollow until confirmed time alone runs past it',
             durationShortfall: 'Duration {{duration}} · time cues reach {{reached}} · {{missing}} not accounted for in the prose',
             durationUnquantified: 'Duration {{duration}} · no time phrases quantify it yet; prose can use time without naming it',
             sceneStart: 'Scene start · elapsed 0',

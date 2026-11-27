@@ -2730,7 +2730,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "backward": "Ngược",
             "excluded": "Loại trừ",
             "declaredDuration": "Thời lượng khai báo",
-            "durationOver": "văn xuôi chạy qua nó · bị gạch ngang cho đến khi được xác nhận",
             "durationShort": "Văn xuôi ngắn · màu xám không có cụm từ thời gian"
         },
         "cue": {
@@ -2752,7 +2751,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "storyClock": "Đồng hồ câu chuyện {{clock}}",
             "estimatedStoryClock": "Đồng hồ câu chuyện ước tính {{clock}}",
             "durationUsedUp": "Thời lượng {{duration}} đã sử dụng ở đây · Dấu hiệu thời gian tiếp tục đến {{reached}}",
-            "dashedUntilConfirmed": "gạch ngang cho đến khi thời gian được xác nhận một mình chạy qua nó",
             "durationShortfall": "thời gian {{duration}} · tín hiệu thời gian đạt {{reached}} · {{missing}} không được tính trong văn xuôi",
             "durationUnquantified": "thời lượng {{duration}} · Không có cụm từ thời gian định lượng nó; Văn xuôi có thể sử dụng thời gian mà không cần đặt tên cho nó",
             "sceneStart": "cảnh bắt đầu · đã trôi qua 0",

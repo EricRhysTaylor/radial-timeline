@@ -30,7 +30,7 @@ describe('reference occurrences across actual ring layouts', () => {
             subplotColorFor: () => '#996699',
             ringStartRadii: [200, 400, 600], ringWidths: [200, 200, 200],
             scenesByActAndSubplot: { 0: { Family: [scenes[0]], History: [scenes[1]] } },
-            PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, synopsesElements: [], foregroundElements, referenceElements });
+            PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, beatLabelFontSize: 13, synopsesElements: [], foregroundElements, referenceElements });
         const foreground = foregroundElements.join('');
         const markup = scenesMarkup + foreground + referenceElements.join('');
         expect(scenesMarkup).not.toContain('class="ert-time-reference"');

@@ -66,6 +66,7 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
 /** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */
 export function linkActLabelsToTimetable(view: TimetableLinkView, svg: SVGSVGElement): void {
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (event: Event) => {
+        if (!svg.classList.contains('rt-timetable-linked')) return;
         const label = elementOf(event.target)?.closest('.rt-act-label[data-act]') ?? null;
         const index = Number(label?.getAttribute('data-act'));
         if (!label || !Number.isInteger(index)) return;

@@ -85,7 +85,7 @@ export const SUBPLOT_OUTER_RADIUS_STANDARD = {
 
 
 // DRAG SCENE FEATURE //
-// Narrative runs the drag arc just inside the Act labels (ACT_LABEL_RADIUS = 790).
+// Narrative runs the drag arc just beyond the scene rings.
 // Chronologue's month and date labels sit at 790+, so its drag arc takes the
 // Shift elapsed-time lane instead (ELAPSED_ARC_RADIUS).
 
@@ -247,15 +247,6 @@ export const PLOT_PIXEL_WIDTH = 18;
 // =============================================================================
 // TEXT RENDERING - BEAT LABELS
 // =============================================================================
-// Note: Font sizes and styling should be defined in styles.css (.rt-storybeat-title)
-// These constants are for geometric calculations only
-
-/** Beat label font size in px - must match .rt-storybeat-title in CSS */
-export const BEAT_FONT_PX = 9;
-
-/** Generous multiplier for initial render estimation */
-export const ESTIMATE_FUDGE_RENDER = 1.35;
-
 /** Extra pixels added to estimated beat label width */
 export const PADDING_RENDER_PX = 24;
 
@@ -297,8 +288,9 @@ export const NUMBER_SQUARE_LETTER_SPACING_EM = 0.03;
 
 // --- Beat Labels ---
 
-/** Base font size for beat labels (px) - must match .rt-storybeat-title in CSS */
-export const BEAT_LABEL_FONT_SIZE_PX = 12;
+/** Base font sizes for beat labels, shared by SVG styling and arc measurement. */
+export const BEAT_LABEL_FONT_SIZE_PX = 13;
+export const NARRATIVE_BEAT_LABEL_FONT_SIZE_PX = 16;
 
 /** Letter spacing for beat labels (em) */
 export const BEAT_LABEL_LETTER_SPACING_EM = 0.07;

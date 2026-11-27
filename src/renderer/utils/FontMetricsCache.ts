@@ -18,7 +18,6 @@ import {
     NUMBER_SQUARE_FONT_SIZE_PX,
     NUMBER_SQUARE_PADDING_PX,
     NUMBER_SQUARE_LETTER_SPACING_EM,
-    BEAT_LABEL_FONT_SIZE_PX,
     BEAT_LABEL_LETTER_SPACING_EM
 } from '../layout/LayoutConstants';
 
@@ -40,7 +39,6 @@ interface CachedMetrics {
 // Module-level cache - persists across renders
 let beatLabelCache: CachedMetrics | null = null;
 let numberSquareCache: CachedMetrics | null = null;
-let currentFontScale: number = 1;
 
 // Characters to measure for general text (beat labels)
 const MEASUREMENT_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -–—\'".,:;!?&()[]';
@@ -49,18 +47,13 @@ const MEASUREMENT_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -–—\'".,:;!?
  * Lazily initialize the beat label metrics cache.
  * Creates a temporary SVG element, measures characters, then removes it.
  */
-export function ensureBeatLabelCache(fontScale: number = 1): void {
-    // Skip if already cached at this scale
-    if (beatLabelCache && currentFontScale === fontScale) {
-        return;
-    }
-
-    currentFontScale = fontScale;
+function ensureBeatLabelCache(fontSize: number): void {
+    if (beatLabelCache?.config.fontSize === fontSize) return;
 
     const config: FontMetricsCacheConfig = {
         fontFamily: "var(--font-interface)",
-        fontSize: BEAT_LABEL_FONT_SIZE_PX * fontScale,
-        fontWeight: 500,
+        fontSize,
+        fontWeight: 700,
         letterSpacing: `${BEAT_LABEL_LETTER_SPACING_EM}em`,
         textTransform: 'uppercase'
     };
@@ -150,9 +143,7 @@ function measureWithTemporarySvg(config: FontMetricsCacheConfig, chars: string):
  * Automatically initializes cache if needed.
  */
 export function estimateBeatLabelWidth(title: string, fontPx: number, paddingPx: number): number {
-    // Derive scale from requested font size vs base (12px)
-    const fontScale = fontPx / 12;
-    ensureBeatLabelCache(fontScale);
+    ensureBeatLabelCache(fontPx);
 
     if (!beatLabelCache) {
         // Fallback if measurement somehow failed
@@ -220,5 +211,4 @@ export function getNumberSquareWidthFromCache(num: string, scale: number = 1): n
 export function clearFontMetricsCaches(): void {
     beatLabelCache = null;
     numberSquareCache = null;
-    currentFontScale = 1;
 }

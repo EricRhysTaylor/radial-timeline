@@ -11,15 +11,14 @@ import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
     TEXTPATH_START_OFFSET_PX,
     BEAT_TEXT_RADIUS,
-    BEAT_FONT_PX,
-    ESTIMATE_FUDGE_RENDER,
     PADDING_RENDER_PX,
     SCENE_TITLE_INSET
 } from '../layout/LayoutConstants';
 import { alignPositionsToOuterRing, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
 import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
-import { estimatePixelsFromTitle, toBeatRingLabel } from '../utils/LabelMetrics';
+import { toBeatRingLabel } from '../utils/LabelMetrics';
+import { estimateBeatLabelWidth } from '../utils/FontMetricsCache';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
 import { buildTextPath, FLIPPED_TITLE_DY, isTitleFlipped } from '../components/SceneTitlePath';
 import { renderSceneGroup } from '../components/Scenes';
@@ -47,6 +46,7 @@ export interface RingRenderContext {
     scenesByActAndSubplot: Record<number, Record<string, TimelineItem[]>>;
     PUBLISH_STAGE_COLORS: StageColorMap;
     maxTextWidth: number;
+    beatLabelFontSize: number;
     synopsesElements: SVGGElement[];
     /** Chronologue titles, painted above the fixed subplot headlines. */
     foregroundElements: string[];
@@ -232,12 +232,9 @@ export function renderRings(ctx: RingRenderContext): string {
                         return m ? m[1] : full;
                     })();
 
-                    const estimatedWidth = estimatePixelsFromTitle(
-                        rawTitleFull,
-                        BEAT_FONT_PX * fontScale,
-                        ESTIMATE_FUDGE_RENDER,
-                        PADDING_RENDER_PX * fontScale
-                    );
+                    const estimatedWidth = isBeatNote(scene)
+                        ? estimateBeatLabelWidth(rawTitleFull, ctx.beatLabelFontSize, PADDING_RENDER_PX * fontScale)
+                        : 0;
                     // Holding Shift swaps every ring label to its In This Book name
                     // (BeatNameKeyController → showBeatLabels); both names ride here.
                     const inThisBook = isBeatNote(scene) ? scene['In This Book'] : undefined;
@@ -299,7 +296,7 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(beatTextRadius * Math.cos(labelStartAngle))} ${formatNumber(beatTextRadius * Math.sin(labelStartAngle))} 
                                      A ${formatNumber(beatTextRadius)} ${formatNumber(beatTextRadius)} 0 ${largeArcFlag} 1 ${formatNumber(beatTextRadius * Math.cos(labelEndAngle))} ${formatNumber(beatTextRadius * Math.sin(labelEndAngle))}" 
                                   data-slice-start="${formatNumber(sceneStartAngle)}" data-radius="${formatNumber(beatTextRadius)}" fill="none"/>
-                            <text class="rt-storybeat-title" dy="-3"${beatLabelNameAttrs}>
+                            <text class="rt-storybeat-title" dy="-3" font-size="${ctx.beatLabelFontSize}"${beatLabelNameAttrs}>
                                 <textPath href="#plot-label-arc-${act}-${ring}-outer-${idx}" startOffset="2">
                                     ${escapeXml(rawTitleFull)}
                                 </textPath>

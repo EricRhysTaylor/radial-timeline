@@ -89,14 +89,30 @@
   pointer-events: none;
   text-anchor: middle;
   dominant-baseline: middle;
-  font-size: 20px;
   font-weight: 700;
-  /* fill: var(--text-normal); */
-  /* Color is now set dynamically in SVG */
+}
+
+.radial-timeline-container .rt-act-label:not(.ert-timeline-act-label) {
+  font-size: 20px;
+}
+
+.radial-timeline-container .ert-timeline-act-label {
+  font-family: var(--font-interface);
+  dominant-baseline: central;
+}
+
+.radial-timeline-container .ert-timeline-act-label[data-tooltip] {
+  pointer-events: visiblePainted;
+}
+
+.radial-timeline-container .ert-timeline-act-label--inset {
+  paint-order: stroke fill;
+  stroke: var(--background-primary);
+  stroke-width: 4px;
 }
 
 /* With a Timetable open, an act label shows that act in the table. */
-.radial-timeline-svg.rt-timetable-linked .rt-act-label {
+.radial-timeline-container .radial-timeline-svg.rt-timetable-linked .rt-act-label {
   pointer-events: auto;
   cursor: pointer;
 }

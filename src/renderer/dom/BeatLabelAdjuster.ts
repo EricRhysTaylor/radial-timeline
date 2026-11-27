@@ -269,6 +269,8 @@ export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: num
                 separator.setAttribute('class', 'rt-storybeat-title rt-plot-dash-separator');
                 separator.setAttribute('text-anchor', 'middle');
                 separator.setAttribute('dy', '-3');
+                const fontSize = data.element.getAttribute('font-size');
+                if (fontSize) separator.setAttribute('font-size', fontSize);
                 separator.textContent = '—';
                 data.pathElement.parentElement?.appendChild(separator);
             }

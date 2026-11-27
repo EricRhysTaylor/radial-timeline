@@ -1,6 +1,5 @@
 .radial-timeline-container .rt-storybeat-title {
   fill: var(--text-normal);
-  font-size: calc(13px * var(--rt-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;

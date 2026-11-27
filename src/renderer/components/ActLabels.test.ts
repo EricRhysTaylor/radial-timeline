@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderActLabels } from './ActLabels';
+import { layoutNarrativeActLabel, renderActLabels } from './ActLabels';
 import { getSegmentBoundaries } from '../utils/TimelineSegments';
 
 const RADIUS = 790;
@@ -55,5 +55,58 @@ describe('renderActLabels', () => {
             maxStageColor: 'currentColor'
         });
         expect(svg).toContain('startOffset="0" text-anchor="start">Setup</textPath>');
+    });
+});
+
+describe('Narrative Act labels', () => {
+    const rim = 797;
+    const viewBoxHalf = 800;
+    const angleDiff = (a: number, b: number): number => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+
+    it.each([3, 4, 5, 7, 12])('fits ordinary labels in their own exterior pocket (%i acts)', numActs => {
+        for (let act = 0; act < numActs; act++) {
+            const angles = getSegmentBoundaries(act, numActs);
+            const fontSize = 26;
+            const measure = (line: string) => Array.from(line).length * fontSize * 0.55;
+            const title = 'Act ' + (act + 1);
+            const label = layoutNarrativeActLabel({ title, ...angles, fontSize, rim, viewBoxHalf, measure });
+            expect(label.lines.join(' ')).toBe(title);
+            expect(label.inset).toBe(false);
+            const halfWidth = Math.max(...label.lines.map(measure)) / 2;
+            const halfHeight = fontSize * 1.14 * label.lines.length / 2;
+            for (const x of [label.x - halfWidth, label.x + halfWidth]) {
+                for (const y of [label.y - halfHeight, label.y + halfHeight]) {
+                    expect(Math.abs(x)).toBeLessThan(viewBoxHalf);
+                    expect(Math.abs(y)).toBeLessThan(viewBoxHalf);
+                    expect(Math.hypot(x, y)).toBeGreaterThan(rim);
+                    expect(Math.abs(angleDiff(Math.atan2(y, x), (angles.start + angles.end) / 2))).toBeLessThan((angles.end - angles.start) / 2);
+                }
+            }
+        }
+    });
+
+    it('wraps a long custom title while keeping its full wording', () => {
+        const title = 'The City Beneath the Silver Mountains';
+        const fontSize = 26;
+        const measure = (line: string) => Array.from(line).length * fontSize * 0.53;
+        const label = layoutNarrativeActLabel({
+            title, ...getSegmentBoundaries(0, 3), fontSize, rim, viewBoxHalf, measure
+        });
+        expect(label.lines).toHaveLength(2);
+        expect(label.lines.join(' ')).toBe(title);
+        expect(label.fontSize).toBe(fontSize);
+        expect(label.inset).toBe(false);
+    });
+
+    it('leaves the bottom-left indicators clear when wrapping a label for the lower act', () => {
+        const title = 'The City Beneath the Silver Mountains';
+        const fontSize = 26;
+        const measure = (line: string) => Array.from(line).length * fontSize * 0.53;
+        const label = layoutNarrativeActLabel({
+            title, ...getSegmentBoundaries(1, 3), fontSize, rim: 813, viewBoxHalf, measure
+        });
+        expect(label.lines.join(' ')).toBe(title);
+        expect(label.inset).toBe(false);
+        expect(label.x).toBeGreaterThan(0);
     });
 });

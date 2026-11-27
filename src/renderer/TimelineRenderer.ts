@@ -43,6 +43,11 @@ import {
     MONTH_TICK_END,
     MONTH_TICK_START,
     ACT_LABEL_RADIUS,
+    BEAT_TEXT_RADIUS,
+    BEAT_LABEL_FONT_SIZE_PX,
+    NARRATIVE_BEAT_LABEL_FONT_SIZE_PX,
+    NARRATIVE_CHAPTER_MARKER_RADIUS,
+    DRAG_DROP_ARC_RADIUS,
     CHRONOLOGUE_DURATION_ARC_RADIUS,
     NARRATIVE_RUNTIME_ARC_RADIUS,
     MICRO_RING_GAP,
@@ -60,7 +65,7 @@ import { renderDefs } from './components/Defs';
 import { renderEstimatedDateElements } from './components/Progress';
 import { renderActBorders } from './components/Acts';
 import { renderPlaceholderRings } from './components/PlaceholderRings';
-import { renderActLabels } from './components/ActLabels';
+import { renderActLabels, renderNarrativeActLabels } from './components/ActLabels';
 import { renderTargetDateTick, type TargetTickEnhancedData } from './components/ProgressTicks';
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from './components/ProgressRing';
 import { serializeSynopsesToString } from './components/Synopses';
@@ -304,6 +309,10 @@ export function createTimelineSVG(
     const isChronologueMode = currentMode === 'chronologue';
     const isSagaScope = getTimelineScope(settings) === 'saga';
     const sortByWhen = usesWhenOrdering(settings);
+    const centeredActLabels = isNarrativeMode && !isNarrativeRuntime && !isSagaScope && !sortByWhen;
+    // Beat titles use the timeline's 140% Large text size, also used by the CSS scene-title rules.
+    const beatLabelFontSize = (centeredActLabels ? NARRATIVE_BEAT_LABEL_FONT_SIZE_PX : BEAT_LABEL_FONT_SIZE_PX)
+        * (readabilityScale === 'large' ? 1.4 : 1);
     const forceChronological = isChronologueMode;
     // Chapter badges sit on the perimeter the runtime view uses for its running totals.
     const showChapterMarkers = isNarrativeMode && !isNarrativeRuntime && !sortByWhen && (settings.showChapterMarkers ?? false);
@@ -394,8 +403,6 @@ export function createTimelineSVG(
         currentMonthIndex
     });
     boundaryLabelsHtml = outerLabelRender.boundaryLabelsHtml;
-
-    // --- Draw Act labels early (below story beat labels) into the scene layer later ---
 
     // First add the progress ring (RAINBOW YEAR PROGRESS)
     // Calculate year progress
@@ -539,8 +546,7 @@ export function createTimelineSVG(
     svg += `<g id="timeline-scene-layer">`;
 
     // Only show Act labels when using manuscript order (not When date sorting)
-    if (!sortByWhen) {
-        // --- Draw Act labels at fixed radius ---
+    if (!sortByWhen && !centeredActLabels) {
         svg += renderActLabels({
             numActs,
             actLabels,
@@ -582,6 +588,7 @@ export function createTimelineSVG(
         scenesByActAndSubplot,
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
+        beatLabelFontSize,
         synopsesElements,
         foregroundElements,
         referenceElements,
@@ -602,6 +609,17 @@ export function createTimelineSVG(
     }
 
     stopRingRender();
+
+    if (centeredActLabels) {
+        const rim = Math.max(
+            DRAG_DROP_ARC_RADIUS,
+            BEAT_TEXT_RADIUS[readabilityScale] + beatLabelFontSize + 3,
+            showChapterMarkers ? NARRATIVE_CHAPTER_MARKER_RADIUS + 16 : 0
+        ) + 5;
+        svg += renderNarrativeActLabels({
+            numActs, actLabels, maxStageColor, viewBoxHalf: size / 2, rim, fontScale, document: activeDocument
+        });
+    }
 
     // After all scenes are drawn, add just the act borders (vertical lines
     // only). They cross the real rings only: a placeholder's outline runs
@@ -626,8 +644,6 @@ export function createTimelineSVG(
 
     // Calculate the actual outermost outerRadius (first ring's outer edge)
     const actualOuterRadius = outerBand.outerR;
-
-    // (Act labels moved earlier to be under story beat labels)
 
     // Calculate grid data (status counts, grid counts, estimates, runtime)
     const {

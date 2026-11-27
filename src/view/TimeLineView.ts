@@ -27,6 +27,7 @@ import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
 import { setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
 import { RendererService } from '../services/RendererService';
+import { openRuntimeEstimator } from '../RuntimeCommands';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
 import { modeHasAllScenesOuterRing } from '../renderer/modules/ModeRenderingHelpers';
@@ -3535,6 +3536,14 @@ export class RadialTimelineView extends ItemView {
 
                 // Hold Shift (Narrative): beat labels show their In This Book names
                 setupBeatNameKeyController(this, timelineContainer);
+
+                // No runtimes yet: the center's "Runtime" opens the Runtime Estimator for the book.
+                const runtimeMissing = svgElement.querySelector('.rt-runtime-missing');
+                if (runtimeMissing) {
+                    this.renderScope.registerDomEvent(runtimeMissing as unknown as HTMLElement, 'click', () => {
+                        openRuntimeEstimator(this.plugin);
+                    });
+                }
 
                 // Attach Author Progress Indicator click behavior - opens Settings Social tab
                 const aprIndicator = svgElement.querySelector('.rt-apr-indicator');

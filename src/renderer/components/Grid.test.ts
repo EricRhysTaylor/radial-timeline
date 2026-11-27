@@ -47,6 +47,14 @@ function renderGrid(scenes: TimelineItem[]): string {
 }
 
 describe('renderCenterGrid', () => {
+    it('offers the Runtime Estimator when the book has no runtimes, instead of "No Data"', () => {
+        const svg = renderGrid([scene('1.md', 'Zero', 'Todo')]);
+        expect(svg).toContain('rt-runtime-missing');
+        expect(svg).toContain('>Runtime</text>');
+        expect(svg).toContain('Click to estimate them for this book.');
+        expect(svg).not.toContain('No Data');
+    });
+
     it('does not show stage-complete or book-complete icons when one Press scene skips ahead', () => {
         const svg = renderGrid([
             scene('1.md', 'Zero', 'Todo'),

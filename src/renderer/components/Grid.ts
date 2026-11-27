@@ -106,9 +106,17 @@ export function renderCenterGrid(params: {
       }).join('')}
       ${(() => {
         const runtimeY = startYGrid + gridHeight + (cellGapY + 16);
-        const runtimeText = escapeXml(totalRuntimeSeconds > 0 ? formatRuntimeValue(totalRuntimeSeconds) : 'No Data');
-        return `<g class="rt-runtime-display">
-          <text x="${startXGrid}" y="${runtimeY}" text-anchor="start" dominant-baseline="alphabetic" class="center-key-text rt-runtime-total">${runtimeText}</text>
+        if (totalRuntimeSeconds > 0) {
+          return `<g class="rt-runtime-display">
+          <text x="${startXGrid}" y="${runtimeY}" text-anchor="start" dominant-baseline="alphabetic" class="center-key-text rt-runtime-total">${escapeXml(formatRuntimeValue(totalRuntimeSeconds))}</text>
+        </g>`;
+        }
+        // No runtimes yet: name what is missing and offer the estimator
+        // (TimeLineView wires the click to the Runtime Estimator).
+        const tip = escapeXml(t('timeline.grid.runtimeMissingTooltip'));
+        return `<g class="rt-runtime-display rt-runtime-missing rt-tooltip-target" data-tooltip="${tip}" data-tooltip-placement="bottom">
+          <rect x="${startXGrid - 4}" y="${runtimeY - 20}" width="${gridWidth / 2}" height="26" fill="transparent" pointer-events="all" />
+          <text x="${startXGrid}" y="${runtimeY}" text-anchor="start" dominant-baseline="alphabetic" class="center-key-text rt-runtime-total">${escapeXml(t('timeline.grid.runtimeMissing'))}</text>
         </g>`;
       })()}
       <text x="${startXGrid + gridWidth}" y="${startYGrid + gridHeight + (cellGapY + 16)}" text-anchor="end" dominant-baseline="alphabetic" class="center-key-text">${currentYearLabel}//${estimatedTotalScenes}</text>

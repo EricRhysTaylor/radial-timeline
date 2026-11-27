@@ -886,6 +886,16 @@
   fill: rgba(60, 160, 220, 0.9);
 }
 
+/* No runtimes yet: "Runtime" is a way into the Runtime Estimator. */
+.rt-runtime-display.rt-runtime-missing {
+  cursor: pointer;
+}
+
+.rt-runtime-display.rt-runtime-missing:hover .rt-runtime-total {
+  fill: rgba(60, 160, 220, 1);
+  text-decoration: underline;
+}
+
 /* Book switcher (timeline header) */
 .rt-book-switcher {
   position: relative;

@@ -1054,6 +1054,8 @@ export const en = {
             chronologue: 'CHRONOLOGUE',
         },
         grid: {
+            runtimeMissing: 'Runtime',
+            runtimeMissingTooltip: 'No scene runtimes yet. Click to estimate them for this book.',
             statusHeader: {
                 todo: 'Tdo',
                 working: 'Wrk',

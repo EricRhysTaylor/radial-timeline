@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
 import { buildStudioBook } from './studioModel';
-import { wheelAngles, wheelVoidRuns } from './studioWheel';
+import { wheelAngles, wheelPaddingRings, wheelSubplotOrder, wheelVoidRuns } from './studioWheel';
 
 function scene(path: string, title: string, actNumber: number, subplot: string): TimelineItem {
     return { itemType: 'Scene', path, title, date: '', actNumber, subplot, rawFrontmatter: {} };
@@ -20,6 +20,18 @@ describe('Writing Studio wheel', () => {
     it('merges a subplot ring\'s empty scenes into one void cell per run, split at acts', () => {
         expect(wheelVoidRuns(book, 'Smugglers')).toEqual([{ first: 0, last: 1 }, { first: 3, last: 4 }]);
         expect(wheelVoidRuns(book, 'Main Plot')).toEqual([{ first: 2, last: 2 }, { first: 5, last: 5 }]);
+    });
+
+    it('never draws fewer than three rings: All Scenes, then subplots or empty rings', () => {
+        // Two subplots: All Scenes + Smugglers, and one empty ring.
+        expect(wheelSubplotOrder(book).length + wheelPaddingRings(book)).toBe(3);
+        expect(wheelPaddingRings(book)).toBe(1);
+        // One subplot: All Scenes and two empty rings.
+        const single = buildStudioBook([scene('S/1.md', '1 A', 1, 'Main Plot')]);
+        expect(wheelPaddingRings(single)).toBe(2);
+        // Four subplots: no padding.
+        const many = buildStudioBook(['Main Plot', 'B', 'C', 'D'].map((subplot, i) => scene(`S/${i}.md`, `${i + 1} X`, 1, subplot)));
+        expect(wheelPaddingRings(many)).toBe(0);
     });
 
     it('gives acts equal shares of the circle and scenes equal shares of their act', () => {

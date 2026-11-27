@@ -9,7 +9,9 @@
  * Narrative mode rings it: one ring per subplot, the outermost (the main
  * plot's) drawn as All Scenes, each scene in its primary subplot's color, and
  * every other subplot ring inside it with each scene at the same angle as on
- * the outer ring (the timeline's sequence layout). Acts divide the circle. A
+ * the outer ring (the timeline's sequence layout). Like every timeline, it has
+ * at least three rings: ring 1 is All Scenes, rings 2 and 3 a subplot or an
+ * empty ring (placeholderRingCount). Acts divide the circle. A
  * subplot ring's empty stretches are the timeline's placeholder gray, one cell
  * per unbroken run within an act. Colors are the timeline's own (subplot
  * palette, chapter-marker color, scene edges), never the theme accent.
@@ -25,6 +27,8 @@
 import { sceneArcPath } from '../renderer/components/SceneArcs';
 import { SVG_NS } from '../inquiry/minimap/svgUtils';
 import { compareSubplotOrder } from '../renderer/utils/Precompute';
+import { placeholderRingCount } from '../renderer/modules/ModeRenderingHelpers';
+import { TimelineMode } from '../modes/ModeDefinition';
 import type { StudioBook } from './studioModel';
 
 const VIEW_R = 100;
@@ -52,6 +56,11 @@ export function wheelSubplotOrder(book: StudioBook): string[] {
     const counts = new Map<string, number>();
     for (const scene of book.scenes) for (const subplot of scene.subplots) counts.set(subplot, (counts.get(subplot) ?? 0) + 1);
     return [...counts].map(([subplot, count]) => ({ subplot, count })).sort(compareSubplotOrder).map(entry => entry.subplot);
+}
+
+/** Empty rings inside the subplot rings, so the wheel has the timeline's minimum of three rings. */
+export function wheelPaddingRings(book: StudioBook): number {
+    return placeholderRingCount(TimelineMode.NARRATIVE, wheelSubplotOrder(book).length);
 }
 
 /** Each scene's angular span, acts sharing the circle equally and scenes their act equally. */
@@ -107,7 +116,10 @@ export function buildStudioWheel(
     const subplots = wheelSubplotOrder(book);
     const scenesR = book.chapters.length > 0 ? SCENES_R_WITH_CHAPTERS : SCENES_R_WITHOUT_CHAPTERS;
     // One ring per subplot, as on the timeline: the outermost is All Scenes.
-    const ringCount = Math.max(1, subplots.length);
+    // Never fewer than the timeline's minimum (three): Narrative's own
+    // padding rule adds empty rings inside the subplot rings.
+    const paddingRings = wheelPaddingRings(book);
+    const ringCount = subplots.length + paddingRings;
     const ringBand = (scenesR - CENTER_R) / ringCount;
     const outerInner = scenesR - ringBand + RING_GAP / 2;
     const wedgesByScene: SVGPathElement[][] = book.scenes.map(() => []);
@@ -149,6 +161,17 @@ export function buildStudioWheel(
         for (const scene of book.scenes) if (scene.subplots.includes(subplot)) addWedge(ring, scene.index, inner, outer, fill);
         svg.appendChild(ring);
     });
+
+    // Padding rings: room for a subplot not yet written, empty all the way round.
+    for (let pad = 0; pad < paddingRings; pad++) {
+        const position = subplots.length + pad;
+        const outer = scenesR - position * ringBand - RING_GAP / 2;
+        const inner = outer - ringBand + RING_GAP;
+        const ring = make('g');
+        ring.classList.add('ert-studio-ring', 'ert-studio-ring--empty');
+        arc(ring, inner, outer, START, START + TAU, 'ert-studio-void');
+        svg.appendChild(ring);
+    }
 
     const chapterArcs: SVGPathElement[] = [];
     if (book.chapters.length > 0) {

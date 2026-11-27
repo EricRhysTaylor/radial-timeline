@@ -358,7 +358,7 @@ export class WritingStudioView extends ItemView {
                         const link = item.createEl('button', { cls: 'ert-studio__contents-link ert-studio__contents-link--chapter', attr: { type: 'button' } });
                         link.dataset.sceneIndex = String(chapter.firstScene);
                         link.dataset.chapterIndex = String(chapter.index);
-                        link.createSpan({ cls: 'ert-studio__contents-num', text: String(chapter.index + 1) });
+                        // No number column: scene numbers own it, and the reading header names the chapter's number.
                         link.createSpan({ text: chapter.title });
                         chapterList = item.createEl('ol', { cls: 'ert-studio__contents-list ert-studio__contents-list--scenes' });
                     }

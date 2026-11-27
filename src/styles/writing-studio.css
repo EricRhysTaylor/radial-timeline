@@ -172,8 +172,10 @@
   padding-inline-start: var(--size-4-4);
 }
 
-.ert-studio__contents-link {
+/* Doubled class: outranks Obsidian's default button chrome. */
+.ert-studio__contents-link.ert-studio__contents-link {
   display: flex;
+  justify-content: flex-start;
   gap: var(--size-4-2);
   align-items: baseline;
   width: 100%;
@@ -190,7 +192,7 @@
   cursor: pointer;
 }
 
-.ert-studio__contents-link:hover {
+.ert-studio__contents-link.ert-studio__contents-link:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
@@ -204,7 +206,7 @@
   color: var(--text-accent);
 }
 
-.ert-studio__contents-link[aria-current="location"] {
+.ert-studio__contents-link.ert-studio__contents-link[aria-current="location"] {
   background: var(--background-modifier-active-hover);
 }
 
@@ -529,7 +531,8 @@
     z-index: 4;
   }
 
-  .ert-studio__strip {
+  /* Doubled class: outranks Obsidian's default button chrome. */
+  .ert-studio__strip.ert-studio__strip {
     display: flex;
     gap: var(--size-4-3);
     align-items: center;

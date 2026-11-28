@@ -93,17 +93,17 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         const numbersByScene = new Map<string, Element[]>();
         svg.querySelectorAll('.rt-number-square[data-scene-id], .rt-number-text[data-scene-id]').forEach(el => {
             const id = el.getAttribute('data-scene-id')!;
-            const numbers = numbersByScene.get(id) ?? [];
+            const numbers = numbersByScene.get(id) ?? []; // SAFE: the scene's first number square starts its list
             numbers.push(el); numbersByScene.set(id, numbers);
         });
         svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => group.classList.toggle('is-active', holds(group)));
         svg.querySelectorAll<SVGElement>('.rt-scene-group[data-item-type="Scene"]').forEach(group => {
-            const encoded = group.getAttribute('data-path') ?? '';
+            const encoded = group.getAttribute('data-path') ?? ''; // SAFE: a scene group without a path is neither a source nor a target
             const source = sourceEncoded.has(encoded);
             const destination = !source && destinationEncoded.has(encoded);
             const targets: Element[] = [group];
             const sceneId = group.querySelector('.rt-scene-path')?.id;
-            if (sceneId) targets.push(...(numbersByScene.get(sceneId) ?? []));
+            if (sceneId) targets.push(...(numbersByScene.get(sceneId) ?? [])); // SAFE: a scene drawn without number squares has none to light
             targets.forEach(el => {
                 el.classList.toggle('ert-reference-source-scene', source);
                 el.classList.toggle('ert-reference-destination-scene', destination);

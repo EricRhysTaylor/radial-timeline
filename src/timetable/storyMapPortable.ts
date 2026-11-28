@@ -23,10 +23,10 @@ function readPortableShape(value: unknown, bookId: string): { bookFolder: string
     const record = { ...raw.provenance, bookId };
     if (!isStoryMapProvenance(record)) return null;
     const scenePaths = new Set(record.scenes.map(scene => scene.path));
-    const nodes = record.generated.nodes ?? [];
+    const nodes = record.generated.nodes ?? []; // SAFE: Canvas JSON may omit nodes; an empty map has none to check
     const nodeIds = new Set(nodes.map(node => node.id));
     if (scenePaths.size !== record.scenes.length || nodeIds.size !== nodes.length || nodes.some(node => !node.id || (node.type === 'file' && (typeof node.file !== 'string' || !scenePaths.has(node.file))))) return null;
-    if ((record.generated.edges ?? []).some(edge => !nodeIds.has(edge.fromNode) || !nodeIds.has(edge.toNode))) return null;
+    if ((record.generated.edges ?? []).some(edge => !nodeIds.has(edge.fromNode) || !nodeIds.has(edge.toNode))) return null; // SAFE: Canvas JSON may omit edges; none to check
     return { bookFolder: raw.bookFolder, record };
 }
 
@@ -38,7 +38,8 @@ export function readPortableStoryMap(value: unknown, books: ReadonlyArray<{ id: 
     if (!read) return null;
     const { bookFolder, record } = read;
     const inside = (path: string) => path.startsWith(`${bookFolder}/`) && !path.split('/').some(part => !part || part === '.' || part === '..');
-    if (record.scenes.some(scene => !inside(scene.path)) || (record.generated.nodes ?? []).some(node => node.type === 'file' && (typeof node.file !== 'string' || !inside(node.file)))) return null;
+    const nodes = record.generated.nodes ?? []; // SAFE: Canvas JSON may omit nodes; none to check
+    if (record.scenes.some(scene => !inside(scene.path)) || nodes.some(node => node.type === 'file' && (typeof node.file !== 'string' || !inside(node.file)))) return null;
     return record;
 }
 

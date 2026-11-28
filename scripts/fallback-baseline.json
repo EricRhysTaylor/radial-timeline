@@ -1,14 +1,14 @@
 {
   "maintenance": {
-    "totalWarnings": 2110,
+    "totalWarnings": 2081,
     "warningsByRule": {
-      "silent-catch": 17,
+      "silent-catch": 16,
       "or-chain-3": 0,
-      "nullish-literal": 1069,
-      "or-literal": 998,
-      "switch-default-return": 26
+      "nullish-literal": 1064,
+      "or-literal": 978,
+      "switch-default-return": 23
     },
-    "updatedAt": "2026-11-17T00:06:46.712Z",
+    "updatedAt": "2026-11-28T04:53:14.673Z",
     "mode": "maintenance"
   }
 }

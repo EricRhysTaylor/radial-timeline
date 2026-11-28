@@ -42,7 +42,7 @@ export function renderTimelinePreview(container: HTMLElement, doc: TimelinePrevi
         const scenes = new Map(doc.scenes.map(scene => [scene.id, scene]));
         tree.scenes.forEach(placement => {
             const scene = scenes.get(placement.sceneId);
-            const status = scene?.status ?? 'todo';
+            const status = scene?.status ?? 'todo'; // SAFE: the preview colors a scene with no status like Todo, as the timeline does
             const palette = themes.dark.color;
             const color = status === 'complete'
                 ? palette.publishStage[scene?.publishStage as keyof typeof palette.publishStage] ?? palette.publishStage.zero

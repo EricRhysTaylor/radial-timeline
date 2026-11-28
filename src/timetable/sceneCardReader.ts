@@ -135,8 +135,8 @@ export function highlightReaderSentence(reader: HTMLElement, sentence: { start: 
     let offset = 0;
     let started = false;
     while (walker.nextNode()) {
-        const node = walker.currentNode;
-        const end = offset + (node.textContent?.length ?? 0);
+        const node = walker.currentNode as Text; // SAFE: the walker shows text nodes only (NodeFilter.SHOW_TEXT)
+        const end = offset + node.length;
         if (!started && sentence.start < end) { range.setStart(node, sentence.start - offset); started = true; }
         if (started && sentence.end <= end) {
             range.setEnd(node, sentence.end - offset);

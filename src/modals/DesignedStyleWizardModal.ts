@@ -1480,7 +1480,7 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         const indentRow = this.fieldRow(body, t('ui.designedStyleWizardModal.paragraphIndentLabel'));
-        this.numberInput(indentRow, this.spec.body.paragraphIndentEm ?? 0, 'paragraphIndentEm', (n) => {
+        this.numberInput(indentRow, this.spec.body.paragraphIndentEm ?? 0, 'paragraphIndentEm', (n) => { // SAFE: 0 is how the control shows "not set"; choosing 0 clears it (wizardControlRanges)
             this.mutateSpec((s) => {
                 if (n === 0) delete s.body.paragraphIndentEm;
                 else s.body.paragraphIndentEm = n;
@@ -1610,7 +1610,7 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         const lsRow = this.fieldRow(body, t('ui.designedStyleWizardModal.letterSpacingLabel'));
-        this.numberInput(lsRow, this.spec.runningHeader.letterSpacing ?? 0, 'headerLetterSpacing', (n) => {
+        this.numberInput(lsRow, this.spec.runningHeader.letterSpacing ?? 0, 'headerLetterSpacing', (n) => { // SAFE: 0 is how the control shows "not set"; choosing 0 clears it (wizardControlRanges)
             this.mutateSpec((s) => {
                 if (n === 0) delete s.runningHeader.letterSpacing;
                 else s.runningHeader.letterSpacing = n;

@@ -129,7 +129,7 @@ function sceneIdOnDisk(content: string): string | undefined {
     try {
         const text = readFrontmatterText(content);
         return text ? readSceneId(frontmatterValues(text)) : undefined;
-    } catch {
+    } catch { // SAFE: YAML that cannot be read counts as no scene id, as this function documents
         return undefined;
     }
 }

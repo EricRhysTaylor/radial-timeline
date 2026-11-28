@@ -136,7 +136,7 @@ export class CommandRegistrar {
                     const view = this.plugin.getTimelineViews().find(item => item.currentMode === 'chronologue');
                     const svg = view?.contentEl.querySelector<SVGSVGElement>('.radial-timeline-svg');
                     if (!view || !svg) { new Notice('Open a timeline in Chronologue first.'); return; }
-                    new CompressedPreviewModal(this.app, svg, view.sceneData ?? []).open();
+                    new CompressedPreviewModal(this.app, svg, view.sceneData ?? []).open(); // SAFE: developer-only preview; a timeline with no scene data previews empty
                 },
             });
             this.plugin.addCommand({
@@ -973,7 +973,7 @@ export class CommandRegistrar {
                     // Say whose LaTeX failed, and show what LaTeX printed.
                     if (!isImportedLayout) throw error;
                     const failure = categorizeExportError(error);
-                    const latexLines = extractLatexErrorLines(failure.rawOutput ?? '');
+                    const latexLines = extractLatexErrorLines(failure.rawOutput ?? ''); // SAFE: a failure with no tool output has no LaTeX lines, so the error is not the template's
                     // Only a LaTeX error ("! ...") is the template's; anything
                     // else keeps the message it already has.
                     if (!latexLines[0]?.startsWith('!')) throw failure;

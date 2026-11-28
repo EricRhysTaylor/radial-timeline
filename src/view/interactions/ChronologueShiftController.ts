@@ -276,7 +276,9 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         const profile = getActivePlanetaryProfile(view.plugin.settings);
 
         const padTime = (value: number): string => String(Math.max(0, value)).padStart(2, '0');
-        const ordered = Array.from(dateLabels).sort((a, b) => Date.parse(a.getAttribute('data-earth-date') ?? '') - Date.parse(b.getAttribute('data-earth-date') ?? ''));
+        // Every label here was selected by [data-earth-date], so the attribute is present.
+        const earthTime = (label: Element): number => Date.parse(label.getAttribute('data-earth-date')!);
+        const ordered = Array.from(dateLabels).sort((a, b) => earthTime(a) - earthTime(b));
         const precedingYear = new Map<Element, number>();
         let previousYear: number | undefined;
         if (profile) ordered.forEach(label => {

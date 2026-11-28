@@ -110,7 +110,7 @@ export function buildStudioBook(items: TimelineItem[], context: ChapterContext =
     for (const item of items) {
         if (!item.path) continue;
         const subplot = item.subplot && item.subplot.trim().length > 0 ? item.subplot.trim() : mainPlot;
-        const list = subplotsByPath.get(item.path) ?? [];
+        const list = subplotsByPath.get(item.path) ?? []; // SAFE: the scene's first subplot starts its list
         if (!list.includes(subplot)) list.push(subplot);
         subplotsByPath.set(item.path, list);
     }

@@ -58,7 +58,7 @@ export interface StudioWheelHandle {
 /** Subplots in timeline ring order: the main plot outermost, then by scene count. */
 export function wheelSubplotOrder(book: StudioBook): string[] {
     const counts = new Map<string, number>();
-    for (const scene of book.scenes) for (const subplot of scene.subplots) counts.set(subplot, (counts.get(subplot) ?? 0) + 1);
+    for (const scene of book.scenes) for (const subplot of scene.subplots) counts.set(subplot, (counts.get(subplot) ?? 0) + 1); // SAFE: counting; a subplot's first scene counts from 0
     return [...counts].map(([subplot, count]) => ({ subplot, count })).sort(compareSubplotOrder).map(entry => entry.subplot);
 }
 
@@ -239,9 +239,9 @@ export function buildStudioWheel(
         svg,
         setCurrent(index) {
             if (index === current) return;
-            if (current !== null) for (const wedge of wedgesByScene[current] ?? []) wedge.classList.remove('is-current');
+            if (current !== null) for (const wedge of wedgesByScene[current] ?? []) wedge.classList.remove('is-current'); // SAFE: a scene with no drawn wedge has none to unlight
             current = index;
-            if (index !== null) for (const wedge of wedgesByScene[index] ?? []) wedge.classList.add('is-current');
+            if (index !== null) for (const wedge of wedgesByScene[index] ?? []) wedge.classList.add('is-current'); // SAFE: a scene with no drawn wedge has none to light
             const scene = index !== null ? book.scenes[index] : undefined;
             for (const chapterArc of chapterArcs) {
                 chapterArc.classList.toggle('is-current', !!scene && scene.chapter === Number(chapterArc.dataset.chapterIndex));

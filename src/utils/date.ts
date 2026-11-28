@@ -921,7 +921,7 @@ export function generateChronologicalTicks(
     const validScenes: Array<{ date: Date; sortedIndex: number; precision: 'year' | 'month' | 'day' | 'time' }> = [];
     scenes.forEach((s, idx) => {
         if (s.when && !isNaN(s.when.getTime())) {
-            validScenes.push({ date: s.when, sortedIndex: idx, precision: s.whenPrecision ?? 'time' });
+            validScenes.push({ date: s.when, sortedIndex: idx, precision: s.whenPrecision ?? 'time' }); // SAFE: a When without a recorded precision was parsed as a full date and time
         }
     });
 

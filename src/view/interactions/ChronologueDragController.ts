@@ -174,7 +174,7 @@ export class ChronologueDragController {
         this.startX = evt.clientX;
         this.startY = evt.clientY;
 
-        const startAngle = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle') ?? '');
+        const startAngle = this.groupStartAngle(group);
         this.sourceStartAngle = Number.isFinite(startAngle) ? startAngle : undefined;
         this.accentColor = resolvePublishStageColorFromGroup(this.view.plugin.app, group);
         this.modalAccent = resolveSubplotColorFromGroup(group);
@@ -278,7 +278,7 @@ export class ChronologueDragController {
         const path = encodedPath ? decodeURIComponent(encodedPath) : null;
         if (!path || path === this.sourcePath) return null;
 
-        const startAngle = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle') ?? '');
+        const startAngle = this.groupStartAngle(group);
         if (!Number.isFinite(startAngle)) return null;
         return { group, path, startAngle };
     }
@@ -304,6 +304,12 @@ export class ChronologueDragController {
         }
     }
 
+    /** A scene's start angle on the wheel: the raw angle when time is compressed, else the drawn one; NaN when it has neither. */
+    private groupStartAngle(group: Element): number {
+        const raw = group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle');
+        return raw === null ? NaN : Number(raw);
+    }
+
     // ── commit ─────────────────────────────────────────────────────────────
 
     private async commitDrop(sourcePath: string, targetPath: string): Promise<void> {
@@ -312,8 +318,11 @@ export class ChronologueDragController {
             const byPath = new Map(sequence.map(scene => [scene.path, scene]));
             const displayed = Array.from(this.svg.querySelectorAll<SVGGElement>('.rt-scene-group[data-item-type="Scene"]'))
                 .filter(group => this.isOnOuterRing(group))
-                .sort((a, b) => Number(a.getAttribute('data-start-angle-raw') ?? a.getAttribute('data-start-angle')) - Number(b.getAttribute('data-start-angle-raw') ?? b.getAttribute('data-start-angle')))
-                .map(group => byPath.get(decodeURIComponent(group.getAttribute('data-path') || '')))
+                .sort((a, b) => this.groupStartAngle(a) - this.groupStartAngle(b))
+                .map(group => {
+                    const path = group.getAttribute('data-path');
+                    return path === null ? undefined : byPath.get(decodeURIComponent(path));
+                })
                 .filter((scene): scene is typeof sequence[number] => !!scene);
             if (displayed.length === sequence.length) sequence = displayed;
         }

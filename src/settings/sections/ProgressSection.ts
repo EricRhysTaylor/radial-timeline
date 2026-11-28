@@ -933,6 +933,6 @@ export function renderProgressSection(params: {
     // Dashed frame in the Zero stage color; tinted while the mode is on.
     zeroDraftSetting.settingEl.addClass('ert-zero-draft-setting');
     zeroDraftSetting.settingEl.setCssProps({ '--ert-zero-draft-color': zeroStageColor });
-    zeroDraftSetting.settingEl.toggleClass('is-enabled', plugin.settings.enableZeroDraftMode ?? false);
+    zeroDraftSetting.settingEl.toggleClass('is-enabled', plugin.settings.enableZeroDraftMode ?? false); // SAFE: an unset setting is off, its default
 
 }

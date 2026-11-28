@@ -137,7 +137,7 @@ export class WritingStudioView extends ItemView {
     }
 
     async setState(state: unknown, result: ViewStateResult): Promise<void> {
-        const next = (state ?? {}) as StudioState;
+        const next = (state ?? {}) as StudioState; // SAFE: a fresh tab has no saved state; each field is checked below
         if (next.scope === 'book' || next.scope === 'chapter' || next.scope === 'scene') this.readingScope = next.scope;
         if (typeof next.scenePath === 'string' && next.scenePath.length > 0) {
             this.pendingScenePath = next.scenePath;
@@ -335,7 +335,7 @@ export class WritingStudioView extends ItemView {
 
     /** The book's shape as the manuscript shows it; a change means the manuscript is rebuilt. */
     private structureKey(book: StudioBook): string {
-        return book.scenes.map(scene => `${scene.path}|${scene.title}|${scene.act}|${scene.chapter ?? ''}`).join('\n')
+        return book.scenes.map(scene => `${scene.path}|${scene.title}|${scene.act}|${scene.chapter ?? ''}`).join('\n') // SAFE: a scene in no chapter contributes an empty field to the key
             + '\n#' + book.chapters.map(chapter => chapter.title).join('\n');
     }
 
@@ -486,7 +486,9 @@ export class WritingStudioView extends ItemView {
         if (list.scrollHeight <= list.clientHeight) return;
         const link = list.querySelector<HTMLElement>('.ert-studio__contents-link.is-current[data-scene-index]:not([data-chapter-index])');
         if (!link) return;
-        const heading = list.querySelector<HTMLElement>('.ert-studio__contents-heading')?.offsetHeight ?? 0;
+        const headingEl = list.querySelector<HTMLElement>('.ert-studio__contents-heading');
+        if (!headingEl) return;
+        const heading = headingEl.offsetHeight;
         const box = list.getBoundingClientRect();
         const row = link.getBoundingClientRect();
         if (row.top >= box.top + heading && row.bottom <= box.bottom) return;
@@ -637,7 +639,7 @@ export class WritingStudioView extends ItemView {
         const scene = section && this.book ? this.book.scenes[Number(section.dataset.sceneIndex)] : undefined;
         const target = link.getAttribute('data-href') ?? link.getAttribute('href');
         if (!target) return;
-        void this.app.workspace.openLinkText(target, scene?.path ?? '', Keymap.isModEvent(event));
+        void this.app.workspace.openLinkText(target, scene?.path ?? '', Keymap.isModEvent(event)); // SAFE: '' resolves the link from the vault root, Obsidian's meaning for no source note
     }
 
     // ── Header and details ───────────────────────────────────────────────

@@ -126,7 +126,7 @@ export function renderCommunitySceneTextBlock({ plugin, containerEl, book, reren
     };
 
     // Scenes asked for on Community: each opens the Send dialog.
-    const requests = state?.requests ?? [];
+    const requests = state?.requests ?? []; // SAFE: before Community has answered, no scenes have been asked for
     const asked = new Setting(block)
         .setName(t('ui.communityShareSection.requestsName'))
         .setDesc(state

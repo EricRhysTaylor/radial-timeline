@@ -97,7 +97,8 @@ export async function prepareDemoImport(
             const rebase = (item: string) => resolvePath(item, true);
             const next = { ...record,
                 scenes: record.scenes.map(scene => ({ ...scene, path: rebase(scene.path) })),
-                generated: { ...record.generated, nodes: (record.generated.nodes ?? []).map(node => node.type === 'file' && typeof node.file === 'string' ? { ...node, file: rebase(node.file) } : node) }
+                generated: { ...record.generated, nodes: (record.generated.nodes ?? []) // SAFE: a Canvas record may omit nodes; then none are rebased
+                    .map(node => node.type === 'file' && typeof node.file === 'string' ? { ...node, file: rebase(node.file) } : node) }
             };
             files.set(path, strToU8(JSON.stringify(portableStoryMap(next, `${destination}/${folder}`), null, 2)));
         } else if (path.endsWith('.canvas')) {

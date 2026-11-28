@@ -103,7 +103,7 @@ export function buildChronologueOuterLabels(
         const range = compressed?.scale.ranges.find(item => item.id === scene.path);
         return range ? compressed!.mapAngle((range.startAngle + range.endAngle) / 2) : positions.get(idx)!.startAngle;
     });
-    const sceneAngularSize = compressed ? undefined : positions.get(0)?.angularSize ?? 0;
+    const sceneAngularSize = compressed ? undefined : positions.get(0)?.angularSize ?? 0; // SAFE: with no first scene there is no width to draw
 
     const datedScenes = sortedScenes.map(scene => {
         const raw = scene.rawFrontmatter?.When;

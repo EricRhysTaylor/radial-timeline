@@ -88,7 +88,7 @@ export interface ChapterResolution {
 
 /** The book's Chapter source; absent means the scene property. */
 export function bookChapterContext(book: Partial<Pick<BookProfile, 'sourceFolder' | 'chapterSource'>> | null | undefined): ChapterContext {
-    return { source: book?.chapterSource ?? { kind: 'property' }, bookFolder: book?.sourceFolder ?? '' };
+    return { source: book?.chapterSource ?? { kind: 'property' }, bookFolder: book?.sourceFolder ?? '' }; // SAFE: no Chapter source chosen means the Chapter property (the setting's default); folder mode is not chosen without a book folder
 }
 
 /**

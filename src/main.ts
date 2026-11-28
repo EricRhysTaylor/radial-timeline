@@ -71,6 +71,8 @@ import { migrateLegacyKeysToSecretStorage, needsLegacyKeyMigration } from './ai/
 import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
+import { sanitizePublishStageColors, sanitizeSubplotColors } from './utils/cssColorSafety';
+import { sanitizeStoredHeroPatterns } from './renderer/components/heroPatternValidator';
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
 import { COMMUNITY_AUTO_SYNC_INTERVAL_MS, CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
@@ -1066,6 +1068,13 @@ export default class RadialTimelinePlugin extends Plugin {
         const sceneTemplatesMigrated = sceneTemplates.base !== storedSceneTemplates.base || sceneTemplates.advanced !== storedSceneTemplates.advanced;
         this.settings.sceneYamlTemplates = sceneTemplates;
         syncMainPlotName(this.settings);
+        // Colours and custom patterns from data.json are written into SVG
+        // markup, so a synced or shared vault's edited copy is checked here
+        // before anything renders: unsafe colours take their defaults and a
+        // custom pattern that breaks the paste rules is dropped.
+        this.settings.publishStageColors = sanitizePublishStageColors(this.settings.publishStageColors, DEFAULT_SETTINGS.publishStageColors);
+        this.settings.subplotColors = sanitizeSubplotColors(this.settings.subplotColors, DEFAULT_SETTINGS.subplotColors);
+        this.settings.customWorkingPatterns = sanitizeStoredHeroPatterns(this.settings.customWorkingPatterns);
         syncSubplotPalette(subplotPaletteColors(this.settings.subplotColors));
         await this.hydrateInquirySessionsFromVault();
         if (this.settings.publishStageColors?.House === '#DA7847') {

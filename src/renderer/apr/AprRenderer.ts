@@ -16,6 +16,7 @@ import { DEFAULT_BOOK_TITLE } from '../../utils/books';
 import { renderAprBadges, renderAprBranding, renderAprCenterPercent } from './AprBranding';
 import { STAGE_ORDER } from '../../utils/constants';
 import { escapeXml } from '../../utils/svg';
+import { isSafeCssColor } from '../../utils/cssColorSafety';
 import { compareSubplotOrder } from '../utils/Precompute';
 import { getMainPlotName } from '../../utils/mainPlot';
 
@@ -93,10 +94,10 @@ const resolveOpacity = (portable: boolean) =>
     (varExpr: string, fallback: string): string =>
         portable ? fallback : varExpr;
 
-const normalizeOptionalColor = (value?: string): string | undefined => {
-    const trimmed = value?.trim();
-    return trimmed ? trimmed : undefined;
-};
+// Every colour option reaches the SVG markup through here, so an unsafe value
+// (for example from an edited data.json) reads as unset and takes its default.
+const normalizeOptionalColor = (value?: string): string | undefined =>
+    isSafeCssColor(value) ? value.trim() : undefined;
 
 /**
  * Normalize a stage color map so every key (Zero/Author/House/Press) is a non-empty string.
@@ -176,7 +177,7 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
     const aprIdPrefix = `apr-${Math.random().toString(36).slice(2, 9)}-`;
 
     // Structural palette based on theme (with optional custom spokes color)
-    const structural = resolveStructuralColors(theme, spokeColor);
+    const structural = resolveStructuralColors(theme, normalizeOptionalColor(spokeColor));
 
     // Normalize stage colors so each key is guaranteed non-empty (blanks fall through to DEFAULT_SETTINGS).
     // Downstream code can trust stageColorMap.Press et al. without further checks.

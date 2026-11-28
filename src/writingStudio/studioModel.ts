@@ -246,6 +246,19 @@ export function scopeRange(book: StudioBook, scope: StudioScope, current: number
     return { first: 0, last };
 }
 
+/**
+ * The beat whose stage the scene is in: the last beat marker before it in book order. A beat
+ * opens its stage, which runs until the next beat. Null before the first beat.
+ */
+export function beatAt(book: StudioBook, sceneIndex: number): StudioBeat | null {
+    let found: StudioBeat | null = null;
+    for (const beat of book.beats) {
+        if (beat.afterScene >= sceneIndex) break;
+        found = beat;
+    }
+    return found;
+}
+
 export function chapterAt(book: StudioBook, sceneIndex: number): StudioChapter | null {
     const scene = book.scenes[sceneIndex];
     return scene && scene.chapter !== null ? book.chapters[scene.chapter] ?? null : null;

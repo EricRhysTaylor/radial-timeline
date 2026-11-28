@@ -26,6 +26,8 @@ import {
 } from './SceneTitleExpansion';
 import { applySceneTitleGeometry } from '../../renderer/dom/SceneTitleOrientation';
 import { SCENE_TITLE_INSET } from '../../renderer/layout/LayoutConstants';
+import { beatStagePaths, type RingItem } from './beatStage';
+import { getOuterRingIndex } from './dragGeometry';
 
 export class SceneInteractionManager {
     private svg: SVGSVGElement;
@@ -325,27 +327,15 @@ export class SceneInteractionManager {
         const sceneTitle = group.querySelector('.rt-scene-title');
         if (sceneTitle) sceneTitle.classList.add('rt-selected');
         
-        // Find related scenes (same path) and don't mute them
+        // Related scenes stay lit: the same note on other rings and, for a beat on the
+        // Narrative timeline, the scenes in its stage (up to the next beat).
         const related = new Set<Element>();
         const currentPathAttr = group.getAttribute('data-path');
-        if (currentPathAttr) {
-            const matches = this.svg.querySelectorAll(`[data-path="${currentPathAttr}"]`);
-            matches.forEach(mg => {
-                if (mg === group) return;
-                const rp = mg.querySelector('.rt-scene-path');
-                if (rp) related.add(rp);
-                const rt = mg.querySelector('.rt-scene-title');
-                if (rt) related.add(rt);
-                const rid = (rp as SVGPathElement | null)?.id;
-                if (rid) {
-                    const rsq = this.svg.querySelector(`.rt-number-square[data-scene-id="${rid}"]`);
-                    if (rsq) related.add(rsq);
-                    const rtx = this.svg.querySelector(`.rt-number-text[data-scene-id="${rid}"]`);
-                    if (rtx) related.add(rtx);
-                }
-            });
+        if (currentPathAttr) this.keepPathLit(currentPathAttr, related, group);
+        if (group.getAttribute('data-item-type') === 'Beat' && currentPathAttr && this.getView()?.currentMode === 'narrative') {
+            for (const path of beatStagePaths(this.outerRingItems(), currentPathAttr)) this.keepPathLit(path, related, group);
         }
-        
+
         // Mute everything else
         const all = this.svg.querySelectorAll('.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title, .rt-discontinuity-marker');
         all.forEach(el => {
@@ -355,6 +345,33 @@ export class SceneInteractionManager {
         });
     }
     
+    /** Every drawing of the note at this (encoded) path, on any ring, joins the lit set. */
+    private keepPathLit(encodedPath: string, related: Set<Element>, hovered: Element): void {
+        this.svg.querySelectorAll(`[data-path="${encodedPath}"]`).forEach(match => {
+            if (match === hovered) return;
+            const path = match.querySelector('.rt-scene-path');
+            if (path) related.add(path);
+            const title = match.querySelector('.rt-scene-title');
+            if (title) related.add(title);
+            const id = (path as SVGPathElement | null)?.id;
+            if (id) {
+                const square = this.svg.querySelector(`.rt-number-square[data-scene-id="${id}"]`);
+                if (square) related.add(square);
+                const text = this.svg.querySelector(`.rt-number-text[data-scene-id="${id}"]`);
+                if (text) related.add(text);
+            }
+        });
+    }
+
+    /** The outer ring's scenes and beats in book order (clockwise from the top). */
+    private outerRingItems(): RingItem[] {
+        const outer = getOuterRingIndex(this.svg);
+        return Array.from(this.svg.querySelectorAll<SVGGElement>(`.rt-scene-group[data-ring="${outer}"][data-path]:not([data-path=""])`))
+            .map(group => ({ group, angle: Number(group.getAttribute('data-start-angle-raw')) }))
+            .sort((a, b) => a.angle - b.angle)
+            .map(({ group }) => ({ kind: group.getAttribute('data-item-type') === 'Beat' ? 'Beat' : 'Scene', path: group.getAttribute('data-path')! }));
+    }
+
     // ========================================================================
     // Scene Title Expansion Logic
     // ========================================================================

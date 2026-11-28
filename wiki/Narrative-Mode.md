@@ -10,7 +10,7 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Book or Saga scope**: Switch between one active book and a combined Saga view.
 *   **Subplot Colors**: The outer ring segments are colored by their subplot. This lets you quickly visualize which plot threads are dominant in each section of the book.
 *   **Publishing markers**: Optional outer-ring placards show the part and chapter markers you have placed on scenes.
-*   **Story Beats**: Displays story beats (like Save the Cat) along the timeline, helping you pace your narrative structure.
+*   **Story Beats**: Displays story beats (like Save the Cat) along the timeline, helping you pace your narrative structure. Each beat marks a stage of your story's progress: it sits just before the scenes it describes, and its stage runs to the next beat. Hover a beat to light the scenes in its stage, on every ring they appear on, while the rest of the book dims.
 *   **Beat names in your book's terms**: Hold **Shift** to swap the beat labels to each beat's [In This Book](YAML-Frontmatter#beat-notes-yaml) name — "Debate" becomes "The Flight from Detection". Shift also shows the subplot ring key.
 *   **Interactive Reordering**: You can drag scenes on the outer ring to reorder them. See [Reorder Scenes](How-to#reorder-scenes) for details.
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.

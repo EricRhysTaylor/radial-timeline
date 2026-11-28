@@ -7001,6 +7001,7 @@ export const en = {
             chapterContinued: '{{title}} (continued)',
             details: 'Scene details',
             detailsChapter: 'Chapter',
+            detailsBeat: 'Beat',
             detailsAct: 'Act',
             detailsWhen: 'When',
             detailsSubplots: 'Subplots',

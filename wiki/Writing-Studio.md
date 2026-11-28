@@ -15,7 +15,7 @@ Writing Studio shows the active book. Choose another book in the timeline, and t
 
 - **The wheel** lights the scene you are reading. The other scenes stay gray. Click a scene on the wheel to go to it.
 - **Contents** lists the book in outline form: acts, then chapters with their scene counts, then scenes and beats. Click a scene to go to it. Click a chapter's arrow to fold it.
-- **Scene details**, on the right, show the scene's chapter, act, date, subplots, status, publish stage, word count and synopsis.
+- **Scene details**, on the right, show the scene's chapter, beat, act, date, subplots, status, publish stage, word count and synopsis. The beat is the stage of the story the scene is in: the last beat before it in the book. A scene before the first beat has no beat line.
 
 As you scroll, the wheel lights the scene you are reading, and the details follow. The wheel stays in place; only the contents list scrolls, and it keeps the scene you are reading in view.
 

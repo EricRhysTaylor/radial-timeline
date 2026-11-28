@@ -36,7 +36,7 @@ import { toRomanNumeral } from '../utils/romanNumerals';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { assignSubplotColors, bookOwnSubplotColors, subplotColorCss, subplotColorOn } from '../renderer/utils/subplotColors';
 import { WRITING_STUDIO_VIEW_TYPE } from './constants';
-import { actStarts, buildOutline, buildStudioBook, chapterAt, chapterTitleIsNumber, scopeRange, stepTarget, type OutlineLeaf, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
+import { actStarts, beatAt, buildOutline, buildStudioBook, chapterAt, chapterTitleIsNumber, scopeRange, stepTarget, type OutlineLeaf, type StudioBook, type StudioScene, type StudioScope, type StudioUnit } from './studioModel';
 import { buildStudioWheel, wheelSubplotOrder, type StudioWheelHandle } from './studioWheel';
 
 interface StudioState {
@@ -748,6 +748,7 @@ export class WritingStudioView extends ItemView {
             facts.createEl('dd', { text: value });
         };
         fact(t('ui.writingStudio.detailsChapter'), chapter ? (chapterTitleIsNumber(chapter.title) ? chapter.title : `${chapter.index + 1} · ${chapter.title}`) : null);
+        fact(t('ui.writingStudio.detailsBeat'), beatAt(book, this.current)?.name ?? null); // SAFE: before the first beat the scene is in no beat's stage; the line is left out
         fact(t('ui.writingStudio.detailsAct'), toRomanNumeral(scene.act));
         fact(t('ui.writingStudio.detailsWhen'), scene.when ? formatExportWhen(scene.when) : null);
         fact(t('ui.writingStudio.detailsSubplots'), scene.subplots.join(', '));

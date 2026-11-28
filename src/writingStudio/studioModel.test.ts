@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { actStarts, buildOutline, buildStudioBook, chapterTitleIsNumber, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
+import { actStarts, beatAt, buildOutline, buildStudioBook, chapterTitleIsNumber, scopeRange, splitSceneTitle, stepTarget } from './studioModel';
 
 function scene(path: string, title: string, extra: Partial<TimelineItem> & { chapter?: string } = {}): TimelineItem {
     const { chapter, ...rest } = extra;
@@ -97,6 +97,23 @@ describe('Writing Studio contents outline', () => {
             ['Catalyst', 1],
             ['Break Into Two', 2],
         ]);
+    });
+
+    it('puts each scene in the stage of the last beat before it', () => {
+        // Opening Image opens the book; Catalyst follows scene 2 (index 1); Break Into Two follows scene 3.
+        expect([0, 1, 2, 3, 4].map(index => beatAt(book, index)?.name)).toEqual([
+            'Opening Image', 'Opening Image', 'Catalyst', 'Break Into Two', 'Break Into Two',
+        ]);
+    });
+
+    it('puts no beat on a scene before the first beat', () => {
+        const late = buildStudioBook([
+            scene('S/1.md', '1 Prologue'),
+            { itemType: 'Beat', path: 'B/1.md', title: '1.5 Catalyst', date: '' },
+            scene('S/2.md', '2 Arrival'),
+        ]);
+        expect(beatAt(late, 0)).toBeNull();
+        expect(beatAt(late, 1)?.name).toBe('Catalyst');
     });
 
     it('nests scenes and in-chapter beats under chapters, inside acts', () => {

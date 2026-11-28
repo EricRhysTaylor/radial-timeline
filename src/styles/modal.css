@@ -733,6 +733,25 @@
   min-width: 0;
 }
 
+/* Renumber: every planned rename, one quiet line each. */
+.ert-drag-confirm-rename-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-2xs);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--ert-pad-sm);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+}
+
+.ert-drag-confirm-rename-item {
+  font-size: 0.88em;
+  line-height: 1.35;
+  color: var(--text-normal);
+}
+
 .ert-drag-confirm-history-meta {
   font-size: 0.78em;
   line-height: 1.35;

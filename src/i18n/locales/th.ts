@@ -1520,7 +1520,6 @@ export const th: DeepPartial<TranslationKeys> = {
         "rangeSelectedLabel": "ฉาก {{start}}–{{end}}",
         "rangeCountLabel": "เลือก {{count}} ฉาก",
         "rangeLoading": "กำลังดึงฉาก...",
-        "rangeDecimalWarning": "ชื่อไฟล์ฉากบางไฟล์ใช้ตัวเลขทศนิยมเป็นคำนำหน้า การจัดหมายเลขฉากแบบมาตรฐานใช้จำนวนเต็มเท่านั้น ใช้การลาก + ตั้งชื่อแบบ Ripple เพื่อปรับให้มาตรฐาน",
         "actionCancel": "ยกเลิก",
         "emptyNotice": "ไม่มีฉากใดให้จัดรวม",
         "rangeEmpty": "ช่วงที่เลือกว่างเปล่า",

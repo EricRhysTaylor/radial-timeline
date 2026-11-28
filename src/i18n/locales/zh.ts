@@ -1537,7 +1537,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         rangeSelectedLabel: '场景 {{start}}–{{end}}',
         rangeCountLabel: '已选择 {{count}} 个场景',
         rangeLoading: '正在获取场景…',
-        rangeDecimalWarning: '部分场景文件名使用了小数前缀。规范的场景编号仅为整数；请使用拖动 + Ripple Rename 进行规范化。',
         actionCancel: '取消',
         emptyNotice: '没有可组装的场景。',
         rangeEmpty: '所选范围为空。',

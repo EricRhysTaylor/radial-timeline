@@ -1520,7 +1520,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         "rangeSelectedLabel": "Scènes {{start}}–{{end}}",
         "rangeCountLabel": "{{count}} scènes sélectionnées",
         "rangeLoading": "Récupération des scènes…",
-        "rangeDecimalWarning": "Certains fichiers de scènes utilisent des préfixes décimaux. La numérotation canonique des scènes n'accepte que des entiers : utilisez le glisser-déposer et Renommer en cascade pour normaliser.",
         "actionCancel": "Annuler",
         "emptyNotice": "Aucune scène disponible pour l'assemblage.",
         "rangeEmpty": "La plage sélectionnée est vide.",

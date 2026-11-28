@@ -61,6 +61,7 @@ import {
 import { ERT_CLASSES } from '../ui/classes';
 import { buildSpreadValidationContext, collectSpreadWarningTooltips } from '../publishing/spreadValidationContext';
 import { getExportValidationIssues } from '../services/PublishingValidationService';
+import { openBookRenumber } from '../services/BookRenumberService';
 import type {
     BookProfile,
     BookPublishingPreferences,
@@ -1385,9 +1386,16 @@ export class ManuscriptOptionsModal extends Modal {
 
         this.createSectionHeading(this.scopeCard, t('manuscriptModal.rangeHeading'), 'sliders-horizontal');
         this.rangeStatusEl = this.scopeCard.createDiv({ cls: 'ert-manuscript-range-status', text: t('manuscriptModal.rangeLoading') });
-        this.rangeDecimalWarningEl = this.scopeCard.createDiv({
-            cls: 'ert-manuscript-range-warning ert-hidden',
-            text: t('manuscriptModal.rangeDecimalWarning')
+        this.rangeDecimalWarningEl = this.scopeCard.createDiv({ cls: 'ert-manuscript-range-warning ert-hidden' });
+        this.rangeDecimalWarningEl.createSpan({ text: t('manuscriptModal.rangeDecimalWarning') });
+        this.rangeDecimalWarningEl.appendText(' ');
+        const renumberLink = this.rangeDecimalWarningEl.createEl('a', { text: t('manuscriptModal.rangeDecimalRenumber'), href: '#' });
+        renumberLink.onClickEvent(event => {
+            event.preventDefault();
+            void openBookRenumber(this.plugin, {
+                sourcePath: this.getSourceBook()?.sourceFolder,
+                onDone: () => { void this.loadScenesForOrder(); },
+            });
         });
         const rangeShell = this.scopeCard.createDiv({ cls: 'ert-manuscript-range-shell' });
         this.rangeCardContainer = rangeShell.createDiv({ cls: 'ert-manuscript-range-cards' });
@@ -3973,7 +3981,9 @@ export class ManuscriptOptionsModal extends Modal {
         const count = this.getSelectedSceneCount();
         this.rangeStatusEl?.setText(t('ui.manuscriptOptionsModal.itemsSelected', { items: this.countItems(count) }));
         this.updateBadgeSceneCount();
-        const hasDecimalScenes = this.getSelectedSceneTitles().some((title) => /^\d+\.\d+\s+/.test((title || '').trim()));
+        // Only a book's scenes are renumbered; other sources keep the names they have.
+        const isBook = !this.source || this.source.kind === 'book';
+        const hasDecimalScenes = isBook && this.getSelectedSceneTitles().some((title) => /^\d+\.\d+\s+/.test((title || '').trim()));
         if (this.rangeDecimalWarningEl) {
             this.rangeDecimalWarningEl.toggleClass('ert-hidden', !hasDecimalScenes);
         }

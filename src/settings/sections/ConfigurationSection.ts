@@ -23,6 +23,7 @@ import {
     resolveTimelineChapterMarkers
 } from '../../utils/timelineChapters';
 import { getActiveBook } from '../../utils/books';
+import { openBookRenumber, planBookRenumber } from '../../services/BookRenumberService';
 import { refreshWritingStudios } from '../../writingStudio/openWritingStudio';
 
 export function renderConfigurationSection(params: { app: App; plugin: RadialTimelinePlugin; containerEl: HTMLElement }): void {
@@ -151,6 +152,29 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
                     plugin.settings.enableManuscriptRippleRename = value;
                     await plugin.saveSettings();
                 }));
+        }
+    });
+
+    // The same renumber a drag runs, on demand. The button says what is pending.
+    createDenseRow(schemaContainer, {
+        title: t('ui.bookRenumber.settingName'),
+        description: t('ui.bookRenumber.settingDesc'),
+        control: (setting) => {
+            setting.addButton(button => {
+                const recount = async (): Promise<void> => {
+                    button.setButtonText(t('ui.bookRenumber.settingCounting')).setDisabled(true);
+                    const pending = (await planBookRenumber(plugin)).needRename;
+                    if (pending === 0) {
+                        button.setButtonText(t('ui.bookRenumber.settingInOrder'));
+                        return;
+                    }
+                    button.setButtonText(t('ui.bookRenumber.settingButton', { notes: tCount('note', pending) })).setDisabled(false);
+                };
+                button.onClick(() => {
+                    void openBookRenumber(plugin, { onDone: () => { void recount(); } });
+                });
+                void recount();
+            });
         }
     });
 

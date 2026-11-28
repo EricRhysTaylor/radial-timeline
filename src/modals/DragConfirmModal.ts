@@ -25,6 +25,10 @@ export interface DragConfirmCurrentMoveSummary {
     showRenameImpact?: boolean;
     /** Label for the contextChange card (default "Context change"). */
     contextLabel?: string;
+    /** Heading over the summary (default "Current move summary"). */
+    sectionTitle?: string;
+    /** Each planned rename, listed so the author sees every name before it changes. */
+    renames?: { from: string; to: string }[];
 }
 
 /** The ripple rename card: how many other scene files the move renames. */
@@ -112,7 +116,7 @@ export class DragConfirmModal extends ErtModal {
         const listDiv = contentEl.createDiv({ cls: 'ert-drag-confirm-list' });
 
         const currentMoveSection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
-        currentMoveSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.dragConfirmModal.currentMoveTitle') });
+        currentMoveSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: this.currentMove.sectionTitle ?? t('ui.dragConfirmModal.currentMoveTitle') });
 
         const actionRow = currentMoveSection.createDiv({ cls: 'ert-drag-confirm-row' });
         const actionIcon = actionRow.createDiv({ cls: 'ert-drag-confirm-row-icon' });
@@ -132,6 +136,15 @@ export class DragConfirmModal extends ErtModal {
         }
         if (this.currentMove.rippleRename) {
             this.createImpactCard(impactGrid, t('ui.dragConfirmModal.extraEffectLabel'), formatRippleRenameImpact(this.currentMove.rippleRenameOtherCount ?? 0), ICON_WAVES);
+        }
+
+        if (this.currentMove.renames?.length) {
+            const renameSection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
+            renameSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.dragConfirmModal.renamesTitle') });
+            const renameList = renameSection.createDiv({ cls: 'ert-drag-confirm-rename-list' });
+            this.currentMove.renames.forEach(({ from, to }) => {
+                this.renderMoveSummary(renameList.createDiv({ cls: 'ert-drag-confirm-rename-item' }), `${from} | ${to}`);
+            });
         }
 
         if (this.recentMoves.length > 0) {

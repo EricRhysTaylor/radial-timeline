@@ -3,12 +3,11 @@ import { Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
     applySceneNumberUpdates,
-    buildRippleRenamePlan,
     countRippleRenamesAfterUpdates,
     SceneReorderVerificationError,
-    type SceneUpdate,
-    type SceneReorderProgress
+    type SceneUpdate
 } from '../../services/SceneReorderService';
+import { formatRenameProgressLine, runRippleRenumber } from '../../services/BookRenumberService';
 import { DragConfirmModal } from '../../modals/DragConfirmModal';
 import {
     DragOverlays,
@@ -907,7 +906,7 @@ export class OuterRingDragController {
             this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType });
             await runSceneMoveWithSketches(() => applySceneNumberUpdates(this.view.plugin.app, updates, {
                     onProgress: (progress) => {
-                        modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
+                        modal.updateProgress(formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
                     },
                     verification: {
                         expectedOrderedPaths,
@@ -1054,7 +1053,7 @@ export class OuterRingDragController {
             this.log('apply empty-act drop', { targetAct: targetActNumber, path: sourcePath, itemType: sourceType, renames: renumberUpdates.length });
             await runSceneMoveWithSketches(() => applySceneNumberUpdates(this.view.plugin.app, updates, {
                     onProgress: (progress) => {
-                        modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
+                        modal.updateProgress(formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
                     },
                     verification: {
                         expectedOrderedPaths,
@@ -1112,20 +1111,6 @@ export class OuterRingDragController {
         }
     }
 
-    private formatRenameProgressLine(prefix: string, progress: SceneReorderProgress): string {
-        if (progress.phase === 'scan') {
-            if (progress.totalFiles === 0) return t('ui.outerRingDragController.progressNoRenames', { prefix });
-            return t('ui.outerRingDragController.progressPlanning', { prefix, count: progress.totalFiles });
-        }
-        if (progress.phase === 'rename') {
-            return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.renamedFiles, total: progress.totalFiles });
-        }
-        if (progress.totalFiles === 0) {
-            return t('ui.outerRingDragController.progressNoRenames', { prefix });
-        }
-        return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.totalFiles, total: progress.totalFiles });
-    }
-
     /** Files the ripple rename will rename once these updates have landed, beyond the updates' own files. */
     private async countRippleRenamesAfter(updates: SceneUpdate[]): Promise<number> {
         const sceneData = await this.view.plugin.getSceneData();
@@ -1135,48 +1120,8 @@ export class OuterRingDragController {
     }
 
     private async runRippleRenameIfEnabled(onStatus?: (message: string) => void): Promise<void> {
-        const enabled = Boolean(this.view.plugin.settings.enableManuscriptRippleRename);
-        if (!enabled) return;
-
-        try {
-            const sceneData = await this.view.plugin.getSceneData();
-            const plan = buildRippleRenamePlan(sceneData, {
-                beatModel: resolveSelectedBeatModelFromSettings(this.view.plugin.settings)
-            });
-            if (plan.needRename === 0) {
-                if (onStatus) onStatus(t('ui.outerRingDragController.rippleAlreadyNormalized'));
-                else new Notice(t('ui.outerRingDragController.rippleAlreadyNormalized'), 2600);
-                return;
-            }
-
-            const needRenameMessage = t('ui.outerRingDragController.rippleNeedRename', { count: plan.needRename, checked: plan.checked });
-            if (onStatus) onStatus(needRenameMessage);
-            else new Notice(needRenameMessage, 3200);
-
-            await applySceneNumberUpdates(this.view.plugin.app, plan.updates, {
-                onProgress: (progress) => {
-                    if (!onStatus) return;
-                    onStatus(this.formatRenameProgressLine(t('ui.outerRingDragController.rippleRenamePrefix'), progress));
-                },
-                verification: {
-                    expectedOrderedPaths: plan.orderedPaths,
-                    expectedNumbersByPath: plan.expectedNumbersByPath,
-                },
-                onWarning: () => {
-                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
-                },
-            });
-        } catch (error) {
-            if (error instanceof SceneReorderVerificationError) {
-                console.warn('Ripple rename verification warning:', error);
-                if (onStatus) onStatus(t('ui.outerRingDragController.rippleVerificationIssue'));
-                else new Notice(t('ui.outerRingDragController.rippleVerificationIssue'), 5000);
-            } else {
-                console.error('Ripple rename failed:', error);
-                if (onStatus) onStatus(t('ui.outerRingDragController.rippleFailed'));
-                else new Notice(t('ui.outerRingDragController.rippleFailed'), 3500);
-            }
-        }
+        if (!this.isRippleRenameEnabled()) return;
+        await runRippleRenumber(this.view.plugin, onStatus);
     }
 
     private onPointerMove(evt: PointerEvent): void {

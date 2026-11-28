@@ -1520,7 +1520,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         "rangeSelectedLabel": "Cảnh {{start}}–{{end}}",
         "rangeCountLabel": "Đã chọn {{count}} cảnh",
         "rangeLoading": "Đang lấy cảnh...",
-        "rangeDecimalWarning": "Một số tên tệp cảnh sử dụng tiền tố thập phân. Số hóa cảnh chuẩn chỉ dùng số nguyên; hãy dùng kéo + Đổi tên Ripple để chuẩn hóa.",
         "actionCancel": "Hủy",
         "emptyNotice": "Không có cảnh nào để sắp xếp.",
         "rangeEmpty": "Phạm vi đã chọn trống.",

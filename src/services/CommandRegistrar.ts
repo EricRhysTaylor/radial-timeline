@@ -63,6 +63,7 @@ import { registerFormattingKey } from '../view/interactions/FormattingKey';
 import { getMainPlotName } from '../utils/mainPlot';
 import { CompressedPreviewModal } from '../chronologue/CompressedPreviewModal';
 import { openWritingStudio } from '../writingStudio/openWritingStudio';
+import { openBookRenumber } from './BookRenumberService';
 
 export class CommandRegistrar {
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
@@ -242,6 +243,14 @@ export class CommandRegistrar {
             name: t('commands.timelineAudit'),
             callback: () => {
                 new TimelineAuditModal(this.app, this.plugin).open();
+            }
+        });
+
+        this.plugin.addCommand({
+            id: 'renumber-book',
+            name: t('commands.renumberBook'),
+            callback: () => {
+                void openBookRenumber(this.plugin);
             }
         });
 

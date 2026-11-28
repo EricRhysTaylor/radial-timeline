@@ -1535,7 +1535,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         rangeSelectedLabel: '장면 {{start}}–{{end}}',
         rangeCountLabel: '{{count}} 장면 선택됨',
         rangeLoading: '장면을 가져오는 중…',
-        rangeDecimalWarning: '일부 장면 파일명이 소수 접두어를 사용합니다. 정규 장면 번호는 정수만 허용합니다. 드래그 + Ripple Rename으로 정규화하세요.',
         actionCancel: '취소',
         emptyNotice: '조립할 장면이 없습니다.',
         rangeEmpty: '선택된 범위가 비어 있습니다.',

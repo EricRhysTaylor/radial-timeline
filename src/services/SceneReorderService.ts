@@ -197,6 +197,11 @@ export async function applySceneNumberUpdates(
     }
 }
 
+/** The name a note at this path takes once its number becomes newNumber. */
+export function renamedBasename(path: string, newNumber: string): string {
+    return buildRenamedBasename(extractBasename(path), newNumber);
+}
+
 function buildRenamedBasename(basename: string, newNumber: string): string {
     const match = basename.match(/^\s*(\d+(?:\.\d+)?)\s+(.*)$/);
     if (match) {

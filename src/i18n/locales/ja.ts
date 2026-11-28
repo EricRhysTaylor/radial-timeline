@@ -1536,7 +1536,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         rangeSelectedLabel: 'シーン {{start}}–{{end}}',
         rangeCountLabel: '{{count}} シーン選択中',
         rangeLoading: 'シーンを取得中…',
-        rangeDecimalWarning: '一部のシーンファイル名で小数プレフィックスが使用されています。正規のシーン番号は整数のみです。ドラッグと Ripple Rename で正規化してください。',
         actionCancel: 'キャンセル',
         emptyNotice: '組み立て可能なシーンがありません。',
         rangeEmpty: '選択した範囲が空です。',

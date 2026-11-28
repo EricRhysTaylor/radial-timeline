@@ -19,6 +19,7 @@ Timeline display options, frontmatter key remapping, ripple rename, and log loca
 
 *   **Remap frontmatter field keys**: Map custom frontmatter keys to Radial Timeline scene core fields.
 *   **Manuscript ripple rename**: Normalizes scene and active-beat filename prefixes after drag reorder. Scenes stay integer-numbered; beats use decimal minors. On in new vaults.
+*   **Renumber now**: Gives the same renumber at any time, for example after **Add scene** left a note numbered 4.5. The button says how many notes need renaming, or **Already in order**. It lists each rename (4.5 Evening Conversations → 5 Evening Conversations) and starts only when you choose **Begin**. Filenames only; no note text changes. It works whether or not ripple rename is on. The same renumber is in the command palette (**Book renumber scene and beat notes**) and in the export window, where a book with decimal scene numbers shows a **Renumber now** link. If other notes link to a renamed note, Obsidian may ask whether to update those links, as it does for any rename.
 
 ### Logs
 

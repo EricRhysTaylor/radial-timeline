@@ -1535,7 +1535,6 @@ export const de: DeepPartial<TranslationKeys> = {
         rangeSelectedLabel: 'Szenen {{start}}–{{end}}',
         rangeCountLabel: '{{count}} Szenen ausgewählt',
         rangeLoading: 'Szenen werden abgerufen…',
-        rangeDecimalWarning: 'Einige Szenendateinamen verwenden Dezimalpräfixe. Die kanonische Szenennummerierung erlaubt nur ganze Zahlen; verwenden Sie Drag + Ripple Rename zur Normalisierung.',
         actionCancel: 'Abbrechen',
         emptyNotice: 'Keine Szenen zum Zusammenstellen verfügbar.',
         rangeEmpty: 'Ausgewählter Bereich ist leer.',

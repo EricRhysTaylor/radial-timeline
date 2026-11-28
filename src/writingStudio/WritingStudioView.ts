@@ -476,6 +476,25 @@ export class WritingStudioView extends ItemView {
             if (active && !isChapter) link.setAttribute('aria-current', 'location');
             else link.removeAttribute('aria-current');
         });
+        this.keepCurrentInContents();
+    }
+
+    /**
+     * The contents scroll on their own beside the fixed wheel: keep the scene being read
+     * in sight, below the sticky heading. The list moves only when the scene has left it,
+     * and then brings the scene to the middle, with the scenes around it showing.
+     */
+    private keepCurrentInContents(): void {
+        const list = this.contentsEl;
+        if (list.scrollHeight <= list.clientHeight) return;
+        const link = list.querySelector<HTMLElement>('.ert-studio__contents-link.is-current[data-scene-index]:not([data-chapter-index])');
+        if (!link) return;
+        const heading = list.querySelector<HTMLElement>('.ert-studio__contents-heading')?.offsetHeight ?? 0;
+        const box = list.getBoundingClientRect();
+        const row = link.getBoundingClientRect();
+        if (row.top >= box.top + heading && row.bottom <= box.bottom) return;
+        const middle = box.top + heading + (box.height - heading - row.height) / 2;
+        list.scrollTop += row.top - middle;
     }
 
     /** The line under the wheel: the scene being read, or the one under the pointer. */

@@ -30,21 +30,31 @@
 
 /* ── Navigator ───────────────────────────────────────────────────────── */
 
+/* The wheel and the line under it stay put; only the contents scroll. */
 .ert-studio__nav {
   grid-area: nav;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--size-4-4) var(--size-4-3) var(--size-4-8);
+  overflow: hidden;
+  padding: var(--size-4-4) var(--size-4-3) 0;
   border-inline-end: 1px solid var(--background-modifier-border);
-  scrollbar-width: thin;
 }
+
+.ert-studio__nav-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 
 .ert-studio__strip {
   display: none;
 }
 
 .ert-studio__wheel {
+  flex: none;
   max-width: 300px;
   margin: 0 auto;
 }
@@ -120,6 +130,7 @@
 /* Exactly three lines, each cut rather than wrapped, so the hover caption
    replaces the resting one without moving the contents below. */
 .ert-studio__caption {
+  flex: none;
   display: flex;
   gap: var(--size-4-2);
   align-items: baseline;
@@ -180,11 +191,23 @@
    Beat     milestone icon and name, faint italic, not a link */
 
 .ert-studio__contents {
+  flex: 1 1 auto;
+  min-height: 0;
   margin-top: var(--size-4-4);
+  padding-bottom: var(--size-4-8);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
+/* The heading stays at the top of the scrolling list. */
 .ert-studio__contents-heading {
-  margin: 0 0 var(--size-2-2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: var(--size-2-2);
+  background: var(--background-primary);
+  margin: 0;
   font-size: var(--font-ui-smaller);
   font-weight: var(--font-semibold);
   letter-spacing: 0.08em;
@@ -724,6 +747,11 @@
 
   .ert-studio__nav-panel {
     display: none;
+  }
+
+  /* In the strip's drop-down the whole panel scrolls as one. */
+  .ert-studio__contents {
+    overflow: visible;
   }
 
   .ert-studio[data-nav-open="true"] .ert-studio__nav-panel {

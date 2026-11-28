@@ -27,7 +27,7 @@ Read your whole book in one place, see your chapters in the Timetable, read a sc
 
 - **Read a scene on its panel.** In the Panels layout, click **Read scene**, the book button in a panel's top-right corner. The panel turns over to show the scene's text, with a scale beside it that shows where you are. Click a passage to open the scene in a pop-out window at that spot.
 
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/a0132a663fbd41adcc2f201cc175e0270b2059a3/wiki/images/release-8-3-panel-reader.webp" alt="Three Pride and Prejudice scene panels: First Ball turned over to its text, with a passage highlighted under the pointer and the position scale beside it, between the fronts of Mr Bennet Visits and Jane's Admiration" width="800">
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/d10e665588888b3602f34d92fe633b9a468e82a8/wiki/images/release-8-3-panel-reader.webp" alt="Three Pride and Prejudice scene panels: First Ball turned over to its text with the position scale beside it, between Mr Bennet Visits and Jane's Admiration, each showing its place behind the character's portrait" width="800">
 
 - **One menu for each panel.** The **⋯** button under **Read scene** holds **Open note**, image focus and the panel's image choices.
 - **Move a beat in the Timetable.** In Narrative, drag a beat by its grip onto the top or bottom half of a scene to place it before or after that scene. A beat stays in its act and between its neighboring beats. The confirmation shows its new number.

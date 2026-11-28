@@ -5704,7 +5704,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "progressNoRenames": "{{prefix}} : Aucun nom de fichier renomme nécessaire.",
             "progressPlanning": "{{prefix}} : Planification {{count}} Renommer le(s)...",
             "progressRenamed": "{{prefix}} : Renommé {{renamed}}/{{total}} fichiers.",
-            "rippleAlreadyNormalized": "Ripple Rename : déjà normalisé (noms de fichiers uniquement ; aucune modification de contenu).",
             "rippleNeedRename": "Ripple Rename : les fichiers {{count}} doivent être renommés ({{checked}} coché, noms de fichiers uniquement).",
             "rippleVerificationIssue": "Renommage en cascade appliqué, mais Radial Timeline a détecté un problème. Veuillez examiner les notes concernées.",
             "rippleFailed": "Ripple Rename a échoué. Voir la console pour les détails."

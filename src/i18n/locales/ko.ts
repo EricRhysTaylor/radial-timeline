@@ -5697,7 +5697,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             progressNoRenames: '{{prefix}}: 파일 이름 변경이 필요 없습니다.',
             progressPlanning: '{{prefix}}: 파일 {{count}}개 이름 변경 계획 중...',
             progressRenamed: '{{prefix}}: 파일 {{renamed}}/{{total}}개 이름 변경됨.',
-            rippleAlreadyNormalized: 'Ripple Rename: 이미 정규화되어 있습니다 (파일 이름만, 내용 편집 없음).',
             rippleNeedRename: 'Ripple Rename: 파일 {{count}}개의 이름을 변경해야 합니다 ({{checked}}개 확인됨, 파일 이름만).',
             rippleVerificationIssue: 'Ripple Rename이 적용되었지만 RT가 잠재적인 문제를 감지했습니다. 영향을 받은 노트를 검토하세요.',
             rippleFailed: 'Ripple Rename에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.',

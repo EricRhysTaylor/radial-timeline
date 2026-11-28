@@ -5704,7 +5704,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "progressNoRenames": "{{prefix}}: ไม่จำเป็นต้องเปลี่ยนชื่อไฟล์",
             "progressPlanning": "{{prefix}}: การวางแผน {{count}} เปลี่ยนชื่อไฟล์...",
             "progressRenamed": "{{prefix}}: เปลี่ยนชื่อไฟล์ {{renamed}}/{{total}}",
-            "rippleAlreadyNormalized": "Ripple เปลี่ยนชื่อ: ถูกทำให้เป็นมาตรฐานแล้ว (ชื่อไฟล์เท่านั้น ไม่มีการแก้ไขเนื้อหา)",
             "rippleNeedRename": "ระลอกคลื่นเปลี่ยนชื่อ: {{count}} ไฟล์ต้องเปลี่ยนชื่อ ({{checked}} ตรวจสอบแล้ว ชื่อไฟล์เท่านั้น)",
             "rippleVerificationIssue": "การเปลี่ยนชื่อแบบลูกคลื่นถูกใช้ แต่ Radial Timeline ตรวจพบปัญหาที่เป็นไปได้ โปรดตรวจสอบโน้ตที่ได้รับผลกระทบ",
             "rippleFailed": "การเปลี่ยนชื่อระลอกคลื่นล้มเหลว ดูคอนโซลสำหรับรายละเอียด"

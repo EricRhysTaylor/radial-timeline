@@ -625,8 +625,8 @@ export class RadialTimelineView extends ItemView {
             // an icon button; on a bar too narrow for the full row, TitleBarFit
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: (anchor: HTMLElement) => void }> = [
-                { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
                 { label: t('ui.writingStudio.title'), icon: 'book-open-text', run: () => { void openWritingStudio(this.app); } },
+                { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
                 { label: t('ui.timeLineView.canvasAction'), icon: 'layout-dashboard', run: (anchor) => {
                     const book = getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings) : undefined;
                     const candidates = book ? bookStoryMaps(this.app.vault.getFiles(), book) : [];

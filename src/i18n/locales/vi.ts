@@ -5704,7 +5704,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "progressNoRenames": "{{prefix}}: Không cần đổi tên tệp.",
             "progressPlanning": "{{prefix}}: lập kế hoạch {{count}} đổi tên tệp (s) ...",
             "progressRenamed": "{{prefix}}: Đã đổi tên tệp {{renamed}} / {{total}}.",
-            "rippleAlreadyNormalized": "Ripple Rename: Đã được chuẩn hóa (chỉ tên tệp; không có nội dung chỉnh sửa).",
             "rippleNeedRename": "Rename Ripple: (các) tệp {{count}} cần đổi tên ({{checked}} được kiểm tra, chỉ tên tệp).",
             "rippleVerificationIssue": "Đã áp dụng đổi tên lan tỏa, nhưng Radial Timeline phát hiện vấn đề tiềm ẩn. Xem xét các ghi chú bị ảnh hưởng.",
             "rippleFailed": "Đổi tên Ripple không thành công. Xem bảng điều khiển để biết chi tiết."

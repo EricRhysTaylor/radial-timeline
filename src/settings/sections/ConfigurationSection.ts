@@ -163,7 +163,15 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             setting.addButton(button => {
                 const recount = async (): Promise<void> => {
                     button.setButtonText(t('ui.bookRenumber.settingCounting')).setDisabled(true);
-                    const pending = (await planBookRenumber(plugin)).needRename;
+                    let pending: number;
+                    try {
+                        pending = (await planBookRenumber(plugin)).needRename;
+                    } catch (error) {
+                        // Leave the button usable: a click retries and reports the failure.
+                        console.error('Renumber count failed:', error);
+                        button.setButtonText(t('ui.bookRenumber.settingName')).setDisabled(false);
+                        return;
+                    }
                     if (pending === 0) {
                         button.setButtonText(t('ui.bookRenumber.settingInOrder'));
                         return;

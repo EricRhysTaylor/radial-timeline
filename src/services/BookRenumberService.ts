@@ -113,7 +113,14 @@ export interface OpenBookRenumberOptions {
  * whether or not Ripple rename is on, since the author asked for it.
  */
 export async function openBookRenumber(plugin: RadialTimelinePlugin, options: OpenBookRenumberOptions = {}): Promise<void> {
-    const plan = await planBookRenumber(plugin, options.sourcePath);
+    // Callers fire this with `void`, so a failed count must surface here, not as an unhandled rejection.
+    let plan: Awaited<ReturnType<typeof planBookRenumber>>;
+    try {
+        plan = await planBookRenumber(plugin, options.sourcePath);
+    } catch (error) {
+        new Notice(describeRenumberFailure(error), 5000);
+        return;
+    }
     if (plan.needRename === 0) {
         new Notice(t('ui.bookRenumber.alreadyInOrder'), 3000);
         return;

@@ -296,6 +296,30 @@ describe('detectChanges', () => {
     expect(result.updateStrategy).toBe('full');
   });
 
+  it('redraws the timeline when the recent moves overlay is turned off', () => {
+    const settings = (showRecentMovesOverlay: boolean) => ({
+      books: [{
+        id: 'one', title: 'One', sourceFolder: 'One',
+        recentStructuralMoves: [{ timestamp: '2026-11-27T10:00:00Z', itemType: 'Scene', itemId: 'scene.md', itemLabel: 'Scene', summary: 'Scene 2 Ball after Scene 1 Arrival' }],
+      }],
+      activeBookId: 'one',
+      showRecentMovesOverlay,
+    }) as never;
+    const snapshot = (on: boolean) => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: {} } as never],
+      new Set(),
+      createSearchState(),
+      'narrative',
+      settings(on),
+      null
+    );
+    const on = snapshot(true);
+    const off = snapshot(false);
+    const result = detectChanges(on, { ...off, timestamp: on.timestamp + 1 });
+    expect(result.changeTypes.has(ChangeType.RECENT_MOVES)).toBe(true);
+    expect(result.updateStrategy).toBe('full');
+  });
+
   it('forces a full render when the active novel PDF layout changes', () => {
     const prev = makeSnapshot({
       activeNovelPandocLayoutId: 'bundled-fiction-signature-literary'

@@ -243,6 +243,8 @@ export function createSnapshot(
 
     const recentMovesHash = (() => {
         try {
+            // The overlay's own switch counts too: turning it off must redraw the timeline without it.
+            if (settings.showRecentMovesOverlay === false) return 'off';
             const entries = getActiveRecentStructuralMoves(settings).slice(0, 10);
             return entries.map((entry) => `${entry.timestamp ?? ''}:${entry.itemId ?? ''}`).join('|');
         } catch {

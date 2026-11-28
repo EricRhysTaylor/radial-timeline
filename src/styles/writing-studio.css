@@ -459,15 +459,15 @@
   font-size: var(--font-ui-smaller);
 }
 
-/* ‹ Scene ›  ‹ Chapter ›: each stepper names what its arrows move. Same height,
-   fill and corners as Obsidian's dropdowns beside it. */
+/* ‹ Scene ›  ‹ Chapter ›: each stepper names what its arrows move. Hollow,
+   at the height of Obsidian's dropdowns beside it. */
 .ert-studio__stepper {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   height: var(--input-height);
-  border-radius: var(--input-radius);
-  background: var(--interactive-normal);
-  box-shadow: var(--input-shadow);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
 }
 
 .ert-studio__stepper-label {

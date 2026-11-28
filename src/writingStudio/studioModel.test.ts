@@ -99,21 +99,24 @@ describe('Writing Studio contents outline', () => {
         ]);
     });
 
-    it('puts each scene in the stage of the last beat before it', () => {
-        // Opening Image opens the book; Catalyst follows scene 2 (index 1); Break Into Two follows scene 3.
+    it('gives each scene the beat it carries, or the stage it is in', () => {
+        // A beat happens in the scene just before it: Opening Image comes before any scene,
+        // Catalyst follows scene 2 (index 1) and Break Into Two follows scene 3 (index 2).
         expect([0, 1, 2, 3, 4].map(index => beatAt(book, index)?.name)).toEqual([
-            'Opening Image', 'Opening Image', 'Catalyst', 'Break Into Two', 'Break Into Two',
+            'Opening Image', 'Catalyst', 'Break Into Two', 'Break Into Two', 'Break Into Two',
         ]);
     });
 
-    it('puts no beat on a scene before the first beat', () => {
+    it('puts no beat on a scene before the first beat\'s scene', () => {
         const late = buildStudioBook([
             scene('S/1.md', '1 Prologue'),
-            { itemType: 'Beat', path: 'B/1.md', title: '1.5 Catalyst', date: '' },
             scene('S/2.md', '2 Arrival'),
+            { itemType: 'Beat', path: 'B/2.md', title: '2.5 Catalyst', date: '' },
+            scene('S/3.md', '3 Docks'),
         ]);
         expect(beatAt(late, 0)).toBeNull();
         expect(beatAt(late, 1)?.name).toBe('Catalyst');
+        expect(beatAt(late, 2)?.name).toBe('Catalyst');
     });
 
     it('nests scenes and in-chapter beats under chapters, inside acts', () => {
@@ -126,9 +129,9 @@ describe('Writing Studio contents outline', () => {
                 { kind: 'scene', scene: 1 },
                 { kind: 'beat', beat: 1 },
                 { kind: 'scene', scene: 2 },
+                // A beat happens in the scene before it, so the act's last beat stays in that scene's chapter.
+                { kind: 'beat', beat: 2 },
             ] },
-            // The last beat of the act has no next scene in its chapter here: it stands at act level.
-            { kind: 'beat', beat: 2 },
         ]);
         expect(outline[1].entries).toEqual([
             { kind: 'chapter', chapter: 1, continued: false, children: [{ kind: 'scene', scene: 3 }] },

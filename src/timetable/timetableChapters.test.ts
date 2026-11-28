@@ -18,10 +18,17 @@ describe('Timetable chapter headings', () => {
             .toEqual(['1:-', '# The Arrival', '2:0', 'beat:0', '3:0', '# The Escape', '4:1', '5:1']);
     });
 
-    it('leaves a beat between two chapters outside both, as Writing Studio does', () => {
+    it('puts a beat in the chapter of the scene it follows, as Writing Studio does', () => {
+        // A beat happens in the scene just before it: "break" follows 3 (The Arrival), "end" follows 4 (The Escape).
         const lines = withChapterHeadings([row('2'), row('3'), row('break', 'beat'), row('4'), row('end', 'beat'), { type: 'act', act: 2 }], chapterOf, chapters);
         const tags = lines.flatMap(line => line.type === 'row' ? [`${line.row.path}:${line.chapter ?? '-'}`] : []);
-        expect(tags).toEqual(['2:0', '3:0', 'break:-', '4:1', 'end:-']);
+        expect(tags).toEqual(['2:0', '3:0', 'break:0', '4:1', 'end:1']);
+    });
+
+    it('leaves a beat outside any chapter when the scene before it is in none', () => {
+        const lines = withChapterHeadings([row('1'), row('first', 'beat'), row('2')], chapterOf, chapters);
+        const tags = lines.flatMap(line => line.type === 'row' ? [`${line.row.path}:${line.chapter ?? '-'}`] : []);
+        expect(tags).toEqual(['1:-', 'first:-', '2:0']);
     });
 
     it('repeats a chapter heading after an act divider, marked continued', () => {

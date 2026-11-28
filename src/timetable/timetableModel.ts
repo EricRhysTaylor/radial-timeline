@@ -162,10 +162,11 @@ export interface TimetableChapterLine {
  * Add a chapter heading above the first scene row of each chapter (and again
  * after an act divider when a chapter runs into the next act). Each row is
  * tagged with the chapter it sits under, so a folded chapter can hide its
- * rows. A beat, sketch or note sits under the open chapter only when the next
- * scene in its act belongs to that chapter, so a beat between two chapters
- * stands between them, as in Writing Studio's contents. A scene in no chapter
- * ends the open one. Rows keep their order; headings only interleave.
+ * rows. A beat happens in the scene just before it, so it sits under that
+ * scene's chapter, as in Writing Studio's contents. A sketch or note sits under
+ * the open chapter only when the next scene in its act belongs to that chapter,
+ * so one between two chapters stands between them. A scene in no chapter ends
+ * the open one. Rows keep their order; headings only interleave.
  */
 export function withChapterHeadings(
     lines: TimetableLine[],
@@ -187,6 +188,11 @@ export function withChapterHeadings(
     for (const [position, line] of lines.entries()) {
         if (line.type === 'act') { open = null; heading = null; result.push(line); continue; }
         if (line.type !== 'row') { result.push(line); continue; }
+        if (line.row.kind === 'beat') {
+            // `open` is the chapter of the scene just before the beat in this act, if any.
+            result.push({ ...line, chapter: open });
+            continue;
+        }
         if (line.row.kind !== 'scene') {
             result.push({ ...line, chapter: open !== null && nextSceneChapter(position) === open ? open : null });
             continue;

@@ -187,9 +187,9 @@ export interface OutlineAct {
 
 /**
  * The contents as an outline: acts, then chapters with their scenes, with
- * scenes outside any chapter and story beats at act level. A beat sits inside
- * a chapter only when the next scene after it in that act belongs to the same
- * chapter, so a beat between two chapters stands between them.
+ * scenes outside any chapter and story beats at act level. A beat happens in
+ * the scene just before it (its own scene), so it sits in that scene's chapter;
+ * a beat with no scene before it in the act stands at act level.
  */
 export function buildOutline(book: StudioBook): OutlineAct[] {
     const sequence: Array<OutlineLeaf & { act: number }> = [];
@@ -208,13 +208,12 @@ export function buildOutline(book: StudioBook): OutlineAct[] {
         const items = sequence.filter(item => item.act === act);
         const entries: OutlineEntry[] = [];
         let open: Extract<OutlineEntry, { kind: 'chapter' }> | null = null;
-        items.forEach((item, position) => {
+        items.forEach(item => {
             const leaf: OutlineLeaf = item.kind === 'scene' ? { kind: 'scene', scene: item.scene } : { kind: 'beat', beat: item.beat };
             if (item.kind === 'beat') {
-                const next = items.slice(position + 1).find(candidate => candidate.kind === 'scene');
-                const nextChapter = next && next.kind === 'scene' ? book.scenes[next.scene].chapter : null;
-                if (open && nextChapter === open.chapter) open.children.push(leaf);
-                else { open = null; entries.push(leaf); }
+                // `open` is the chapter of the scene just before the beat in this act, if any.
+                if (open) open.children.push(leaf);
+                else entries.push(leaf);
                 return;
             }
             const chapter = book.scenes[item.scene].chapter;
@@ -247,13 +246,15 @@ export function scopeRange(book: StudioBook, scope: StudioScope, current: number
 }
 
 /**
- * The beat whose stage the scene is in: the last beat marker before it in book order. A beat
- * opens its stage, which runs until the next beat. Null before the first beat.
+ * The beat whose stage the scene is in. A beat is a moment in the scene just before its marker
+ * (Save the Cat: "a beat = moment"), and its stage runs from that scene up to the next beat's
+ * scene. So a scene's beat is the last beat placed after it or after an earlier scene. Null
+ * before the first beat's scene.
  */
 export function beatAt(book: StudioBook, sceneIndex: number): StudioBeat | null {
     let found: StudioBeat | null = null;
     for (const beat of book.beats) {
-        if (beat.afterScene >= sceneIndex) break;
+        if (beat.afterScene > sceneIndex) break;
         found = beat;
     }
     return found;

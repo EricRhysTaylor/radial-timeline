@@ -200,16 +200,20 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--size-4-8)), transparent 100%);
 }
 
-/* The heading stays at the top of the list, with a band of page color under
-   it, so rows slip away below the heading instead of running into it. */
+/* The heading stays at the top of the list and ends in a band that fades from
+   page color to clear, so rows dim as they slide up under it. */
 .ert-studio__contents-heading {
+  --ert-studio-list-fade: var(--size-4-6);
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: var(--size-4-3) 0 var(--size-4-3);
-  background: var(--background-primary);
+  padding: var(--size-4-3) 0 var(--ert-studio-list-fade);
+  background: linear-gradient(to bottom,
+    var(--background-primary) calc(100% - var(--ert-studio-list-fade) + var(--size-2-3)),
+    transparent 100%);
   margin: 0;
   font-size: var(--font-ui-smaller);
   font-weight: var(--font-semibold);
@@ -383,12 +387,14 @@
 
 /* ── Reading column ──────────────────────────────────────────────────── */
 
+/* Text also fades out at the bottom edge of the column. */
 .ert-studio__main {
   grid-area: main;
   position: relative;
   min-height: 0;
   overflow-y: auto;
   padding: 0 var(--size-4-8) var(--size-4-16);
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--size-4-12)), transparent 100%);
 }
 
 .ert-studio__head {
@@ -397,18 +403,21 @@
   z-index: 2;
   max-width: var(--ert-studio-measure);
   margin: 0 auto;
-  /* The header ends in a band of page color below its rule, so scrolling text
-     slips away before it reaches the line. The band is part of the header's
-     height, so a scene brought into view lands below it. */
-  padding: var(--size-4-3) 0 calc(var(--size-4-3) + var(--size-4-5));
-  background: var(--background-primary);
+  /* Below its rule the header ends in a band that fades from page color to
+     clear, so scrolling text dims as it rises toward the line. The band is
+     part of the header's height, so a scene brought into view lands below it. */
+  --ert-studio-head-fade: var(--size-4-9);
+  padding: var(--size-4-3) 0 calc(var(--size-4-3) + var(--ert-studio-head-fade));
+  background: linear-gradient(to bottom,
+    var(--background-primary) calc(100% - var(--ert-studio-head-fade) + var(--size-4-2)),
+    transparent 100%);
 }
 
 .ert-studio__head::after {
   content: '';
   position: absolute;
   inset-inline: 0;
-  bottom: var(--size-4-5);
+  bottom: var(--ert-studio-head-fade);
   border-bottom: 1px solid var(--background-modifier-border-hover);
 }
 
@@ -448,12 +457,15 @@
   font-size: var(--font-ui-smaller);
 }
 
-/* ‹ Scene ›  ‹ Chapter ›: each stepper names what its arrows move. */
+/* ‹ Scene ›  ‹ Chapter ›: each stepper names what its arrows move. Same height,
+   fill and corners as Obsidian's dropdowns beside it. */
 .ert-studio__stepper {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
+  height: var(--input-height);
+  border-radius: var(--input-radius);
+  background: var(--interactive-normal);
+  box-shadow: var(--input-shadow);
 }
 
 .ert-studio__stepper-label {
@@ -463,7 +475,8 @@
 }
 
 .ert-studio__stepper-button {
-  padding: var(--size-2-1) var(--size-2-2);
+  height: 100%;
+  padding: 0 var(--size-4-2);
 }
 
 .ert-studio__scope,

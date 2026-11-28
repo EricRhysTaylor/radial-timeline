@@ -219,6 +219,16 @@ export class WritingStudioView extends ItemView {
         this.registerDomEvent(this.textEl, 'click', (event: MouseEvent) => this.followLink(event));
 
         this.detailsEl = setAccessibleLabel(this.rootEl.createEl('aside', { cls: 'ert-studio__details' }), t('ui.writingStudio.details'));
+        // In a narrow pane the details float over the text: a click anywhere else, or Escape, puts them away.
+        this.registerDomEvent(this.rootEl, 'pointerdown', (event: PointerEvent) => {
+            if (this.rootEl.dataset.detailsOpen !== 'true') return;
+            const target = event.target as Element;
+            if (this.detailsEl.contains(target) || target.closest('.ert-studio__details-toggle')) return;
+            this.setDetailsOpen(false);
+        });
+        this.registerDomEvent(this.rootEl, 'keydown', (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && this.rootEl.dataset.detailsOpen === 'true') this.setDetailsOpen(false);
+        });
 
         this.registerDomEvent(this.mainEl, 'scroll', () => this.scheduleSpy(), { passive: true });
         // Any reading gesture of the author's own releases a jump's pin.
@@ -707,6 +717,9 @@ export class WritingStudioView extends ItemView {
         if (!scene) return;
         const chapter = chapterAt(book, this.current);
         const card = this.detailsEl.createDiv({ cls: 'ert-studio__card' });
+        const close = setAccessibleLabel(card.createEl('button', { cls: 'clickable-icon ert-studio__details-close', attr: { type: 'button' } }), t('ui.writingStudio.stripClose'));
+        setIcon(close, 'x');
+        events.registerDomEvent(close, 'click', () => this.setDetailsOpen(false));
         card.createDiv({ cls: 'ert-studio__card-kicker', text: t('ui.writingStudio.sceneOf', { n: String(this.current + 1), total: String(book.scenes.length) }) });
         card.createDiv({ cls: 'ert-studio__card-title', text: scene.name });
 

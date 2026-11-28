@@ -569,6 +569,11 @@
   border-inline-start: 1px solid var(--background-modifier-border);
 }
 
+/* The close button belongs to the floating details of a narrow pane. */
+.ert-studio__details-close {
+  display: none;
+}
+
 .ert-studio__card-kicker,
 .ert-studio__card-label {
   color: var(--text-faint);
@@ -650,6 +655,11 @@
     border-radius: var(--radius-m);
     background: var(--background-primary);
     box-shadow: var(--shadow-l);
+  }
+
+  .ert-studio[data-details-open="true"] .ert-studio__details-close {
+    display: inline-flex;
+    float: inline-end;
   }
 }
 

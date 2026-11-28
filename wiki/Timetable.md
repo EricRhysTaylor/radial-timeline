@@ -131,20 +131,29 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 ![The timeline beside TimeTable Panels, with scene cards and character portraits](images/homepage-timeline-panels.webp)
 
-**Panels** shows each scene, beat and sketch as a card, act by act: number, title, date, rings, characters and the synopsis, with an image beside them. Beats show their purpose; sketches show their text, and **Expand sketch** opens the rest.
+**Panels** shows each scene, beat and sketch as a panel, act by act: number, title, date, rings, characters and the synopsis, with an image beside them. Beats show their purpose. Sketches show their text, and **Expand sketch** opens the rest.
 
-<p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene cards, each with a character portrait over a picture of the place, the date, rings, characters and synopsis" width="800"></p>
+<p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene panels, each with a character portrait over a picture of the place, the date, rings, characters and synopsis" width="800"></p>
 
-- **Image** chooses what each card shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place and the character side by side, or whichever one the scene has), **Place background + character** (the character’s portrait over the place, with the card’s text on a backing you set with **Text backing**: **Subtle**, **Balanced** or **Strong**), or **None**. A character’s or place’s picture comes from its note’s `Image`, or else a picture named after it; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
-- **Character selection** decides whose portrait a card shows, among the scene’s characters who have one: **Most distinctive** (the default, the character who appears in the fewest scenes of the book, so each card tells you something), **First listed**, **Second character**, **POV character**, or **Balanced variety** (like Most distinctive, but avoids showing the same face on two cards in a row).
-- **Card images**, the picture button on a card, says where the card’s portrait and place come from (*Portrait: from Elizabeth Bennet’s note*, *Place: picture named Longbourn 2.webp*), and changes them for that card only: pick one of its characters, **Next portrait** to step through a character’s numbered portraits, **Choose portrait…**, or **Choose place image…**. **Return to automatic images** hands the choice back.
-- **Image sizing:** **Fill** crops the image to the card, **Fit** shows all of it. **Set image focus**, on a card, picks the part of the image that stays in view: click the image or use the sliders, or **Center** to reset. A focus point belongs to the picture, so Canvas cards crop it the same way.
+### Read a scene on its panel
+
+Click **Read scene**, the book button in a scene panel's top-right corner. The panel turns over and shows the scene's text. A scale beside the text shows where you are in the scene. Click a passage to open the scene in a pop-out window at that spot. Click **Show front of panel** to turn it back.
+
+<p align="center"><img src="images/release-8-3-panel-reader.webp" alt="Three Pride and Prejudice scene panels: First Ball turned over to its text, with a passage highlighted under the pointer and the position scale beside it, between the fronts of Mr Bennet Visits and Jane's Admiration" width="800"></p>
+
+### Panel options
+
+- **Scene options**, the **⋯** button under **Read scene**, holds **Open note**, **Set image focus** and **Set place image focus** (when the panel has that picture), and the panel's image choices.
+- **Image** chooses what each panel shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place and the character side by side, or whichever one the scene has), **Place background + character** (the character’s portrait over the place, with the panel’s text on a backing you set with **Text backing**: **Subtle**, **Balanced** or **Strong**), or **None**. A character’s or place’s picture comes from its note’s `Image`, or else a picture named after it; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
+- **Character selection** decides whose portrait a panel shows, among the scene’s characters who have one: **Most distinctive** (the default, the character who appears in the fewest scenes of the book, so each panel tells you something), **First listed**, **Second character**, **POV character**, or **Balanced variety** (like Most distinctive, but avoids showing the same face on two panels in a row).
+- **The panel's image choices**, in **Scene options**, say where the panel’s portrait and place come from (*Portrait: from Elizabeth Bennet’s note*, *Place: picture named Longbourn 2.webp*). Change them for that panel only: pick one of its characters, **Next portrait** to step through a character’s numbered portraits, **Choose portrait…**, or **Choose place image…**. **Return to automatic images** hands the choice back.
+- **Image sizing:** **Fill** crops the image to the panel, **Fit** shows all of it. **Set image focus**, in **Scene options**, picks the part of the image that stays in view: click the image or use the sliders, or **Center** to reset. A focus point belongs to the picture, so Canvas cards crop it the same way.
 - **Portrait shape:** **Square** or **Landscape**.
 - **Panel size:** **Small**, **Medium** or **Large**.
 - In a narrow pane these choices fold into **Image settings**, the image button in the toolbar, under **Image combinations**, **Background treatment**, **Character selection**, **Image sizing**, **Portrait shape** and **Panel size**.
-- **Synopsis:** click it, or **Add synopsis** on a card without one, to edit it in place, then **Save**. If the note changed elsewhere meanwhile, your edit stays in the field so you can copy it.
+- **Synopsis:** click it, or **Add synopsis** on a panel without one, to edit it in place, then **Save**. If the note changed elsewhere meanwhile, your edit stays in the field so you can copy it.
 
-The layout and panel size are saved with the view. The image choices (**Image**, **Text backing**, **Image sizing**, **Portrait shape** and **Character selection**) are shared with Canvas cards and apply across your books, and a card’s own picture choices stay with that note.
+The layout and panel size are saved with the view. The image choices (**Image**, **Text backing**, **Image sizing**, **Portrait shape** and **Character selection**) are shared with Canvas cards and apply across your books. A panel’s own picture choices stay with that note.
 
 ## Outline
 

@@ -24,7 +24,9 @@ const BACKINGS: readonly PlaceTextBacking[] = ['subtle', 'balanced', 'strong'];
 const FITS: readonly StoryImageFit[] = ['fill', 'fit'];
 const SHAPES: readonly PortraitShape[] = ['square', 'landscape'];
 const STRATEGIES: readonly StoryImageStrategy[] = ['distinctive', 'first', 'second', 'pov', 'balanced'];
-const DEFAULTS: StoryCardImages = { combination: 'character', backing: 'balanced', fit: 'fill', portraitShape: 'square' };
+// A panel shows its place behind the character until the author chooses otherwise (Eric, 2026-11-27).
+// A scene with no place picture shows its character alone, as Character does.
+const DEFAULTS: StoryCardImages = { combination: 'layered', backing: 'balanced', fit: 'fill', portraitShape: 'square' };
 const SHARED_CANVAS_VEILS: Record<PlaceTextBacking, readonly [string, string]> = { subtle: ['84%', '58%'], balanced: ['92%', '72%'], strong: ['96%', '86%'] };
 const CANVAS_SHADE_VEILS: Record<CanvasBackgroundShade, readonly [string, string]> = { original: ['0%', '0%'], light: ['45%', '25%'], medium: ['70%', '45%'], strong: ['90%', '70%'] };
 

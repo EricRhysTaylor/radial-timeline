@@ -20,8 +20,11 @@ describe('the images a card shows, one rule for Panels and Canvas', () => {
         expect(cardImages('combined', 'scene', sources({ character: null }))).toMatchObject({ cover: place, companion: null });
         expect(cardImages('combined', 'scene', sources({ place: null, character: null }))).toMatchObject({ cover: null, showCover: true, placeholderIcon: 'map-pin' });
     });
-    it('no longer knows Scene artwork: a saved choice of it reads as Character', () => {
-        expect(storyCardImages({ storyCardImages: { combination: 'artwork' } } as RadialTimelineSettings).combination).toBe('character');
+    it('no longer knows Scene artwork: a saved choice of it reads as the default, Place background + character', () => {
+        expect(storyCardImages({ storyCardImages: { combination: 'artwork' } } as RadialTimelineSettings).combination).toBe('layered');
+    });
+    it('shows the character alone in Place background + character when the scene has no place picture', () => {
+        expect(cardImages('layered', 'scene', sources({ place: null }))).toMatchObject({ cover: character, backdrop: null, showCover: true });
     });
     it('shows no tile at all with None, so the title starts at the edge', () => {
         expect(cardImages('none', 'scene', sources())).toEqual({ cover: null, companion: null, backdrop: null, showCover: false, placeholderIcon: 'file-text' });
@@ -50,8 +53,8 @@ const viewConfig = (values: Record<string, unknown>) => ({
 
 describe('one set of card image settings', () => {
     it('reads defaults, and ignores values it does not know', () => {
-        expect(storyCardImages({} as RadialTimelineSettings)).toEqual({ combination: 'character', backing: 'balanced', fit: 'fill', portraitShape: 'square' });
-        expect(storyCardImages({ storyCardImages: { combination: 'sideways', fit: 'fit' } } as RadialTimelineSettings)).toMatchObject({ combination: 'character', fit: 'fit' });
+        expect(storyCardImages({} as RadialTimelineSettings)).toEqual({ combination: 'layered', backing: 'balanced', fit: 'fill', portraitShape: 'square' });
+        expect(storyCardImages({ storyCardImages: { combination: 'sideways', fit: 'fit' } } as RadialTimelineSettings)).toMatchObject({ combination: 'layered', fit: 'fit' });
     });
     it('adopts a Timetable view\'s own settings once, then clears them from the view', async () => {
         const plugin = pluginWith({});

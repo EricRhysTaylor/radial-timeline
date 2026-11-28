@@ -151,7 +151,7 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 Click **Read scene**, the book button in a scene panel's top-right corner. The panel turns over and shows the scene's text. A scale beside the text shows where you are in the scene. Click a passage to open the scene in a pop-out window at that spot. Click **Show front of panel** to turn it back.
 
-<p align="center"><img src="images/release-8-3-panel-reader.webp" alt="Three Pride and Prejudice scene panels: First Ball turned over to its text, with a passage highlighted under the pointer and the position scale beside it, between the fronts of Mr Bennet Visits and Jane's Admiration" width="800"></p>
+<p align="center"><img src="images/release-8-3-panel-reader.webp" alt="Three Pride and Prejudice scene panels: First Ball turned over to its text with the position scale beside it, between Mr Bennet Visits and Jane's Admiration, each showing its place behind the character's portrait" width="800"></p>
 
 ### Panel options
 

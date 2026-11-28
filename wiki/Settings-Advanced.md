@@ -9,6 +9,7 @@ Timeline display options, frontmatter key remapping, ripple rename, and log loca
 
 *   **Auto-expand clipped scene titles**: Automatically expands truncated scene titles on hover.
 *   **Show part and chapter markers**: Displays part and chapter boundaries on the Narrative all-scenes ring and reports how many active chapter markers exist in the current book.
+*   **Chapter source**: Chooses where the active book's chapters come from. Pick **Chapter property on scenes** to use the **Chapter** title you give the first scene of each chapter. Or pick a level of folders inside the book's folder, and each folder at that level becomes a chapter named after it. The list shows example folder names for each level. Chapter markers, the Timetable, [Writing Studio](Writing-Studio) and export all use this choice. Chapters follow the timeline's scene order. If another chapter's scenes fall between the scenes of one folder, the setting names that folder, so you can move the scenes or change their order. Each book keeps its own choice.
 *   **Recent drag move overlay in narrative mode**: Shows the last committed scene and beat drag moves.
 *   **Readability size**: Switches curated timeline text sizing between `Normal` and `Large`.
 *   **Show time notation bar in scene notes**: In scene notes, a vertical bar beside the text marks each time phrase in editing and Reading view. Other notes never show it. Turn it off to hide the bar; the time summary in the note's title bar stays visible. See [Scene Time](Scene-Time).

@@ -82,6 +82,18 @@ The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar
 | **Progress** | Each heading counts complete scenes, words, and overdue scenes; overdue Due cells stand out. |
 | **Gossamer** | Beats come forward with their latest score for the selected signal, its change since the previous run, the expected range (flagged when a score is outside it), and the justification. Other rows recede. |
 
+### Chapters
+
+In Narrative, each chapter has a heading above its scenes, with the number of scenes in it. Click the arrow to fold a chapter. Hover a heading and click **Read chapter** to read the chapter in [Writing Studio](Writing-Studio).
+
+<p align="center"><img src="images/release-8-3-timetable-chapters.webp" alt="The Pride &amp; Prejudice Timetable in Narrative: under Act 1, the chapter headings Netherfield Is Let (3), The Meryton Assembly (4) with its Read chapter button showing, and Jane at Netherfield (3), each above its scenes and beats" width="800"></p>
+
+- A chapter that runs past the end of an act shows its heading again in the next act, marked *(continued)*. Each heading counts the scenes under it.
+- A beat sits inside a chapter when the scene after it belongs to that chapter.
+- Headings appear when the table is in manuscript order. Sorting by a column hides them until you choose **Clear sort**.
+
+Chapters come from the **Chapter** property on your scenes, or from folders. Choose in **Settings → Advanced → Chapter source**; see [Settings → Advanced](Settings-Advanced#timeline-display).
+
 ### Move a beat in Narrative
 
 In the active book's Timetable, drag a beat by its grip to the top or bottom half of a scene row to place it before or after that scene. The move must stay within the same act and between the beat's existing neighbors, including any beats hidden by a filter. The confirmation shows the new beat number and how many notes will be renamed. Drop it anywhere else and a notice explains the rule, with a link to **Settings → Core → Story beats**, where the beat system's order and act assignments are changed.

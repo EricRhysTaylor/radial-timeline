@@ -143,6 +143,8 @@ Mark the first scene of each chapter.
 
 You can add or clear chapter markers from the scene right-click menu in Narrative mode, or edit the `Chapter:` field directly in the scene note.
 
+**Chapters from folders.** If your scenes already sit in one folder per chapter, you can use those folders instead. Choose the folder level in **Settings → Advanced → Chapter source**, and each folder becomes a chapter named after it. See [Settings → Advanced](Settings-Advanced#timeline-display).
+
 ---
 
 ## The `Part:` Field

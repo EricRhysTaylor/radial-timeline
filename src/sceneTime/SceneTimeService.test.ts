@@ -65,9 +65,44 @@ describe('scene time decision persistence', () => {
         const stored = parseTimeStore(f.files.get('Radial Timeline/Scene Time/decisions.json')!);
         expect(stored.scenes[f.file.path][key].action).toBe('exclude');
     });
+    it('keeps a decision while the writer types on another line of the same block (Devin, 8.3.0)', async () => {
+        const f = fixture(); await f.service.initialize();
+        const cues = f.service.snapshot(f.file, f.source())!.cues;
+        await f.service.decide(f.file, cues[0].key, { action: 'add', minutes: 120 });
+        await f.service.decide(f.file, cues[1].key, { action: 'exclude', minutes: 0 });
+        // A single Enter starts the next paragraph: no blank line, so the block grows.
+        f.setSource(`${f.source()}\nShe writes on, a new paragraph.`);
+        const after = f.service.snapshot(f.file, f.source())!;
+        expect(after.cues[0].decision).toEqual({ action: 'add', minutes: 120 });
+        expect(after.cues[1].decision?.action).toBe('exclude');
+        expect(after.elapsed).toBe(120);
+    });
+    it('moves schema-1 decisions to line keys once, when the store loads', async () => {
+        const source = 'Two hours later, she arrives.\nShe sleeps for six hours.';
+        const oldKey = (quote: string) => JSON.stringify([source, source.indexOf(quote), quote]);
+        const manual = 'manual-selection-v1:"She arrives."';
+        const f = fixture(JSON.stringify({ schemaVersion: 1, scenes: {
+            'Scenes/Test.md': { [oldKey('Two hours later')]: { action: 'add', minutes: 120 }, [manual]: { action: 'add', minutes: 5 } },
+            'Scenes/Gone.md': { [oldKey('six hours')]: { action: 'exclude', minutes: 0 } },
+        } }));
+        f.files.set('Scenes/Test.md', source);
+        await f.service.initialize();
+        const stored = parseTimeStore(f.files.get('Radial Timeline/Scene Time/decisions.json')!);
+        expect(stored.schemaVersion).toBe(2);
+        expect(stored.scenes['Scenes/Test.md'][JSON.stringify(['Two hours later, she arrives.', 0, 'Two hours later'])]).toEqual({ action: 'add', minutes: 120 });
+        expect(stored.scenes['Scenes/Test.md'][manual]).toEqual({ action: 'add', minutes: 5 });
+        // A scene that is no longer there keeps its decisions as they were.
+        expect(stored.scenes['Scenes/Gone.md']).toEqual({ [oldKey('six hours')]: { action: 'exclude', minutes: 0 } });
+        expect(f.service.snapshot(f.file, source)!.cues[0].decision).toEqual({ action: 'add', minutes: 120 });
+        // The second load finds schema 2 and writes nothing.
+        f.adapter.write.mockClear();
+        await new SceneTimeService(f.plugin).initialize();
+        expect(f.adapter.write).not.toHaveBeenCalled();
+    });
     it('validates versioned data and rejects invalid contributions', () => {
         expect(parseTimeStore('{"schemaVersion":1,"scenes":{}}')).toEqual({ schemaVersion: 1, scenes: {} });
-        for (const raw of ['{}', '{"schemaVersion":2,"scenes":{}}', '{"schemaVersion":1,"scenes":[]}',
+        expect(parseTimeStore('{"schemaVersion":2,"scenes":{}}')).toEqual({ schemaVersion: 2, scenes: {} });
+        for (const raw of ['{}', '{"schemaVersion":3,"scenes":{}}', '{"schemaVersion":1,"scenes":[]}',
             '{"schemaVersion":1,"scenes":{"a":{"b":{"action":"add","minutes":-1}}}}',
             '{"schemaVersion":1,"scenes":{"a":{"b":{"action":"guess","minutes":3}}}}']) {
             expect(() => parseTimeStore(raw)).toThrow();

@@ -102,6 +102,35 @@ export function maskNonProse(source: string): string {
         .replace(/^\s*(?:#{1,6}\s+.*|[-*_]{3,}\s*|\[\^[^\]]+\]:.*)$/gm, blank);
 }
 
+/**
+ * A cue's decision key: its own line, where on the line it starts, and the words matched.
+ * Writers in Obsidian usually start a paragraph with a single Enter, so a line is what they see
+ * as a paragraph; typing on any other line leaves the key, and the decision, in place.
+ * (Store schema 1 keyed by the whole block of lines without a blank one; migrateDecisionKeys moves those.)
+ */
+function lineCueKey(line: string, offset: number, quote: string): string {
+    return JSON.stringify([line, offset, quote]);
+}
+
+/**
+ * Move one scene's decisions from schema-1 keys (the cue's whole block of lines) to line keys,
+ * by scanning the scene's current text. A decision whose cue is not found, or matches more than
+ * one cue, keeps its key; manual-time keys never change.
+ */
+export function migrateDecisionKeys(source: string, decisions: Record<string, TimeDecision>): Record<string, TimeDecision> {
+    const byOldKey = new Map<string, string | null>();
+    for (const cue of scanSceneTime(source).cues) {
+        const oldKey = JSON.stringify([cue.context, cue.contextOffset, cue.quote]);
+        byOldKey.set(oldKey, byOldKey.has(oldKey) ? null : cue.key);
+    }
+    const next: Record<string, TimeDecision> = {};
+    for (const [key, decision] of Object.entries(decisions)) {
+        const moved = byOldKey.get(key);
+        next[moved ?? key] = decision;
+    }
+    return next;
+}
+
 /** Every occurrence is retained; detection proposes interpretations and never confirms them. */
 export function scanSceneTime(source: string): SceneTimeScan {
     const text = maskNonProse(source);
@@ -150,7 +179,7 @@ export function scanSceneTime(source: string): SceneTimeScan {
                 paragraphEnd = next;
             }
             const context = source.slice(paragraphStart, paragraphEnd);
-            cues.push({ key: JSON.stringify([context, from - paragraphStart, match[0]]), from, to,
+            cues.push({ key: lineCueKey(source.slice(lineStart, lineEnd), from - lineStart, match[0]), from, to,
                 line: text.slice(0, from).split('\n').length - 1, quote: match[0], context, contextOffset: from - paragraphStart,
                 kind: pattern.kind, suggestedMinutes: pattern.span ? minutesFromSpan(match[1]) : null, duplicate: false });
         }

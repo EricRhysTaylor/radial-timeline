@@ -2,16 +2,22 @@ import { Component, MarkdownView, Notice, TFile, normalizePath } from 'obsidian'
 import { attachManualTimes, manualTimeKey, manualTimeQuote } from './manualTime';
 import type RadialTimelinePlugin from '../main';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
-import { resolveSceneTime, scanSceneTime, type SceneTimeSnapshot, type TimeDecision } from './model';
+import { migrateDecisionKeys, resolveSceneTime, scanSceneTime, type SceneTimeSnapshot, type TimeDecision } from './model';
 import { t } from '../i18n';
 
 const STORE_DIR = 'Radial Timeline/Scene Time';
 const STORE_PATH = `${STORE_DIR}/decisions.json`;
-interface TimeStore { schemaVersion: 1; scenes: Record<string, Record<string, TimeDecision>> }
+/**
+ * Schema 2 keys each detected cue by its own line (model.ts lineCueKey); schema 1 keyed it by its
+ * whole block of lines, so typing anywhere in the block lost the decision. A schema-1 file is
+ * moved to schema 2 once, when it loads (SceneTimeService.initialize).
+ */
+type TimeStoreVersion = 1 | 2;
+interface TimeStore { schemaVersion: TimeStoreVersion; scenes: Record<string, Record<string, TimeDecision>> }
 
 export function parseTimeStore(raw: string): TimeStore {
     const value: unknown = JSON.parse(raw);
-    if (!value || typeof value !== 'object' || !('schemaVersion' in value) || value.schemaVersion !== 1
+    if (!value || typeof value !== 'object' || !('schemaVersion' in value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2)
         || !('scenes' in value) || !value.scenes || typeof value.scenes !== 'object' || Array.isArray(value.scenes)) {
         throw new Error(t('sceneTime.errors.unsupportedFile'));
     }
@@ -32,7 +38,7 @@ export function parseTimeStore(raw: string): TimeStore {
 }
 
 export class SceneTimeService extends Component {
-    private data: TimeStore = { schemaVersion: 1, scenes: {} };
+    private data: TimeStore = { schemaVersion: 2, scenes: {} };
     private revision = 0;
     private cache = new Map<string, { source: string; when: unknown; duration: unknown; revision: number; snapshot: SceneTimeSnapshot }>();
     private listeners = new Set<() => void>();
@@ -45,7 +51,20 @@ export class SceneTimeService extends Component {
     async initialize(): Promise<void> {
         try {
             const io = this.plugin.app.vault.adapter; // SAFE: JSON sidecar loads before the Vault index is ready.
-            if (await io.exists(STORE_PATH)) this.data = parseTimeStore(await io.read(STORE_PATH));
+            if (!(await io.exists(STORE_PATH))) return;
+            const stored = parseTimeStore(await io.read(STORE_PATH));
+            if (stored.schemaVersion === 2) {
+                this.data = stored;
+                return;
+            }
+            // Schema 1: move each scene's decisions to line keys, reading the scene as it is now.
+            const scenes: TimeStore['scenes'] = {};
+            for (const [path, decisions] of Object.entries(stored.scenes)) {
+                scenes[path] = await io.exists(path) ? migrateDecisionKeys(await io.read(path), decisions) : decisions;
+            }
+            const migrated: TimeStore = { schemaVersion: 2, scenes };
+            await io.write(STORE_PATH, JSON.stringify(migrated, null, 2));
+            this.data = migrated;
         } catch (error) {
             this.error = t('sceneTime.errors.loadFailed', { detail: error instanceof Error ? error.message : String(error) });
             new Notice(this.error);

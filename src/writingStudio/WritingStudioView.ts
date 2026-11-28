@@ -42,7 +42,6 @@ import { buildStudioWheel, wheelSubplotOrder, type StudioWheelHandle } from './s
 interface StudioState {
     scenePath?: string;
     scope?: StudioScope;
-    unit?: StudioUnit;
 }
 
 /** How far down the reading column a scene must reach to be the one being read. */
@@ -74,7 +73,6 @@ export class WritingStudioView extends ItemView {
     private sourceFolder = '';
     private current = 0;
     private readingScope: StudioScope = 'book';
-    private unit: StudioUnit = 'scene';
     private pendingScenePath: string | null = null;
     private loadToken = 0;
     private rendered = new Map<number, RenderedScene>();
@@ -135,13 +133,12 @@ export class WritingStudioView extends ItemView {
 
     getState(): Record<string, unknown> {
         const scene = this.book?.scenes[this.current];
-        return { scenePath: scene?.path ?? this.pendingScenePath ?? undefined, scope: this.readingScope, unit: this.unit };
+        return { scenePath: scene?.path ?? this.pendingScenePath ?? undefined, scope: this.readingScope };
     }
 
     async setState(state: unknown, result: ViewStateResult): Promise<void> {
         const next = (state ?? {}) as StudioState;
         if (next.scope === 'book' || next.scope === 'chapter' || next.scope === 'scene') this.readingScope = next.scope;
-        if (next.unit === 'scene' || next.unit === 'chapter') this.unit = next.unit;
         if (typeof next.scenePath === 'string' && next.scenePath.length > 0) {
             this.pendingScenePath = next.scenePath;
             if (this.book) {
@@ -657,36 +654,28 @@ export class WritingStudioView extends ItemView {
         top.createDiv({ cls: 'ert-studio__crumb', text: this.bookTitle });
         const controls = top.createDiv({ cls: 'ert-studio__controls' });
 
-        const unit = setAccessibleLabel(controls.createDiv({ cls: 'ert-studio__segmented', attr: { role: 'group' } }), t('ui.writingStudio.stepBy'));
-        const unitButton = (value: StudioUnit, label: string, disabled: boolean): void => {
-            const button = unit.createEl('button', { text: label, attr: { type: 'button', 'aria-pressed': String(this.unit === value) } });
-            button.toggleClass('is-active', this.unit === value);
-            button.disabled = disabled;
-            events.registerDomEvent(button, 'click', () => { this.unit = value; this.renderHeader(); this.app.workspace.requestSaveLayout(); });
-        };
-        unitButton('scene', t('ui.writingStudio.unitScene'), false);
-        unitButton('chapter', t('ui.writingStudio.unitChapter'), book.chapters.length === 0);
-
-        const pager = controls.createDiv({ cls: 'ert-studio__pager' });
-        this.pagerButton(pager, -1, events);
-        this.pagerButton(pager, 1, events);
-
-        const scope = setAccessibleLabel(controls.createEl('select', { cls: 'dropdown ert-studio__scope' }), t('ui.writingStudio.scopeLabel'));
+        // How much of the book is on the page, with its name in front of it.
+        const show = controls.createEl('label', { cls: 'ert-studio__show' });
+        show.createSpan({ cls: 'ert-studio__show-label', text: t('ui.writingStudio.scopeLabel') });
+        const scope = show.createEl('select', { cls: 'dropdown ert-studio__scope' });
         for (const [value, label] of [['book', t('ui.writingStudio.scopeBook')], ['chapter', t('ui.writingStudio.scopeChapter')], ['scene', t('ui.writingStudio.scopeScene')]] as const) {
             scope.createEl('option', { value, text: label });
         }
         scope.value = this.readingScope;
         events.registerDomEvent(scope, 'change', () => this.setScope(scope.value as StudioScope));
 
+        // One stepper per unit, each naming what its arrows move.
+        this.renderStepper(controls, 'scene', t('ui.writingStudio.unitScene'), events);
+        if (book.chapters.length > 0) this.renderStepper(controls, 'chapter', t('ui.writingStudio.unitChapter'), events);
+
+        // The act being read; choosing another goes to its first scene.
         const starts = actStarts(book);
         if (starts.length > 1) {
             const acts = setAccessibleLabel(controls.createEl('select', { cls: 'dropdown ert-studio__acts' }), t('ui.writingStudio.actJump'));
-            acts.createEl('option', { value: '', text: t('ui.writingStudio.actJump') });
             for (const start of starts) acts.createEl('option', { value: String(start.scene), text: actLabel(start.act) });
-            events.registerDomEvent(acts, 'change', () => {
-                if (acts.value !== '') this.goTo(Number(acts.value));
-                acts.value = '';
-            });
+            const currentStart = [...starts].reverse().find(start => start.scene <= this.current) ?? starts[0];
+            acts.value = String(currentStart.scene);
+            events.registerDomEvent(acts, 'change', () => this.goTo(Number(acts.value)));
         }
 
         const toggle = controls.createEl('button', { cls: 'clickable-icon ert-studio__details-toggle', attr: { type: 'button', 'aria-expanded': String(this.rootEl.dataset.detailsOpen === 'true') } });
@@ -707,11 +696,19 @@ export class WritingStudioView extends ItemView {
         this.stripTitleEl.setText(scene.name);
     }
 
-    private pagerButton(parent: HTMLElement, direction: -1 | 1, events: Component): void {
+    /** ‹ Scene › or ‹ Chapter ›: arrows on either side of the unit they move by. */
+    private renderStepper(parent: HTMLElement, unit: StudioUnit, label: string, events: Component): void {
+        const stepper = setAccessibleLabel(parent.createDiv({ cls: 'ert-studio__stepper', attr: { role: 'group' } }), label);
+        this.stepButton(stepper, unit, -1, events);
+        stepper.createSpan({ cls: 'ert-studio__stepper-label', text: label });
+        this.stepButton(stepper, unit, 1, events);
+    }
+
+    private stepButton(parent: HTMLElement, unit: StudioUnit, direction: -1 | 1, events: Component): void {
         const book = this.book;
         if (!book) return;
-        const target = stepTarget(book, this.unit, this.current, direction);
-        const button = parent.createEl('button', { cls: 'clickable-icon ert-studio__pager-button', attr: { type: 'button' } });
+        const target = stepTarget(book, unit, this.current, direction);
+        const button = parent.createEl('button', { cls: 'clickable-icon ert-studio__stepper-button', attr: { type: 'button' } });
         setIcon(button, direction < 0 ? 'chevron-left' : 'chevron-right');
         if (target === null) {
             button.disabled = true;
@@ -719,8 +716,8 @@ export class WritingStudioView extends ItemView {
             return;
         }
         const targetChapter = chapterAt(book, target);
-        const name = this.unit === 'chapter' && targetChapter && targetChapter.firstScene === target ? targetChapter.title : book.scenes[target].name;
-        const key = this.unit === 'chapter'
+        const name = unit === 'chapter' && targetChapter && targetChapter.firstScene === target ? targetChapter.title : book.scenes[target].name;
+        const key = unit === 'chapter'
             ? (direction < 0 ? 'ui.writingStudio.previousChapter' : 'ui.writingStudio.nextChapter')
             : (direction < 0 ? 'ui.writingStudio.previousScene' : 'ui.writingStudio.nextScene');
         setTooltip(button, t(key, { name }));

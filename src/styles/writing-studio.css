@@ -190,22 +190,25 @@
    Scene    number and name; inside a chapter, indented on a guide line
    Beat     milestone icon and name, faint italic, not a link */
 
+/* A rule under the timeline marks where the scrolling list begins. */
 .ert-studio__contents {
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: var(--size-4-4);
+  margin-top: var(--size-4-3);
   padding-bottom: var(--size-4-8);
+  border-top: 1px solid var(--background-modifier-border-hover);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 
-/* The heading stays at the top of the scrolling list. */
+/* The heading stays at the top of the list, with a band of page color under
+   it, so rows slip away below the heading instead of running into it. */
 .ert-studio__contents-heading {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding-bottom: var(--size-2-2);
+  padding: var(--size-4-3) 0 var(--size-4-3);
   background: var(--background-primary);
   margin: 0;
   font-size: var(--font-ui-smaller);
@@ -394,9 +397,19 @@
   z-index: 2;
   max-width: var(--ert-studio-measure);
   margin: 0 auto;
-  padding: var(--size-4-3) 0 var(--size-4-2);
+  /* The header ends in a band of page color below its rule, so scrolling text
+     slips away before it reaches the line. The band is part of the header's
+     height, so a scene brought into view lands below it. */
+  padding: var(--size-4-3) 0 calc(var(--size-4-3) + var(--size-4-5));
   background: var(--background-primary);
-  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ert-studio__head::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--size-4-5);
+  border-bottom: 1px solid var(--background-modifier-border-hover);
 }
 
 .ert-studio__head-row {
@@ -423,32 +436,34 @@
   align-items: center;
 }
 
-.ert-studio__segmented {
+/* Show [Whole book]: the menu with its name in front of it. */
+.ert-studio__show {
   display: inline-flex;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  overflow: hidden;
+  gap: var(--size-2-3);
+  align-items: center;
 }
 
-.ert-studio__segmented button {
-  height: auto;
-  padding: var(--size-2-1) var(--size-4-2);
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+.ert-studio__show-label {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
-.ert-studio__segmented button.is-active {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+/* ‹ Scene ›  ‹ Chapter ›: each stepper names what its arrows move. */
+.ert-studio__stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
 }
 
-.ert-studio__pager {
-  display: inline-flex;
-  gap: var(--size-2-1);
+.ert-studio__stepper-label {
+  padding: 0 var(--size-2-1);
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+}
+
+.ert-studio__stepper-button {
+  padding: var(--size-2-1) var(--size-2-2);
 }
 
 .ert-studio__scope,
@@ -490,7 +505,7 @@
 .ert-studio__text {
   max-width: var(--ert-studio-measure);
   margin: 0 auto;
-  padding-top: var(--size-4-4);
+  padding-top: var(--size-4-2);
 }
 
 .ert-studio__message {

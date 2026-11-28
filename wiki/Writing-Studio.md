@@ -17,16 +17,16 @@ Writing Studio shows the active book. Choose another book in the timeline, and t
 - **Contents** lists the book in outline form: acts, then chapters with their scene counts, then scenes and beats. Click a scene to go to it. Click a chapter's arrow to fold it.
 - **Scene details**, on the right, show the scene's chapter, act, date, subplots, status, publish stage, word count and synopsis.
 
-As you scroll, the wheel, the contents and the details all move to the scene you are reading.
+As you scroll, the wheel lights the scene you are reading, and the details follow. The wheel stays in place; only the contents list scrolls, and it keeps the scene you are reading in view.
 
-## Choose how much to read
+## Move through the book
 
 The bar above the text has these controls:
 
-- **Scene** or **Chapter** sets what the arrows step by.
-- The arrows go to the previous or next scene or chapter.
-- **Show** chooses **Whole book**, **This chapter** or **This scene**.
-- **Go to act** jumps to the start of an act. It appears when the book has more than one act.
+- **Show** chooses how much of the book is on the page: **Whole book**, **This chapter** or **This scene**.
+- **‹ Scene ›** goes to the previous or next scene.
+- **‹ Chapter ›** goes to the start of this chapter, or of the next one. It appears when the book has chapters.
+- **The act menu** shows the act you are in. Choose another act to go to its first scene. It appears when the book has more than one act.
 
 ## Edit while you read
 

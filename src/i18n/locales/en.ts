@@ -6987,7 +6987,6 @@ export const en = {
             nextScene: 'Next scene: {{name}}',
             previousChapter: 'Previous chapter: {{name}}',
             nextChapter: 'Next chapter: {{name}}',
-            stepBy: 'Step by',
             unitScene: 'Scene',
             unitChapter: 'Chapter',
             scopeLabel: 'Show',
